@@ -6,11 +6,10 @@
 
 ## 克隆后直接运行
 
-安装 [uv](https://docs.astral.sh/uv/)。在仓库根目录运行：
+安装 [uv](https://docs.astral.sh/uv/)。在仓库根目录运行一条命令，uv 会选择 Python 3.12 并按锁文件准备依赖：
 
 ```sh
-uv sync --frozen --python 3.12
-uv run --frozen uvicorn citation_tool.api:create_app --factory --host 127.0.0.1 --port 8765
+uv run --frozen citation-tool
 ```
 
 打开 **<http://127.0.0.1:8765/>**，默认选中三个真实数据源，不需要另下数据包或登录。没有模型 Key 时，点击首页「无需 Key，试用本地检索」，或打开 <http://127.0.0.1:8765/?local=1>，输入 `LFY2, soybean`。这个访客入口只查两套本地库，无需外网，不生成模型理由、规范引用或全文证据。
@@ -22,6 +21,18 @@ uv run --frozen uvicorn citation_tool.api:create_app --factory --host 127.0.0.1 
 | aBiotech 老师样例库 | 50 篇题录，50 篇均附摘要。 |
 
 两套本地库保留线上快照的全部文献标识。摘要按各条记录所列的 CC BY 或 CC0 及所链接的原文许可使用，保留题名、作者和来源；仅做 HTML 文本规范化。不满足公开分发条件的摘要不提交，条目标为「仅题录」，可按题名检索并跳转来源，不参与模型推荐排名。[Europe PMC 版权说明](https://europepmc.org/Copyright) · [语料与 SHA-256 清单](corpora/manifest.json)。仓库不含论文 PDF、模型密钥、账号或历史数据。
+
+### 升级已有部署
+
+先停止旧服务；有重要数据的实例先备份 SQLite 和稿件目录。在**同一个仓库目录**运行：
+
+```sh
+git pull --ff-only && uv run --frozen citation-tool
+```
+
+保留原环境变量和数据路径，无需重建账号、导入论文库或重装前端。Git 不能快进时会停下，不要强制覆盖本地修改。由 systemd 等管理的实例，拉取后用原服务管理器启动，不再额外启动第二个进程。原 Uvicorn factory 命令仍可使用；短命令可传 `--host` 和 `--port`。
+
+需要先核对启动配置时，运行 `uv run --frozen citation-tool --check`：它检查前端文件、语料、配置和显式启用的 E5 缓存，使用临时 SQLite，不监听端口、不接触旧数据库、不请求在线库或模型。正式启动后可用 `/healthz` 确认可用。
 
 ### 接入真实 Agent 与部署配置
 

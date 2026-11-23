@@ -22,6 +22,9 @@ dependencies = [
   "uvicorn>=0.30,<1",
 ]
 
+[project.scripts]
+citation-tool = "citation_tool.cli:main"
+
 [dependency-groups]
 dev = [
   "httpx>=0.27,<1",
