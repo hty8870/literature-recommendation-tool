@@ -54,4 +54,4 @@ uv run --frozen python tools/check_spec.py
 
 运行上述本地夹具后，可另用 `npm run test:browser:themes` 验证四主题的桌面/手机首页、全文入口、双榜单、原生移动触控、引用和证据弹窗；它使用隔离的无头 Edge，不操作日常浏览器。可用 `THEMES=2,3 VIEWPORTS=mobile npm run test:browser:themes` 缩小范围，截图和报告写入 `data/runtime/theme-browser-acceptance/` 的新目录。
 
-`tools/smoke.py` 使用真实本地 HTTP/SSE 验证早到结果、事件重放和快照不可变，不调用外部模型。缺少另行准备的语料快照或 E5 缓存时，仅依赖该文件的测试会显式跳过，并列出缺失文件；已有数据仍按原断言验证。评测工具的 `run` 命令可能花费 API 额度；先读对应协议并从 `prepare` 开始。仓库不含生产 SSH 目标和密钥，不触发部署。维护者若另获发布授权，须显式指定 `CITATION_DEPLOY_SSH_TARGET`（OpenSSH 别名或 `user@host`），用 SSH 配置或 `CITATION_DEPLOY_SSH_IDENTITY_FILE` 指定本机私钥路径；发布脚本仍面向既有服务器布局，不是通用部署器。
+常规启动的回归测试使用无参数 `create_app()` 验证首页、健康检查和模拟数据源，不需要设置 `CITATION_CANDIDATE_PIPELINE`。`tools/smoke.py` 使用真实本地 HTTP/SSE 验证早到结果、事件重放和快照不可变，不调用外部模型。缺少另行准备的语料快照或 E5 缓存时，仅依赖该文件的测试会显式跳过，并列出缺失文件；已有数据仍按原断言验证。评测工具的 `run` 命令可能花费 API 额度；先读对应协议并从 `prepare` 开始。仓库不含生产 SSH 目标和密钥，不触发部署。维护者若另获发布授权，须显式指定 `CITATION_DEPLOY_SSH_TARGET`（OpenSSH 别名或 `user@host`），用 SSH 配置或 `CITATION_DEPLOY_SSH_IDENTITY_FILE` 指定本机私钥路径；发布脚本仍面向既有服务器布局，不是通用部署器。

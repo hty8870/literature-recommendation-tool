@@ -76,8 +76,12 @@ def match_annotations(claim: ClaimContext, item: CandidateDiagnostic) -> list[Ma
 
 class CommonScorer:
     def __init__(self, adapters: Mapping[str, LibraryAdapter]) -> None:
-        backgrounds = [getattr(adapter, "_records", []) for adapter in adapters.values()]
-        records = max(backgrounds, key=len, default=[])
+        scoring_adapters = [adapter for adapter in adapters.values() if not adapter.simulation]
+        records = max(
+            (getattr(adapter, "_records", []) for adapter in scoring_adapters),
+            key=len,
+            default=[],
+        )
         self._background = (
             BM25Index(
                 [
@@ -96,7 +100,7 @@ class CommonScorer:
         self._dense: EmbeddingIndex | None = next(
             (
                 adapter._index
-                for adapter in adapters.values()
+                for adapter in scoring_adapters
                 if isinstance(getattr(adapter, "_index", None), EmbeddingIndex)
             ),
             None,

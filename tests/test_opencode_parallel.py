@@ -27,7 +27,7 @@ def test_shared_embedding_keeps_e5_for_common_scoring_and_serializes_search(tmp_
 
     monkeypatch.setattr(EmbeddingIndex, "similarities", original)
     index = parallel.SharedEmbeddingIndex([], model_name="test", cache_dir=tmp_path)
-    scorer = CommonScorer({"a": SimpleNamespace(_index=index)})
+    scorer = CommonScorer({"a": SimpleNamespace(_index=index, simulation=False)})
     assert scorer._dense is index and scorer.version.endswith(":e5")
 
     def search():

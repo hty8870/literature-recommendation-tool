@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 import httpx
 
 from citation_tool.api import create_app
@@ -93,9 +95,25 @@ def test_early_final_stops_workers_and_returns_same_snapshot(tmp_path, live_serv
         assert repeated.json()["snapshot_id"] == manifest["snapshot_id"]
 
 
-def test_static_web_and_library_configuration(tmp_path, live_server) -> None:
-    base = live_server(create_app(Settings.for_tests(tmp_path)))
+def test_default_factory_serves_web_and_simulated_libraries(
+    tmp_path, monkeypatch, live_server
+) -> None:
+    for name in tuple(os.environ):
+        if name.startswith("CITATION_"):
+            monkeypatch.delenv(name)
+    monkeypatch.setenv("CITATION_DB_PATH", str(tmp_path / "citation.sqlite3"))
+    monkeypatch.setenv("CITATION_AUTH_DB_PATH", str(tmp_path / "auth.sqlite3"))
+    monkeypatch.setenv("CITATION_MODEL_CONFIG", str(tmp_path / "missing-model.json"))
+
+    app = create_app()
+    assert app.state.settings.candidate_pipeline == "agentic"
+    base = live_server(app)
     with httpx.Client(timeout=10) as client:
+        health = client.get(f"{base}/healthz")
+        assert health.status_code == 200
+        assert health.json()["status"] == "ok"
+        assert health.json()["simulation"] is True
+        assert health.json()["agent_available"] is False
         page = client.get(f"{base}/")
         assert page.status_code == 200
         assert 'src="./js/main.js"' in page.text

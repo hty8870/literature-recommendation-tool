@@ -14,11 +14,13 @@ from pydantic import Field
 
 from citation_tool.api import create_app
 from citation_tool.candidate_pool import CandidatePool
+from citation_tool.common_scoring import CommonScorer
 from citation_tool.config import LibraryConfig, Settings
 from citation_tool.entities import CandidateDiagnostic, stable_id
 from citation_tool.jcs import sha256_json
 from citation_tool.listwise import DiscoveryModels, ListwiseReranker, RankingDraft, RerankFailure
 from citation_tool.metadata_retrieval import MetadataCorpusAdapter
+from citation_tool.retrieval import build_fixture_adapters
 from citation_tool.source_agent import SourceAgent
 from citation_tool.store import Store
 from test_agent import ScriptedChatModel
@@ -447,6 +449,16 @@ async def test_source_agent_can_submit_then_search_and_reject_unknown_id(tmp_pat
         for message in batch
         if isinstance(message, ToolMessage)
     )
+
+
+def test_common_score_background_ignores_larger_simulated_libraries(tmp_path) -> None:
+    library = LibraryConfig("a", "A", "", 0, simulation=False)
+    metadata = {"a": MetadataCorpusAdapter(library, [record(1)])}
+    simulated = build_fixture_adapters(Settings.for_tests(tmp_path))
+
+    real_background = CommonScorer(metadata).group
+    assert real_background != CommonScorer({}).group
+    assert CommonScorer({**simulated, **metadata}).group == real_background
 
 
 async def test_common_score_does_not_depend_on_candidate_pool(tmp_path):
