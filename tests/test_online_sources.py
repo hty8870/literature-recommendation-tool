@@ -203,7 +203,9 @@ def test_environment_registers_online_large_and_teacher_libraries(tmp_path, monk
     monkeypatch.setenv("CITATION_AUTH_DB_PATH", str(tmp_path / "auth.db"))
     monkeypatch.setenv("CITATION_MODEL_CONFIG", str(tmp_path / "missing-model.json"))
     monkeypatch.setenv("CITATION_EMBEDDING_ENABLED", "1")
+    monkeypatch.delenv("CITATION_DEMO_CONTINUITY", raising=False)
     settings = settings_from_env()
+    assert not settings.demo_continuity
     assert [library.library_id for library in settings.libraries] == [
         "europepmc-online",
         "europepmc-snapshot",

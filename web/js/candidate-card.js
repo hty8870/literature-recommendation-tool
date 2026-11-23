@@ -49,6 +49,8 @@ export class CandidateCard {
     this.movement = el('span', { class: 'result-card__scale' });
     this.title = el('a', { class: 'result-card__title', target: '_blank', rel: 'noopener noreferrer' });
     this.badge = el('span');
+    this.evidenceBadge = el('span', { class: 'badge badge--evidence' });
+    this.localOnly = localOnly;
     this.authors = el('span');
     this.year = el('span');
     this.doi = el('span');
@@ -60,7 +62,7 @@ export class CandidateCard {
     this.quote = el('blockquote');
     this.matches = el('p', { class: 'field-help' });
     this.otherSources = el('div');
-    this.publicationNote = el('p', { class: 'field-help', text: '撤稿状态未核查；只有题录与摘要，不是全文证据。' });
+    this.publicationNote = el('p', { class: 'field-help', text: '撤稿状态未核查。' });
     this.corrections = el('div');
     this.sourceLinks = new Map();
     this.sourceDetails = new Map();
@@ -81,14 +83,12 @@ export class CandidateCard {
       el('div', { class: 'result-card__score-rail' }, this.rank, this.movement),
       el('div', { class: 'result-card__content' },
         el('div', {}, el('h3', { class: 'result-card__heading' }, this.title),
-          el('span', { class: 'result-card__badges' },
-            el('span', { class: 'badge badge--evidence', text: '仅摘要' }), this.badge)),
+          el('span', { class: 'result-card__badges' }, this.evidenceBadge, this.badge)),
         el('div', { class: 'result-card__meta' }, this.authors, this.year, this.doi),
         this.reasonRow, this.details),
       el('div', { class: 'result-card__actions' }, this.copy, this.citation),
     );
     setHidden(this.reasonRow, localOnly);
-    setHidden(this.citation, localOnly);
     this.update(candidate, index, libraryNames);
   }
 
@@ -118,7 +118,10 @@ export class CandidateCard {
     }
     const reason = reasonText(candidate);
     if (this.reason.nodeValue !== reason) this.reason.nodeValue = reason;
-    setText(this.abstract, candidate.evidence_excerpt || '未提供摘要。');
+    const hasAbstract = Boolean(candidate.evidence_excerpt);
+    setText(this.evidenceBadge, hasAbstract ? '仅摘要' : '仅题录');
+    setText(this.abstract, hasAbstract ? candidate.evidence_excerpt : '当前来源未提供摘要，可前往来源查阅。');
+    setHidden(this.citation, this.localOnly || !hasAbstract);
     this.#updateSources(candidate, libraryNames);
     setText(this.quote, candidate.reason_evidence_quote);
     setHidden(this.quote, !candidate.reason_evidence_quote);
@@ -167,7 +170,7 @@ export class CandidateCard {
     }
     const details = [];
     for (const source of candidate.source_records || []) {
-      if (source.abstract === candidate.evidence_excerpt) continue;
+      if (!source.abstract || source.abstract === candidate.evidence_excerpt) continue;
       const key = `${source.library_id}:${source.paper_id}`;
       let entry = this.sourceDetails.get(key);
       if (!entry) {

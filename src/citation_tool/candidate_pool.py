@@ -5,6 +5,7 @@ import logging
 
 from .candidates import retrieval_fingerprint
 from .common_scoring import CommonScorer
+from .config import BIBLIOGRAPHIC_ONLY
 from .entities import (
     CandidateDiagnostic,
     CandidateRanking,
@@ -194,7 +195,7 @@ class CandidatePool:
                 scope_match=recommendation.evidence[0].scope_match,
                 rejection_reasons=sorted(
                     set(recommendation.rejection_reasons)
-                    | {"abstract_metadata_only"}
+                    | {"abstract_metadata_only" if representative.abstract else BIBLIOGRAPHIC_ONLY}
                     | ({"publication_retracted"} if status == "retracted" else set())
                 ),
                 evidence_excerpt=representative.abstract,
@@ -210,7 +211,10 @@ class CandidatePool:
                 publication_types=representative.publication_types,
                 ranking_status="pending" if eligible else "ineligible",
                 score_status="failed",
-                quality_note="真实题录与摘要候选，尚无全文证据或引用资格。",
+                quality_note=(
+                    "真实题录与摘要候选，尚无全文证据或引用资格。" if representative.abstract
+                    else "仅有题录，当前来源未提供摘要；无全文证据或引用资格。"
+                ),
             )
             try:
                 diagnostic = await asyncio.to_thread(self.scorer.score, self.claim, diagnostic)

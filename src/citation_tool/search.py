@@ -60,7 +60,7 @@ def _library_notice(library) -> str:
             "实时查询 Europe PMC，原生相关性 TopN 后本地重排；不是本地全库索引，候选不可直接引用。"
         )
     count = library.record_count if library.record_count is not None else "未知"
-    return f"本地固定快照，{count} 篇真实题录与摘要；候选不可直接引用。"
+    return f"本地固定快照，{count} 篇真实题录，有可用摘要时一并提供；候选不可直接引用。"
 
 
 def library_info(library) -> LibraryInfo:

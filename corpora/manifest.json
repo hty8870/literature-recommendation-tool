@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "source": "https://www.ebi.ac.uk/europepmc/webservices/rest/search",
+  "copyright_terms": "https://europepmc.org/Copyright",
+  "abstract_policy": "Only exact snapshot abstracts matched to Europe PMC Open Access core results with a CC BY or CC0 grant and the article license statement link. Abstracts retain original attribution and wording after markup normalization. Other records carry bibliographic facts and links only. No article full text.",
+  "libraries": {
+    "europepmc-snapshot.json": {
+      "record_count": 11002,
+      "abstract_count": 4400,
+      "abstract_licenses": {
+        "CC BY": 4389,
+        "CC0": 11
+      },
+      "sha256": "b2a45aa30ce381442ae1d415b6c3e5bb4a7fcf131964e6a5e0f6efd83aae2e8f",
+      "original_sha256": "8ee2bc9d6c3cad4f135fdaeb4642df54983d5fa977c0cc2002e851b7dc95e737"
+    },
+    "abiotech-sample.json": {
+      "record_count": 50,
+      "abstract_count": 50,
+      "abstract_licenses": {
+        "CC BY": 50
+      },
+      "sha256": "0c70626e0ba93cd8a661e7ca811fe91e552efcaabbe62da7f8729a7cd0156830",
+      "original_sha256": "f55a4220fa6e905f5d295127dfef9b9a1d58d651148bca19f3209e9630111062"
+    }
+  }
+}

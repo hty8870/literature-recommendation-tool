@@ -3,9 +3,11 @@ from __future__ import annotations
 import os
 
 import httpx
+import pytest
 
 from citation_tool.api import create_app
 from citation_tool.config import Settings
+from test_agent import wait_agent
 from test_integration import headers, search_body, wait_final, wait_state
 
 
@@ -95,15 +97,16 @@ def test_early_final_stops_workers_and_returns_same_snapshot(tmp_path, live_serv
         assert repeated.json()["snapshot_id"] == manifest["snapshot_id"]
 
 
-def test_default_factory_serves_web_and_simulated_libraries(
-    tmp_path, monkeypatch, live_server
-) -> None:
+@pytest.mark.parametrize("mode", [None, "fixture"])
+def test_default_factory_serves_web_and_libraries(tmp_path, monkeypatch, live_server, mode) -> None:
     for name in tuple(os.environ):
         if name.startswith("CITATION_"):
             monkeypatch.delenv(name)
     monkeypatch.setenv("CITATION_DB_PATH", str(tmp_path / "citation.sqlite3"))
     monkeypatch.setenv("CITATION_AUTH_DB_PATH", str(tmp_path / "auth.sqlite3"))
     monkeypatch.setenv("CITATION_MODEL_CONFIG", str(tmp_path / "missing-model.json"))
+    if mode:
+        monkeypatch.setenv("CITATION_LIBRARY_MODE", mode)
 
     app = create_app()
     assert app.state.settings.candidate_pipeline == "agentic"
@@ -112,7 +115,7 @@ def test_default_factory_serves_web_and_simulated_libraries(
         health = client.get(f"{base}/healthz")
         assert health.status_code == 200
         assert health.json()["status"] == "ok"
-        assert health.json()["simulation"] is True
+        assert health.json()["simulation"] is (mode == "fixture")
         assert health.json()["agent_available"] is False
         page = client.get(f"{base}/")
         assert page.status_code == 200
@@ -120,11 +123,38 @@ def test_default_factory_serves_web_and_simulated_libraries(
         assert client.get(f"{base}/js/main.js").status_code == 200
         libraries = client.get(f"{base}/api/v1/libraries")
         assert libraries.status_code == 200
-        configured = libraries.json()["libraries"]
-        assert {item["library_id"] for item in configured} == {"fixture-fast", "fixture-slow"}
-        assert all(item["simulation"] for item in configured)
-        assert all(item["display_name"].startswith("本地演示") for item in configured)
+        catalog = libraries.json()
+        configured = catalog["libraries"]
         assert 'id="library-list"' in page.text
         assert 'id="library-note" hidden' in page.text
         assert 'id="mode-menu"' in page.text
         assert 'id="manuscript-file"' in page.text
+        if mode == "fixture":
+            assert [item["library_id"] for item in configured] == ["fixture-fast", "fixture-slow"]
+            assert all(item["simulation"] for item in configured)
+            assert not catalog["demo_local_search_available"]
+            return
+        assert [(item["library_id"], item["record_count"]) for item in configured] == [
+            ("europepmc-online", None),
+            ("europepmc-snapshot", 11_002),
+            ("abiotech-sample", 50),
+        ]
+        assert not any(item["simulation"] for item in configured)
+        assert configured[1]["adapter_id"] == "metadata-snapshot-bm25-v1"
+        assert catalog["demo_local_search_available"]
+        sent = client.post(
+            f"{base}/api/v1/agent/runs",
+            json={"input_type": "keywords", "keywords": ["LFY2", "soybean"], "local_only": True},
+        ).raise_for_status().json()
+        run = wait_agent(client, base, sent["run_id"])
+        state = wait_final(client, base, run["latest_query_id"])
+        assert run["error"]["code"] == "LOCAL_SEARCH_ONLY"
+        assert {(item["library_id"], item["worker_state"]) for item in state["workers"]} == {
+            ("europepmc-snapshot", "completed"), ("abiotech-sample", "completed"),
+        }
+        assert any(
+            paper["doi"] == "10.1007/s42994-024-00192-2"
+            and "abiotech-sample" in paper["library_ids"]
+            for paper in state["candidate_diagnostics"]
+        )
+        assert state["results"] == []

@@ -443,7 +443,8 @@ async function loadLibraries() {
 function updateAgentAvailability() {
   const workspaceReady = authenticated && (identityReady || !accountsEnabled) && libraries.length;
   agentAvailable = Boolean(!localDemo && workspaceReady && (defaultModelAvailable || modelSettings.isCustom));
-  home.setAgentAvailable(localDemo ? Boolean(workspaceReady && !account && demoLocalAvailable) : agentAvailable);
+  const canTryLocal = Boolean(workspaceReady && !account && demoLocalAvailable);
+  home.setAgentAvailable(localDemo ? canTryLocal : agentAvailable, { canTryLocal: !localDemo && canTryLocal });
   syncChatControls();
 }
 

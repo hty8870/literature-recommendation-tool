@@ -8,7 +8,13 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-from .config import LibraryConfig, Settings
+from .config import (
+    BIBLIOGRAPHIC_ONLY,
+    BUNDLED_CORPUS_PATH,
+    BUNDLED_SAMPLE_PATH,
+    LibraryConfig,
+    Settings,
+)
 
 
 def _bool(name: str, default: bool = False) -> bool:
@@ -27,25 +33,29 @@ def settings_from_env() -> Settings:
     if base_path and not base_path.startswith("/"):
         base_path = "/" + base_path
     base_path = base_path.rstrip("/")
+    library_mode = os.environ.get("CITATION_LIBRARY_MODE", "metadata")
+    corpus_path = Path(os.environ.get("CITATION_CORPUS_PATH", BUNDLED_CORPUS_PATH))
+    sample_path = Path(os.environ.get("CITATION_SAMPLE_CORPUS_PATH", BUNDLED_SAMPLE_PATH))
+    bundled_start = library_mode == "metadata" and (corpus_path, sample_path) == (
+        BUNDLED_CORPUS_PATH, BUNDLED_SAMPLE_PATH
+    )
     settings = replace(
         defaults,
         db_path=Path(os.environ.get("CITATION_DB_PATH", defaults.db_path)),
         default_tenant=os.environ.get("CITATION_DEFAULT_TENANT", defaults.default_tenant),
         model_config_path=Path(os.environ.get("CITATION_MODEL_CONFIG", defaults.model_config_path)),
-        library_mode=os.environ.get("CITATION_LIBRARY_MODE", "fixture"),
+        library_mode=library_mode,
         candidate_pipeline=os.environ.get("CITATION_CANDIDATE_PIPELINE", "agentic"),
         listwise_score_review=_bool(
             "CITATION_LISTWISE_SCORE_REVIEW", defaults.listwise_score_review
         ),
-        corpus_path=Path(os.environ.get("CITATION_CORPUS_PATH", defaults.corpus_path)),
-        sample_corpus_path=Path(
-            os.environ.get("CITATION_SAMPLE_CORPUS_PATH", defaults.sample_corpus_path)
-        ),
+        corpus_path=corpus_path,
+        sample_corpus_path=sample_path,
         model_timeout_ms=int(
             os.environ.get("CITATION_MODEL_TIMEOUT_MS", defaults.model_timeout_ms)
         ),
         allow_user_models=_bool("CITATION_USER_MODELS_ENABLED", defaults.allow_user_models),
-        demo_continuity=_bool("CITATION_DEMO_CONTINUITY", defaults.demo_continuity),
+        demo_continuity=_bool("CITATION_DEMO_CONTINUITY", bundled_start),
         online_enabled=_bool("CITATION_EUROPEPMC_ONLINE", defaults.online_enabled),
         online_timeout_ms=int(
             os.environ.get("CITATION_ONLINE_TIMEOUT_MS", defaults.online_timeout_ms)
@@ -157,7 +167,10 @@ def settings_from_env() -> Settings:
                 display_name="多学科文献快照",
                 fixture_set="",
                 delay_ms=0,
-                adapter_id="metadata-hybrid-e5-rrf-v1",
+                adapter_id=(
+                    "metadata-hybrid-e5-rrf-v1" if settings.embedding_enabled
+                    else "metadata-snapshot-bm25-v1"
+                ),
                 simulation=False,
                 source_type="local_snapshot",
                 corpus_path=settings.corpus_path,
@@ -198,10 +211,18 @@ def load_metadata_records(path: Path) -> list[dict[str, Any]]:
     records = payload.get("records") if isinstance(payload, dict) else None
     if not isinstance(records, list) or not records:
         raise ValueError("metadata corpus must contain records")
-    required = {"work_id", "paper_id", "title", "abstract", "doi", "source_metadata_url"}
+    required = ("work_id", "paper_id", "title", "doi", "source_metadata_url")
     for record in records:
-        if not isinstance(record, dict) or not all(record.get(field) for field in required):
-            raise ValueError("metadata record is missing required identity or abstract fields")
+        if not isinstance(record, dict) or not all(
+            isinstance(record.get(field), str) and record[field].strip() for field in required
+        ):
+            raise ValueError("metadata record is missing required bibliographic identity")
+        abstract = record.get("abstract")
+        if record.get("evidence_level") == BIBLIOGRAPHIC_ONLY:
+            if abstract != "":
+                raise ValueError("bibliography-only record must have an empty abstract")
+        elif not isinstance(abstract, str) or not abstract.strip():
+            raise ValueError("metadata record must have an abstract or be marked bibliography-only")
         if record.get("simulation") is not False:
             raise ValueError("metadata adapter only accepts real records")
     return records

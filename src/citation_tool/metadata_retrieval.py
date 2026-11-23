@@ -180,14 +180,16 @@ class MetadataCorpusAdapter:
             if review
             else "primary_result"
         )
+        abstract = record["abstract"]
         passage = Passage(
-            passage_id=f"{record['paper_id']}#abstract",
+            passage_id=f"{record['paper_id']}#{'abstract' if abstract else 'bibliography'}",
             work_id=record["work_id"],
             paper_id=record["paper_id"],
             library_id=self.library.library_id,
-            raw_text=record["abstract"],
-            normalized_text=record["abstract"],
-            section_path=[record.get("section_label") or "Abstract (publisher metadata)"],
+            raw_text=abstract,
+            normalized_text=abstract,
+            section_path=[record.get("section_label") or "Abstract (publisher metadata)"]
+            if abstract else [],
             paragraph_index=0,
             reading_order_index=0,
             layout_quality="high",
@@ -215,14 +217,14 @@ class MetadataCorpusAdapter:
         )
         return Candidate(
             passage=passage,
-            quote=record["abstract"],
+            quote=abstract,
             display_score=score,
             evidence_role=role,
             locator=SourceLocator(source_uri=record["source_metadata_url"]),
             source=source,
             scope=EvidenceScope(),
-            context=record["abstract"],
-            document_type_eligible=not correction and status != "retracted",
+            context=abstract,
+            document_type_eligible=bool(abstract) and not correction and status != "retracted",
             retraction_status=status,
             score_version=self.score_version,
             score_scale_group=self.score_scale_group,

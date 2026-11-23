@@ -126,7 +126,7 @@ def _verify_evidence(claim: ClaimContext, candidate: Candidate) -> Evidence:
     passage = candidate.passage
     raw_bytes = passage.raw_text.encode("utf-8")
     quote_bytes = candidate.quote.encode("utf-8")
-    found = raw_bytes.find(quote_bytes)
+    found = raw_bytes.find(quote_bytes) if quote_bytes else -1
     text_offset_valid = found >= 0 and raw_bytes[found : found + len(quote_bytes)] == quote_bytes
     start_offset = found if found >= 0 else 0
     end_offset = start_offset + len(quote_bytes) if found >= 0 else 0

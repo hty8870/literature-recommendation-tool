@@ -173,7 +173,7 @@ export class HomeView {
     this.updateButtons();
   }
 
-  setAgentAvailable(agentAvailable) {
+  setAgentAvailable(agentAvailable, { canTryLocal = false } = {}) {
     this.ready = this.libraries.length > 0 && agentAvailable;
     if (this.ready) this.clearError();
     if (this.libraries.length) {
@@ -183,6 +183,9 @@ export class HomeView {
         : !agentAvailable ? '暂无可用模型，请检查模型设置或服务端配置。'
           : this.libraries.some((library) => library.simulation === true) ? '包含模拟文献库，仅供演示。' : '';
       this.setLibraryNote(note);
+      if (!this.localMode && !agentAvailable && canTryLocal) {
+        this.libraryNote.append(' ', el('a', { href: '?local=1', text: '无需 Key，试用本地检索' }));
+      }
     }
     this.updateButtons();
   }

@@ -7,6 +7,10 @@ from pathlib import Path
 from typing import Literal
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+BUNDLED_CORPORA = PROJECT_ROOT / "corpora"
+BUNDLED_CORPUS_PATH = BUNDLED_CORPORA / "europepmc-snapshot.json"
+BUNDLED_SAMPLE_PATH = BUNDLED_CORPORA / "abiotech-sample.json"
+BIBLIOGRAPHIC_ONLY = "bibliographic_metadata_only"
 LOCAL_ONLY_ADAPTER_MODE = "real_abstract_metadata_local_only"
 LOCAL_ONLY_NOTICE = "仅检索已选本地快照的题录与摘要；没有在线查库、模型重排、推荐理由或全文核查。"
 

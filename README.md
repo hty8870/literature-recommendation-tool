@@ -4,37 +4,44 @@
 
 本仓库是**当前开发源码**，含项目、项目内共享选库和经用户审批的数据源发现功能。这些功能不代表[线上试用站](https://biodataagent.com/literature/)已经更新。匿名实例不用于未公开稿件或保密材料。
 
-## 五分钟本地试用（不需要 API Key）
+## 克隆后直接运行
 
-安装 [uv](https://docs.astral.sh/uv/) 和 Python 3.12（项目支持 3.12–3.14）。在仓库根目录运行：
+安装 [uv](https://docs.astral.sh/uv/)。在仓库根目录运行：
 
 ```sh
 uv sync --frozen --python 3.12
-uv run --frozen python -m tools.browser_fixture_server
-```
-
-打开 **<http://127.0.0.1:8767/>**，用关键词模式提交 `LFY2, soybean`。这条路径使用明确标识的模拟论文和固定模型回执，可体验流式榜单、对话和页面操作；不连接真实论文库、不调用付费模型，也不会把模拟结果当成科研证据。进程只监听本机，按 `Ctrl+C` 停止。需要检查前端源码或运行前端测试时，安装 Node.js 22 或更新版；网页运行无第三方 JavaScript 依赖。
-
-顶栏“界面”提供四套完整主题：[1 简洁经典](http://127.0.0.1:8767/?theme=1)、[2 农科院门户](http://127.0.0.1:8767/?theme=2)、[3 学术札记](http://127.0.0.1:8767/?theme=3) 和 [4 研究工作台](http://127.0.0.1:8767/?theme=4)。四套共享检索、对话、历史、账户、项目与引用功能，仅呈现不同；农科院主题不使用院徽或官方身份。主题选择只保存数字编号，旧英文主题链接继续兼容，切换后由服务端恢复原会话。结果卡片与证据详情展示名次而不展示数值分数。[四种前端方案对比图](docs/design/四种前端方案对比.png)展示同一已登录账户、真实多轮对话和服务端历史在各主题下的主页与对话页。
-
-## 运行常规服务
-
-```sh
 uv run --frozen uvicorn citation_tool.api:create_app --factory --host 127.0.0.1 --port 8765
 ```
 
-- 网页：<http://127.0.0.1:8765/>。健康检查：`GET /healthz`；API 交互文档：`GET /docs`；MCP：`POST /mcp`。
-- 缺省使用模拟文献。无需登录即可浏览首页；要运行真实 Agent，需在头像 → **模型设置**填入自己的模型协议、HTTPS 地址、模型名和 Key，或由维护者配置服务端默认模型。兼容 OpenAI Chat Completions 和 Responses；所选模型须支持工具调用和结构化输出。没有模型时服务会明确提示，不冒充真实运行。
-- 本机服务端模型配置可放在 `data/runtime/deepseek.local.json`，或用 `CITATION_MODEL_CONFIG` 指定一个未纳入版本控制的路径。文件包含 `base_url`、`model`、`api_key`；使用原生 Responses 时另设 `api_type` 为 `responses`。不要将真实 Key 写入仓库。浏览器里配置的 Key 只在当前标签页使用，不写入服务器数据库。
-- 要复现真实多库检索，设置 `CITATION_LIBRARY_MODE=metadata`，用 `CITATION_CORPUS_PATH` 和 `CITATION_SAMPLE_CORPUS_PATH` 分别指向有许可的题录/摘要 JSON（格式见 `src/citation_tool/runtime.py`）；默认同时启用 Europe PMC 在线检索。可选 `CITATION_EMBEDDING_ENABLED=1` 开启 E5 与 BM25 混合召回，同时用 `CITATION_EMBEDDING_CACHE_DIR` 指向含 E5 模型及匹配该语料的预建 `.npz` 索引的目录。缺失或不匹配时会在启动时报错，不在首个请求里向量化整库。未准备索引时，可先不启用 E5。真实语料、模型缓存和论文原件不随源码分发。
+打开 **<http://127.0.0.1:8765/>**，默认选中三个真实数据源，不需要另下数据包或登录。没有模型 Key 时，点击首页「无需 Key，试用本地检索」，或打开 <http://127.0.0.1:8765/?local=1>，输入 `LFY2, soybean`。这个访客入口只查两套本地库，无需外网，不生成模型理由、规范引用或全文证据。
+
+| 默认数据源 | 随仓库交付 |
+| --- | --- |
+| Europe PMC 在线 | 适配器。发起检索时由运行服务的机器实时访问 Europe PMC，不依赖试用站。 |
+| 多学科文献快照 | 11,002 篇题录，其中 4,400 篇附可公开分发的摘要。 |
+| aBiotech 老师样例库 | 50 篇题录，50 篇均附摘要。 |
+
+两套本地库保留线上快照的全部文献标识。摘要按各条记录所列的 CC BY 或 CC0 及所链接的原文许可使用，保留题名、作者和来源；仅做 HTML 文本规范化。不满足公开分发条件的摘要不提交，条目标为「仅题录」，可按题名检索并跳转来源，不参与模型推荐排名。[Europe PMC 版权说明](https://europepmc.org/Copyright) · [语料与 SHA-256 清单](corpora/manifest.json)。仓库不含论文 PDF、模型密钥、账号或历史数据。
+
+### 接入真实 Agent 与部署配置
+
+- 首页头像 → **模型设置**：选择协议、填写公网 HTTPS 地址、模型名和自己的 API Key。所选模型须支持工具调用和结构化输出。服务端默认模型可用 `CITATION_MODEL_CONFIG` 指向仓库外的 JSON 文件，字段含 `base_url`、`model`、`api_key`；原生 Responses 加 `"api_type": "responses"`。不继承试用站的 Luna 凭据；浏览器 Key 仅供当前标签页使用，不写服务端数据库。
+- 默认本地召回使用 BM25，不下载模型。持有授权快照时，可设置 `CITATION_CORPUS_PATH`、`CITATION_SAMPLE_CORPUS_PATH` 覆盖两个默认文件；清单的 `original_sha256` 对应原始快照。若启用 `CITATION_EMBEDDING_ENABLED=1`，还需用 `CITATION_EMBEDDING_CACHE_DIR` 指向该语料匹配的预建 E5 模型和 `.npz` 索引。缺失或不匹配在启动时报错，不在首个请求里向量化整库。公开版默认检索排名不承诺与带完整摘要和 E5 的线上实例一致。
+- 健康检查：`GET /healthz`；交互文档：`GET /docs`；MCP：`POST /mcp`。上述命令只监听回环；在远程服务器演示可经已有 HTTPS 入口反代，或用 SSH 端口转发。反代须允许 SSE、保留正确的 Host，并配置 `CITATION_TRUSTED_HOSTS`；按需设 `CITATION_BASE_PATH`、`CITATION_SECURE_COOKIES=1`。不直接公开裸 Uvicorn 或无安全扫描的稿件上传。
 - 进程意外退出后，重启会标记未完成检索与对话轮次中断，不会自动重跑；已保存的候选、会话记录和快照仍可访问，也可继续该会话。
-- 后台发现数据源需 `CITATION_LEARNING_ENABLED=1`、服务端默认模型以及项目内的主动授权；DeepSeek Search/Fetch 还需独立的 `CITATION_LEARNING_SEARCH_KEY`。arXiv 和 Zenodo 是当前已审配方，接入必须用户批准，且默认不勾选。暂不支持由模型自行接入任意网站。
+- 后台发现数据源需 `CITATION_LEARNING_ENABLED=1`、服务端默认模型以及项目内的主动授权；DeepSeek Search/Fetch 还需独立的 `CITATION_LEARNING_SEARCH_KEY`。arXiv 和 Zenodo 是当前已审配方，接入必须用户批准，且默认不勾选。不支持由模型自行接入任意网站。
 
 ### 实机演示的降级模式
 
-在真实题录模式下用 `CITATION_DEMO_CONTINUITY=1` 启动（默认关闭）。访客首轮已经选有本地快照、且服务端默认模型在任何检索受理之前遭遇连接错误、模型超时、限流、余额、鉴权或服务商故障时，只按原关键词或摘要查已选的真实本地库；原 Agent 仍记失败。若已有检索则保留原任务及结果，不另开一轮、不换模型或凭据。有效答复在演示模式下最多额外等引用建议 5 秒，未完成批次继续按原期限后台处理。
+使用仓库内置语料时默认启用 `CITATION_DEMO_CONTINUITY`；使用自备语料时默认关闭，可用 `CITATION_DEMO_CONTINUITY=1` 开启。访客的首轮关键词或摘要若已选本地库，且服务端默认模型在任何检索受理前遭遇连接、超时、限流、余额、鉴权或服务商故障，系统只按原输入查已选的本地库。原 Agent 仍如实记失败；已有检索保留原任务和结果，不换模型或凭据。正常答复最多额外等引用建议 5 秒，未完建议按原期限独立运行。
 
-可预先打开 <http://127.0.0.1:8765/?local=1>。此入口必须显式开启上述开关，只适用于访客的关键词或摘要，不处理全文、不请求模型或在线来源。页内只提供原始题录和摘要，不生成推荐理由、模型排名、规范引用或全文认证。若模型配置本身无法启动实例，在独立本机端口运行时将 `CITATION_MODEL_CONFIG` 指向不存在的专用路径，并设 `CITATION_EUROPEPMC_ONLINE=0`、`CITATION_EMBEDDING_ENABLED=0`，仍用两套真实快照；不覆盖已有数据库或配置。切换演示开关后需重启该本机实例。
+若模型配置有误导致服务不能启动，可另起一个回环端口的实例：用 `CITATION_MODEL_CONFIG` 指向不存在的专用路径，设 `CITATION_EUROPEPMC_ONLINE=0`、`CITATION_EMBEDDING_ENABLED=0`，并为 `CITATION_DB_PATH` 和 `CITATION_AUTH_DB_PATH` 使用独立的新文件。再打开备用实例的 `?local=1`，不覆盖现有数据。
+
+### 模拟演示与界面
+
+测试夹具可用 `CITATION_LIBRARY_MODE=fixture` 显式选择。也可运行 `uv run --frozen python -m tools.browser_fixture_server`，在 <http://127.0.0.1:8767/> 用固定模型回执体验流式榜单和对话。夹具不使用真实论文库，也不调用外部模型。
+
+顶栏「界面」提供四套主题：`?theme=1|2|3|4` 分别为简洁经典（默认）、农科院门户、学术札记和研究工作台。四套共享检索、对话、历史、项目及引用功能，仅呈现不同；不使用院徽或冒充官方。[四套界面对比](docs/design/四种前端方案对比.png)。网页运行不需要 Node.js，运行前端测试需 Node.js 22 或更新版。
 
 ## 源码导览
 
@@ -61,4 +68,4 @@ uv run --frozen python tools/check_spec.py
 
 运行上述本地夹具后，可另用 `npm run test:browser:themes` 验证四主题的桌面/手机首页、全文入口、双榜单、原生移动触控、引用和证据弹窗；它使用隔离的无头 Edge，不操作日常浏览器。可用 `THEMES=2,3 VIEWPORTS=mobile npm run test:browser:themes` 缩小范围，截图和报告写入 `data/runtime/theme-browser-acceptance/` 的新目录。
 
-常规启动的回归测试使用无参数 `create_app()` 验证首页、健康检查和模拟数据源，不需要设置 `CITATION_CANDIDATE_PIPELINE`。`tools/smoke.py` 使用真实本地 HTTP/SSE 验证早到结果、事件重放和快照不可变，不调用外部模型。缺少另行准备的语料快照或 E5 缓存时，仅依赖该文件的测试会显式跳过，并列出缺失文件；已有数据仍按原断言验证。评测工具的 `run` 命令可能花费 API 额度；先读对应协议并从 `prepare` 开始。仓库不含生产 SSH 目标和密钥，不触发部署。维护者若另获发布授权，须显式指定 `CITATION_DEPLOY_SSH_TARGET`（OpenSSH 别名或 `user@host`），用 SSH 配置或 `CITATION_DEPLOY_SSH_IDENTITY_FILE` 指定本机私钥路径；发布脚本仍面向既有服务器布局，不是通用部署器。
+常规启动的回归测试使用无参数 `create_app()` 验证默认三库、真实本地检索和显式夹具模式，不需要设置 `CITATION_CANDIDATE_PIPELINE`。`tools/smoke.py` 使用真实本地 HTTP/SSE 验证早到结果、事件重放和快照不可变，不调用外部模型。缺少另行准备的语料快照或 E5 缓存时，仅依赖该文件的测试会显式跳过，并列出缺失文件；已有数据仍按原断言验证。评测工具的 `run` 命令可能花费 API 额度；先读对应协议并从 `prepare` 开始。仓库不含生产 SSH 目标和密钥，不触发部署。维护者若另获发布授权，须显式指定 `CITATION_DEPLOY_SSH_TARGET`（OpenSSH 别名或 `user@host`），用 SSH 配置或 `CITATION_DEPLOY_SSH_IDENTITY_FILE` 指定本机私钥路径；发布脚本仍面向既有服务器布局，不是通用部署器。
