@@ -15,6 +15,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
+def require_runtime_file(path: Path) -> None:
+    if not path.is_file():
+        relative = path.relative_to(Path(__file__).resolve().parents[1])
+        pytest.skip(f"requires a separately prepared runtime file: {relative.as_posix()}")
+
+
 def iter_sse(response: httpx.Response):
     fields: dict[str, str] = {}
     data_lines: list[str] = []

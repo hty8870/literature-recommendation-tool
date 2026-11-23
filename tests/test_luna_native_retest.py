@@ -12,11 +12,12 @@ from langchain_core.outputs import ChatGeneration, LLMResult
 from tools import luna_native_product_retest as native
 from tools import luna_product_retest as shared
 from tools.benchmark.core import BenchmarkUsageCallback
-from tools.gap_benchmark.data import load_data
+from tools.gap_benchmark.data import RUNTIME, load_data
 
 from citation_tool.config import Settings
 from citation_tool.reasons import ModelConfig
 from citation_tool.retrieval import build_fixture_adapters
+from conftest import require_runtime_file
 
 
 def reply(model="gpt-6-luna", response_id="resp_test_1", *, with_usage=True):
@@ -315,6 +316,7 @@ async def test_shared_case_hooks_drive_the_real_asgi_path_without_cli_or_gold(
 def test_native_contract_freezes_transport_and_keeps_original_data_and_limits(
     tmp_path, monkeypatch
 ):
+    require_runtime_file(RUNTIME / "corpus.json")
     suite, corpus = load_data()
     existing, _, _ = native.prepare_run("scientific-gap-luna-dev-20261117-v1")
     root = tmp_path / "contract"

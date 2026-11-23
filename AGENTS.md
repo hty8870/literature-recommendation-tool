@@ -110,7 +110,7 @@
 - 新能力测量设计入口为 `benchmark/capabilities-v1/protocol.md`：公开题只作诊断，现实胜负用隔离的研究家族和对称最终交付；缺口误荐与过拒、出处真实与语义充分分别测。编目/样本配额不等于已评测/已封存新题，不得把金标索引交给被测系统。本设计不覆盖历史冻结协议。
 - QASPER 同资料全文诊断按 `benchmark/capabilities-v1/qasper-luna-v1.md` 冻结：只给其中合法正文，不给标注；产品真实解析文本与对照附件逐段一致才入评。对照 Kimi 工具限附件且留审计，不冒充开放网络的通用 Agent 对照；词面与段落指标分报，不声称替代人工审查。探针失败保留原记录，禁止静默覆盖；启动命令和边界见 README。
 - 文档变更检查字段、状态机、ID、例子和交叉引用；生成镜像后验证可打开与内容同步。渲染成功不等于逐页视觉审阅。
-- 标准命令登记在 `README.md`，变更启动方式或测试方式时同步更新。使用 `uv sync --frozen`、`uv run ruff check src tests tools`、`uv run pytest` 和 `uv run python tools/smoke.py`，不编造未执行结果。
+- 标准命令登记在 `README.md`，变更启动方式或测试方式时同步更新。使用 `uv sync --frozen`、`uv run ruff check src tests tools`、`uv run pytest -rs` 和 `uv run python tools/smoke.py`。干净检出不带真实语料与 E5 缓存，仅当测试所需的外部文件缺失才显式跳过，不把未执行写成通过。
 - 已授权部署经 `tools/deploy_citation.py` 进入现有服务器 `/literature/*`。部署、模型回连及远程评测都须显式设置 `CITATION_DEPLOY_SSH_TARGET`，用本机 SSH 配置或 `CITATION_DEPLOY_SSH_IDENTITY_FILE` 选择凭据；共享源码不内置部署目标或生产凭据。远端真实 MCP、E5 和真实理由验收通过前不得开放公网。当前按用户要求关闭令牌认证，匿名实例不得用于私稿或保密材料；`tools/public_smoke.py` 从本机复验 HTTPS、匿名网页/API/MCP、真实候选与不可变快照，不需要凭据文件。服务级 DNS 选择不得扩展为修改全局 DNS 或重启共享服务。
 - 发布可用 `tools/deploy_citation.py --stage-only` 仅安装非活动版本、论文库与依赖；这不修改活动服务、Caddy、current 或在线数据库，不算上线，也不代表模型门槛通过。默认模型余额不足时保留旧服务、明确报告阻断，不搬运 Kimi provider 密钥、不跳过真实验收；公网稿件上传在恶意文件防护和端到端验收未完成时必须关闭。
 - 2026-11-17 用户后续明确授权网页默认也使用其 `OpenAI/gpt-6-luna` API 额度。本次可用 `tools/luna_credentials.py` 从 Kimi 官方 CLI 的受控配置导出中仅选定该模型与 OpenAI 官方端点，凭据只在进程内及 SSH stdin 中传递至服务器 systemd 加密存储；不输出原始导出、不复制配置文件、不改全局模型或其他 provider。该明确授权不扩展为未来任意密钥搬运。默认原生 Responses 路径须 `store=false` 并验证真实工具往返、JSON 和实际模型，不再把开发 CLI 信封当作网页运行依赖。

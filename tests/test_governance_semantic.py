@@ -26,6 +26,7 @@ from citation_tool.semantic import (
     hybrid_candidate_window,
     reciprocal_rank_fusion,
 )
+from conftest import require_runtime_file
 from test_agent import StubReasonGenerator
 from test_integration import headers, wait_final
 from test_units import make_claim
@@ -411,8 +412,13 @@ def test_incomparable_candidate_scores_are_never_maxed():
 
 
 def test_deployed_model_metadata_uses_portable_paths():
-    from tools.deploy_citation import model_metadata
+    from tools.deploy_citation import ROOT, model_metadata
 
+    require_runtime_file(
+        ROOT
+        / "data/runtime/embedding-models/models--intfloat--multilingual-e5-small"
+        / "files_metadata.json"
+    )
     metadata = json.loads(model_metadata())
     assert metadata
     assert all(key.startswith("snapshots/") and "\\" not in key for key in metadata)

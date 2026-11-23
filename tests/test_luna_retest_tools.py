@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 from tools.benchmark.core import ROOT, BenchmarkUsageCallback
-from tools.gap_benchmark.data import load_data
+from tools.gap_benchmark.data import RUNTIME, load_data
 from tools.kimi_chat_model import KimiLunaConfig, KimiLunaGateway
 from tools.luna_gap_retest import prepare_run
 from tools.luna_product_retest import (
@@ -46,12 +46,14 @@ from tools.quality_benchmark.core import EMBEDDING_CACHE_DIR
 from citation_tool.config import Settings
 from citation_tool.retrieval import build_fixture_adapters
 from citation_tool.runtime import build_metadata_adapters
+from conftest import require_runtime_file
 
 RUN_NAME = "scientific-gap-luna-dev-20261117-v1"
 
 
 @pytest.fixture(scope="module")
 def frozen() -> tuple[dict, dict]:
+    require_runtime_file(RUNTIME / "corpus.json")
     return load_data()
 
 
@@ -445,6 +447,8 @@ def test_trial_root_env_creates_new_runtime(tmp_path, monkeypatch) -> None:
 
 def test_trial_adapters_are_exactly_three_and_cache_is_prebuilt(tmp_path) -> None:
     settings = trial_settings(tmp_path / "trial")
+    require_runtime_file(settings.corpus_path)
+    require_runtime_file(settings.sample_corpus_path)
     adapters = build_metadata_adapters(settings)
     validate_trial_adapters(adapters)
     _verify_snapshot_cache(adapters)

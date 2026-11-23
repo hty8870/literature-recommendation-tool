@@ -8,12 +8,12 @@ import pytest
 import tools.quality_benchmark.__main__ as quality_cli
 from tools.benchmark.core import DIMENSIONS, UsageTotals, file_hash
 from tools.benchmark.evaluation import PairJudgment
+from tools.quality_benchmark import core as quality_core
 from tools.quality_benchmark.core import (
     artifact_hash,
     evaluation_records,
     expanded_tasks,
     kimi_prompt,
-    load_corpus,
     load_suite,
     product_request,
     project_skill_isolation_valid,
@@ -33,6 +33,12 @@ from citation_tool.config import LibraryConfig
 from citation_tool.entities import utc_now_iso
 from citation_tool.metadata_retrieval import MetadataCorpusAdapter
 from citation_tool.search import _build_claim
+from conftest import require_runtime_file
+
+
+def load_corpus(suite: dict) -> dict:
+    require_runtime_file(quality_core.ROOT / suite["corpus_path"])
+    return quality_core.load_corpus(suite)
 
 
 def _task(case_id="rare_lfy"):
@@ -448,6 +454,7 @@ def _external_suite(tmp_path, corpus):
 
 
 async def test_hybrid_agent_run_requires_prebuilt_embedding_cache(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(quality_cli, "load_corpus", load_corpus)
     monkeypatch.setattr(quality_cli, "EMBEDDING_CACHE_DIR", tmp_path / "missing-cache")
     args = SimpleNamespace(
         suite=quality_cli.ROOT / "benchmark/external/astra-v1/tasks.json",

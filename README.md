@@ -44,10 +44,10 @@ uv run --frozen uvicorn citation_tool.api:create_app --factory --host 127.0.0.1 
 
 ```sh
 uv run --frozen ruff check src tests tools
-uv run --frozen pytest --ignore=tests/test_quality_benchmark.py
+uv run --frozen pytest -rs
 npm test
 uv run --frozen python tools/smoke.py
 uv run --frozen python tools/check_spec.py
 ```
 
-`tools/smoke.py` 使用真实本地 HTTP/SSE 验证早到结果、事件重放和快照不可变，不调用外部模型。`tests/test_quality_benchmark.py` 需要评测协议指定的真实语料快照，准备好后可运行不带 `--ignore` 的完整回归。评测工具的 `run` 命令可能花费 API 额度；先读对应协议并从 `prepare` 开始。仓库不含生产 SSH 目标和密钥，不触发部署。维护者若另获发布授权，须显式指定 `CITATION_DEPLOY_SSH_TARGET`（OpenSSH 别名或 `user@host`），用 SSH 配置或 `CITATION_DEPLOY_SSH_IDENTITY_FILE` 指定本机私钥路径；发布脚本仍面向既有服务器布局，不是通用部署器。
+`tools/smoke.py` 使用真实本地 HTTP/SSE 验证早到结果、事件重放和快照不可变，不调用外部模型。缺少另行准备的语料快照或 E5 缓存时，仅依赖该文件的测试会显式跳过，并列出缺失文件；已有数据仍按原断言验证。评测工具的 `run` 命令可能花费 API 额度；先读对应协议并从 `prepare` 开始。仓库不含生产 SSH 目标和密钥，不触发部署。维护者若另获发布授权，须显式指定 `CITATION_DEPLOY_SSH_TARGET`（OpenSSH 别名或 `user@host`），用 SSH 配置或 `CITATION_DEPLOY_SSH_IDENTITY_FILE` 指定本机私钥路径；发布脚本仍面向既有服务器布局，不是通用部署器。
