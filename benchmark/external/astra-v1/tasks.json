@@ -1,0 +1,575 @@
+{
+  "suite_id": "astra-independent-abstract-v1",
+  "corpus_path": "data/runtime/quality-corpus/large-corpus.json",
+  "max_retrieval_rounds": 3,
+  "repetitions": 3,
+  "stability_case_ids": [
+    "rare_droplet_mads",
+    "ood_pileup_transfer",
+    "zh_rhizosphere_context",
+    "quant_spatial_barcodes"
+  ],
+  "tuning_case_ids": [],
+  "development_case_ids": [],
+  "tasks": [
+    {
+      "case_id": "rare_peanut_pugn",
+      "slice": "rare_entity",
+      "baseline_query": "I am following up AhPUGN1.1, also called Peanut unique gene for nodulation 1.1. Find experimental evidence that changing its expression affects both nodule formation and nitrogenase activity in peanut. Distinguish loss-of-function from overexpression results, and separate the observed phenotypes from proposed downstream signaling.",
+      "request": {
+        "input_type": "keywords",
+        "keywords": ["AhPUGN1.1", "Peanut unique gene for nodulation 1.1", "peanut nodulation", "nitrogenase activity", "loss of function versus overexpression"]
+      },
+      "expect": {
+        "required_ids": ["work:10.1007/s42994-025-00222-7"],
+        "forbidden_ids": ["work:10.1094/mpmi-12-20-0357-r"],
+        "gold_note": "目标摘要明确给出 AhPUGN1.1 的全称、结瘤组织偏表达以及双向干预：沉默/敲除减少根瘤并降低鲜重和固氮酶活性，过表达增强结瘤和固氮酶活性。细胞分裂素和钙信号的解释来自比较转录组，原文用 likely，不应写成已证明的直接分子靶标。近邻同为花生结瘤的功能研究，但对象是 ENOD40/DONE40 与 ASHR3，不能替代指定实体。摘要未给出效应量、重复数或具体培养条件。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1007/s42994-025-00222-7",
+            "quote": "In this study, we identified a gene associated with nodulation in peanuts, named Peanut unique gene for nodulation 1.1 (AhPUGN1.1).",
+            "supports": "将稀有标识符与全称及物种直接对应。"
+          },
+          {
+            "work_id": "work:10.1007/s42994-025-00222-7",
+            "quote": "Silencing or knocking out AhPUGN1.1 in peanut resulted in fewer nodules, as well as lower fresh weight and nitrogenase activity, while overexpressing AhPUGN1.1 significantly enhanced nodulation ability and nitrogenase activity.",
+            "supports": "同一实体的损失功能和过表达呈相反结瘤及固氮酶表型。"
+          },
+          {
+            "work_id": "work:10.1094/mpmi-12-20-0357-r",
+            "quote": "AhENOD40 express from chromosome 5 (chr5) (AhENOD40-1) and chr15 (AhENOD40-2) during symbiosis, and RNA interference of these transcripts drastically affected nodulation, indicating the importance of ENOD40 in A. hypogaea.",
+            "supports": "这是同物种同表型的强近邻，但实验实体为 ENOD40，不是 AhPUGN1.1。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "rare_droplet_mads",
+      "slice": "rare_entity",
+      "baseline_query": "In an enzyme-screening discussion I encountered the acronym MADS. Find the method that uses ESI-MS to decide which droplets to recover, and explain how it can analyze a reaction yet retain material for sorting. I do not mean plant MADS transcription factors or an absorbance-based sorter.",
+      "request": {
+        "input_type": "keywords",
+        "keywords": ["MADS", "ESI-MS", "enzyme screening", "droplet recovery", "split reaction sample"]
+      },
+      "expect": {
+        "required_ids": ["work:10.1002/anie.201913203"],
+        "forbidden_ids": ["work:10.1073/pnas.1606927113", "work:10.1007/s11427-019-1593-0"],
+        "gold_note": "MADS 在此为质谱驱动的液滴筛选，摘要明确将液滴分开，一份 ESI-MS 分析，另一份按质谱结果分选。AADS 同样用于酶定向进化和液滴回收，但读出是吸光度；OsMADS6 是水稻花器官/籽粒发育实体，属于缩写字面陷阱。不要把 AADS 的最高液滴通量或定向进化增益转移给 MADS。摘要不能证明保留的材料必然在所有酶体系中维持活性，也未提供通用回收率。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1002/anie.201913203",
+            "quote": "Mass Activated Droplet Sorting (MADS) Enables High-Throughput Screening of Enzymatic Reactions at Nanoliter Scale.",
+            "supports": "标题只用于确认缩写与方法的身份，不单独作为科学关系的依据。"
+          },
+          {
+            "work_id": "work:10.1002/anie.201913203",
+            "quote": "Droplets are split, one portion is analyzed by ESI-MS, and the second portion is sorted based on the MS result.",
+            "supports": "摘要直接解释分析与保留材料之间的分样及分选逻辑。"
+          },
+          {
+            "work_id": "work:10.1073/pnas.1606927113",
+            "quote": "Using this module, microdroplets can be sorted based on absorbance readout at rates of up to 300 droplets per second (i.e., >1 million droplets per hour).",
+            "supports": "相似的酶液滴筛选采用吸光度而非 ESI-MS，其通量不能移植为目标性能。"
+          },
+          {
+            "work_id": "work:10.1007/s11427-019-1593-0",
+            "quote": "In this study, we characterized the rice (Oryza sativa) abnormal flower and grain1 (afg1) mutant, a new allele of OsMADS6.",
+            "supports": "该记录的 MADS 是植物基因而不是样本筛选方法。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "ood_panicle_protein_turnover",
+      "slice": "semantic_ood",
+      "baseline_query": "Find a rice experiment linking the number of grains on a panicle to removal of a deubiquitinating protein by an E3 enzyme. I need evidence for partner binding, protein destruction and a knockout phenotype, not merely a pathway that changes grain width or weight. Explain which partner is removed and what happens when the E3 is lost.",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "Our rice project concerns how many grains a panicle produces rather than how large each grain becomes. We hypothesize that a ubiquitin-adding enzyme can limit the abundance of a ubiquitin-removing partner, thereby altering reproductive output. We seek an experimental precedent that connects physical binding, proteasome-dependent turnover and a loss-of-function plant phenotype. A study of grain enlargement alone would not resolve our question about grain number."
+      },
+      "expect": {
+        "required_ids": ["work:10.1007/s42994-025-00232-5"],
+        "forbidden_ids": ["work:10.1016/j.molp.2021.04.011"],
+        "gold_note": "OsRGLG6 为 E3，OsOTUB1 为去泛素化伙伴/底物；摘要报告两者体内外互作、OsRGLG6 使 OsOTUB1 泛素化并经 26S 蛋白酶体降解，以及 osrglg6 突变体每穗粒数减少。不能把降解方向倒写。GW2-WG1-OsbZIP47 也有 E3 和底物降解，但底物 WG1 是谷氧还蛋白，表型是粒宽/粒重，不满足指定分子角色与每穗粒数的组合。目标的干旱结果来自模拟实验，不能外推成田间抗旱增产证据；摘要未给出产量提高百分比。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1007/s42994-025-00232-5",
+            "quote": "A yeast two-hybrid screen revealed that OsRGLG6 interacts with OsOTUB1, an ovarian tumor domain-containing ubiquitin-specific protease involved in panicle development. Further experiments confirmed the interaction between OsRGLG6 and OsOTUB1 in vitro and in vivo.",
+            "supports": "相互作用及伙伴的去泛素化蛋白身份有摘要直接证据。"
+          },
+          {
+            "work_id": "work:10.1007/s42994-025-00232-5",
+            "quote": "In vitro and in vivo ubiquitination assays demonstrated that OsRGLG6 ubiquitinates OsOTUB1 and promotes its degradation via the 26S proteasome pathway. CRISPR/Cas9-generated osrglg6 mutants exhibited significant reductions in GPP, indicating a crucial role for OsRGLG6 in the regulation of grain number.",
+            "supports": "支持降解方向、蛋白酶体途径和 E3 缺失时的粒数表型。"
+          },
+          {
+            "work_id": "work:10.1016/j.molp.2021.04.011",
+            "quote": "Here, we report that the GW2-WG1-OsbZIP47 regulatory module controls grain width and weight in rice. WG1, which encodes a glutaredoxin protein, promotes grain growth by increasing cell proliferation.",
+            "supports": "强近邻的表型及底物角色均不同，不能替代粒数/去泛素化伙伴研究。"
+          },
+          {
+            "work_id": "work:10.1016/j.molp.2021.04.011",
+            "quote": "Further studies reveal that the E3 ubiquitin ligase GW2 ubiquitinates WG1 and targets it for degradation.",
+            "supports": "解释它为什么容易被泛素化与水稻产量词汇误选。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "ood_fungal_rna_delivery",
+      "slice": "semantic_ood",
+      "baseline_query": "I want to protect maize from stalk rot caused by Fusarium graminearum without changing the maize genome. Find an experiment in which an engineered beneficial fungus supplies silencing RNA and performs better than its unengineered strain. Distinguish this delivery route from spraying RNA or expressing it in transgenic wheat, and state what level of target suppression the abstract supports.",
+      "request": {
+        "input_type": "keywords",
+        "keywords": ["maize stalk rot", "Fusarium graminearum", "engineered beneficial fungus", "RNA delivery", "unmodified crop genome", "chassis comparison"]
+      },
+      "expect": {
+        "required_ids": ["work:10.1007/s42994-025-00212-9"],
+        "forbidden_ids": ["work:10.1111/pbi.12352", "work:10.1111/pbi.13589"],
+        "gold_note": "目标是改造 Trichoderma harzianum 向病原提供 RNA 的玉米保护实验；摘要报告工程菌优于底盘菌，并把靶标沉默表述为 translational inhibition。不要改写成已测得靶 mRNA 降低。摘要将靶基因先写为 FgPTM2、后写为 FgPMT2，命题保留这一内部拼写不一致，不以字符串区分判错，也不假装已用全文校正。小麦 HIGS 的 RNA 来自转基因宿主；SIGS 研究是外施 RNA 且强调病原吸收差异，都不能替代活体工程真菌递送的证据。Letter 类型不否定这里摘要明确描述的原始实验。摘要未提供田间多年保护率。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1007/s42994-025-00212-9",
+            "quote": "In this study, we utilized MIGS technology to protect maize against Fusarium graminearum, which is responsible for maize stalk rot. An RNAi-engineered Trichoderma harzianum strain, Th-FgPmt2i, was exploited to generate double-stranded RNAs (dsRNAs) to trigger the silencing of the FgPTM2 gene.",
+            "supports": "实验宿主、病原和工程化递送微生物直接对应请求。"
+          },
+          {
+            "work_id": "work:10.1007/s42994-025-00212-9",
+            "quote": "Our data verify that sRNAs generated from Th-FgPmt2i can silence the FgPMT2 gene via translational inhibition in F. graminearum. We further demonstrated that Th-FgPmt2i has a stronger capacity than does the T. harzianum chassis for protection of maize against F. graminearum.",
+            "supports": "支持翻译抑制与优于底盘菌；也保留源摘要靶基因拼写边界。"
+          },
+          {
+            "work_id": "work:10.1111/pbi.12352",
+            "quote": "Co-expression of these three RNAi constructs in two independent elite wheat cultivar transgenic lines conferred high levels of stable, consistent resistance (combined type I and II resistance) to both FHB and FSB throughout the T3 to T5 generations.",
+            "supports": "同病原 RNAi 的宿主是转基因小麦，不是由工程真菌保护未改造玉米。"
+          },
+          {
+            "work_id": "work:10.1111/pbi.13589",
+            "quote": "Topical application of dsRNA targeting virulence-related genes in pathogens with high RNA uptake efficiency significantly inhibited plant disease symptoms, whereas the application of dsRNA in pathogens with low RNA uptake efficiency did not suppress infection.",
+            "supports": "这是局部外施 RNA 与病原吸收效率研究，不是指定的工程菌与底盘比较。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "ood_pileup_transfer",
+      "slice": "semantic_ood",
+      "baseline_query": "I need the original computational study that learned genotype decisions from pictures of aligned read stacks, with evidence that human truth data can help other mammals. Please look for a method applied beyond one sequencing design, rather than only refining cancer somatic calls or improving a nanopore-specific pipeline. Explain what the reported generalization does and does not establish.",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "We are developing a small-variant analysis workflow for a mammal with limited truth labels. Instead of hand-coding error rules for every instrument, we want to encode the local stack of aligned reads visually and train a classifier against known genotypes. A useful precedent would demonstrate transfer from human training resources to another mammalian context and work across more than one sequencing or library design. Studies restricted to cancer-call review or long-read haplotype processing address adjacent but different needs."
+      },
+      "expect": {
+        "required_ids": ["work:10.1038/nbt.4235"],
+        "forbidden_ids": ["work:10.1038/s41592-021-01299-w", "work:10.1038/s41588-018-0257-y"],
+        "gold_note": "DeepVariant 原始摘要把卷积网络、read-pileup 图像、真实基因型和跨基因组版本/哺乳动物物种的泛化联系起来，并列举 10X 全基因组和 Ion Ampliseq 外显子设计。PEPPER-Margin-DeepVariant 是强调单倍型与长读长的后续流程，癌症研究是体细胞变异人工复核自动化，两者的摘要不能替代本题要求的原始跨物种学习证据。泛化到所研究情境不能写成对所有物种/仪器保证有效；摘要未给出本题可直接比较的准确率或训练样本量。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1038/nbt.4235",
+            "quote": "Here we show that a deep convolutional neural network can call genetic variation in aligned next-generation sequencing read data by learning statistical relationships between images of read pileups around putative variant and true genotype calls.",
+            "supports": "目标以读段堆叠图像和已知基因型进行学习。"
+          },
+          {
+            "work_id": "work:10.1038/nbt.4235",
+            "quote": "The learned model generalizes across genome builds and mammalian species, allowing nonhuman sequencing projects to benefit from the wealth of human ground-truth data. We further show that DeepVariant can learn to call variants in a variety of sequencing technologies and experimental designs, including deep whole genomes from 10X Genomics and Ion Ampliseq exomes, highlighting the benefits of using more automated and generalizable techniques for variant calling.",
+            "supports": "同时支持人类真值向其他哺乳动物利用，以及多种技术/设计的研究范围。"
+          },
+          {
+            "work_id": "work:10.1038/s41592-021-01299-w",
+            "quote": "Here, we introduce a haplotype-aware variant calling pipeline, PEPPER-Margin-DeepVariant, that produces state-of-the-art variant calling results with nanopore data.",
+            "supports": "名称含目标方法却是面向纳米孔单倍型的不同流程，不能凭名称共现当作原始论文。"
+          },
+          {
+            "work_id": "work:10.1038/s41588-018-0257-y",
+            "quote": "Here, we systematized and standardized somatic variant refinement using a machine learning approach. The final model incorporates 41,000 variants from 440 sequencing cases.",
+            "supports": "同属机器学习变异分析，但任务是体细胞变异复核，不能迁移其训练规模至目标。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "zh_tomato_nutrition_tradeoff",
+      "slice": "cross_lingual_zh",
+      "baseline_query": "我想找用基因编辑提高番茄果实中γ-氨基丁酸的原始实验，重点不是能否编辑成功，而是不同优良品种是否都保持原来的开花时间和果实大小、数量。请比较品种差异，判断能不能把某个品种的低代价结果推广到全部品种；营养强化综述只能作背景。",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "我们准备对食用品种番茄进行营养品质改良，通过编辑代谢酶的调节区增加果实中的γ-氨基丁酸。但育种决策还取决于开花是否推迟、果实大小和数量是否受到影响，因此需要比较多个优良品种的原始实验证据，而不只是高效转化或编辑方法。若只有某个遗传背景兼顾目标成分与开花表现，应保留这一适用范围，不能默认所有品种都没有代价。"
+      },
+      "expect": {
+        "required_ids": ["work:10.1007/s42994-025-00249-w"],
+        "background_ids": ["work:10.3389/fgene.2022.932859"],
+        "forbidden_ids": ["work:10.1093/hr/uhae187"],
+        "gold_note": "目标编辑 SlGAD3 的 CaMBD 编码区，在 SFT1、SFT2、SFT3 中均增加 GABA，实验条件下不损害摘要列举的果实大小和数量。但 SFT2/SFT3 开花推迟，SFT1 保持野生型开花时间，不能说三个品种均无多效性。营养强化文章有 Review 元数据与综述自述，只能作背景。三元载体文章也同时出现 tomato、GABA、genome editing，但作用目标是解除农杆菌转化屏障，不是提高食用果实 GABA 并比较品种开花。摘要不能证明人体降压疗效、绝对 GABA 含量或所有田间环境无产量损失。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1007/s42994-025-00249-w",
+            "quote": "In this study, we used CRISPR/Cas9-mediated gene editing to precisely modify the CaMBD coding sequence of SlGAD3 in three elite tomato varieties (SFT1, SFT2, and SFT3).",
+            "supports": "原始实验对象是三个优良番茄品种及代谢酶调节区编辑。"
+          },
+          {
+            "work_id": "work:10.1007/s42994-025-00249-w",
+            "quote": "Under our experimental conditions, targeted editing of SlGAD3 led to substantial accumulation of GABA in all three varieties without compromising key agronomic traits such as fruit size and number. Although flowering was delayed in SFT2 and SFT3 mutants, SFT1 mutants had higher GABA levels but also maintained a wild-type flowering time.",
+            "supports": "支持共同的成分/果实表现及品种特异的开花代价，结论限定实验条件。"
+          },
+          {
+            "work_id": "work:10.3389/fgene.2022.932859",
+            "quote": "Thus, the present review critically discusses CRISPR-Cas genome editing-based biofortification of crops for imparting nutraceutical properties.",
+            "supports": "可提供营养强化背景，但摘要明确自述为综述。"
+          },
+          {
+            "work_id": "work:10.1093/hr/uhae187",
+            "quote": "The goal was to develop super-infective ternary vector systems that integrate a novel salicylic acid-degrading enzyme, GABA, and ethylene-degrading enzymes, targeting the transformation of crops by neutralizing plant defense system on Agrobacterium.",
+            "supports": "词汇共现属于转化系统工程，不是指定的食用品质与开花权衡实验。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "zh_rhizosphere_context",
+      "slice": "cross_lingual_zh",
+      "baseline_query": "请找耐草甘膦玉米的根际生态评估：需要同时看细菌和真菌，区分转基因品系喷药、同品系未喷药与近等基因非转基因对照，并跨多个生育时期观察。回答时说明土壤性质、季节与品系本身的相对作用；不要把某些群落指标相似写成长期绝对安全。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": ["耐草甘膦玉米", "根际细菌与真菌", "近等基因系", "喷药与未喷药", "多个生育时期", "土壤理化性质与季节"]
+      },
+      "expect": {
+        "required_ids": ["work:10.1007/s42994-025-00205-8"],
+        "forbidden_ids": ["work:10.1016/j.scitotenv.2015.11.008"],
+        "gold_note": "目标比较 GG2-H、GG2-N 与近等基因 ZD958，跨七个生长阶段同时考察细菌和真菌。摘要说 GG2-H 与 ZD958 的群落结构/多样性相似，又说草甘膦对多样性和丰富度存在暂时影响；土壤 pH、有效磷、有机质及季节与差异关联，对群落变化贡献大于品系。不能据此说草甘膦无任何影响或所有条件下绝对安全。近邻是温室 GT 玉米/大豆四个生长期的细菌研究，不满足真菌、三组对照和生育期组合。摘要未给出随机化、独立重复数或长期生态安全证明。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1007/s42994-025-00205-8",
+            "quote": "In this study, we used high-throughput sequencing to analyze the diversity and composition of the bacterial and fungal communities in the rhizosphere soil around biotech maize GG2, with (GG2-H) and without glyphosate treatment (GG2-N), compared with the near-isogenic, non-biotech maize line ZD958 at seven stages of growth.",
+            "supports": "同一摘要完整交代三种比较条件、两个微生物类群和七个时期。"
+          },
+          {
+            "work_id": "work:10.1007/s42994-025-00205-8",
+            "quote": "The structure and diversity of the bacterial and fungal communities of GG2-H were similar to those of ZD958, whereas glyphosate treatment had temporary effects on bacterial and fungal diversity and richness.",
+            "supports": "相似群落指标与暂时处理效应并存，不能简化为没有影响。"
+          },
+          {
+            "work_id": "work:10.1007/s42994-025-00205-8",
+            "quote": "The differences in the bacterial and fungal communities were associated with changes in soil properties such as pH, available phosphorus and organic matter, and seasonal changes. These factors, rather than maize lines, made the greatest contributions to the shifts in bacterial and fungal community structure.",
+            "supports": "支持土壤/季节的关联及相对贡献，而非普遍因果安全结论。"
+          },
+          {
+            "work_id": "work:10.1016/j.scitotenv.2015.11.008",
+            "quote": "Therefore, the overall objective was to investigate shifts in the rhizosphere bacterial community following long-term glyphosate application on GT corn and soybean in the greenhouse. In this study, rhizosphere soil was sampled from rhizoboxes following 4 growth periods, and bacterial community composition was compared between glyphosate treated and untreated rhizospheres using next-generation barcoded sequencing.",
+            "supports": "近邻具有草甘膦、玉米和多个时期，但明确研究细菌及不同的温室比较设计。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "quant_spatial_barcodes",
+      "slice": "quantitative_constraints",
+      "baseline_query": "I need an RNA assay on tissue sections that reports a spatial scale no larger than 3 micrometres and at least 100,000 transcript-linked spatial barcodes per experiment, with demonstrations in both mouse brain and primary breast cancer. Find the method and report its actual scale and barcode yield. Do not substitute improved capture efficiency for meeting the spatial-resolution requirement.",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "We plan to map RNA on preserved tissue sections using densely positioned capture beads. Our design requires a reported spatial scale of at most three micrometres and at least one hundred thousand transcript-associated locations recovered in a single experiment. We want a published demonstration spanning mouse neural tissue and primary breast cancer. Higher RNA capture sensitivity alone is not sufficient; the spatial scale and number of barcodes must be distinguished from the number of complete cells profiled."
+      },
+      "expect": {
+        "required_ids": ["work:10.1038/s41592-019-0548-y"],
+        "forbidden_ids": ["work:10.1038/s41587-020-0739-1"],
+        "gold_note": "HDST 摘要直接报告每次实验数十万个与转录本相连的空间条形码、2 μm 分辨率，以及小鼠脑和原发乳腺癌验证；2≤3 且数十万≥100000。这里不能把条形码数写成完整单细胞数。Slide-seqV2 摘要突出约单细胞 RNA-seq 一半的捕获效率和相对 Slide-seq 约十倍提升；其中 10 μm 的句子明确介绍既有 Slide-seq，不能无标记地转写成 V2 的新测量，也不能凭捕获率宣称已满足本题≤3 μm与癌组织/条形码产量组合。目标摘要没有精确条形码计数、每细胞转录本数或两方法的同条件准确率比较。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1038/s41592-019-0548-y",
+            "quote": "Here, we developed high-definition spatial transcriptomics, which captures RNA from histological tissue sections on a dense, spatially barcoded bead array. Each experiment recovers several hundred thousand transcript-coupled spatial barcodes at 2-μm resolution, as demonstrated in mouse brain and primary breast cancer.",
+            "supports": "同时支持捕获方式、每实验规模、空间阈值方向和两个实证组织对象。"
+          },
+          {
+            "work_id": "work:10.1038/s41587-020-0739-1",
+            "quote": "Previously, we developed Slide-seq, a technology that enables transcriptome-wide detection of RNAs with a spatial resolution of 10 μm.",
+            "supports": "10 μm 明确指前代 Slide-seq，不能作为达到≤3 μm条件的证据。"
+          },
+          {
+            "work_id": "work:10.1038/s41587-020-0739-1",
+            "quote": "Here we report Slide-seqV2, which combines improvements in library generation, bead synthesis and array indexing to reach an RNA capture efficiency ~50% that of single-cell RNA-seq data (~10-fold greater than Slide-seq), approaching the detection efficiency of droplet-based single-cell RNA-seq techniques.",
+            "supports": "改善的是捕获效率这一不同指标，不能偷换为空间尺度或条形码计数。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "quant_yeast_assembly_panel",
+      "slice": "quantitative_constraints",
+      "baseline_query": "Find a population resource with reference-quality genome assemblies for more than 100 Saccharomyces cerevisiae strains, including phased assemblies of some heterozygous isolates and a nonredundant structural-variant catalog. Report the assembled strain count and approximate number of structural variants. Counts of strains merely screened for fermentation or crossed during breeding do not meet the assembly requirement.",
+      "request": {
+        "input_type": "keywords",
+        "keywords": ["Saccharomyces cerevisiae", "population-scale genome resource", "more than 100 assembled strains", "phased heterozygous isolates", "nonredundant structural variants"]
+      },
+      "expect": {
+        "required_ids": ["work:10.1038/s41588-023-01459-y"],
+        "forbidden_ids": ["work:10.1186/s13068-015-0216-0", "work:10.1093/molbev/msv168"],
+        "gold_note": "ScRAP 包含142株参考质量基因组，超过100株门槛；若干杂合二倍体和多倍体有单倍型分相组装，识别约4800个非冗余结构变异。不能将“若干”写成142株全都完成分相。机器人重排研究的318是筛查酵母数量，超过3000是杂交次数，不是组装基因组数；另一近邻是 S. eubayanus 近完整组装及啤酒杂交酵母比较，不是本题物种的大规模组装面板。摘要未给出所有株的覆盖深度、N50或精确整数SV总数。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1038/s41588-023-01459-y",
+            "quote": "Here we generated the Saccharomyces cerevisiae Reference Assembly Panel (ScRAP) comprising reference-quality genomes for 142 strains representing the species' phylogenetic and ecological diversity. The ScRAP includes phased haplotype assemblies for several heterozygous diploid and polyploid isolates. We identified circa (ca.) 4,800 nonredundant SVs that provide a broad view of the genomic diversity, including the dynamics of telomere length and transposable elements.",
+            "supports": "同时支持实际规模142、部分分相组装，以及约4800而不是精确4800的SV数。"
+          },
+          {
+            "work_id": "work:10.1186/s13068-015-0216-0",
+            "quote": "Screening of 318 different yeasts for ethanol accumulation, sporulation efficiency, and genetic relatedness yielded eight heterothallic strains that served as parents for genome shuffling.",
+            "supports": "318的分母是筛查菌株，不是参考基因组组装数。"
+          },
+          {
+            "work_id": "work:10.1186/s13068-015-0216-0",
+            "quote": "In a second approach, we applied several successive rounds of robot-assisted targeted genome shuffling, yielding more than 3,000 targeted crosses.",
+            "supports": "大数字是杂交事件而非结构变异目录或组装面板。"
+          },
+          {
+            "work_id": "work:10.1093/molbev/msv168",
+            "quote": "Here, we present a nearly complete genome assembly for the recently described yeast species Saccharomyces eubayanus and compare it to the genomes of multiple domesticated alloploid hybrids of S. eubayanus × S. cerevisiae (S. pastorianus syn. S. carlsbergensis), which are used to brew lager-style beers.",
+            "supports": "也是酵母组装与群体历史，但物种/资源规模不是题目要求。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "scope_receptor_expression_dose",
+      "slice": "scope_causality",
+      "baseline_query": "Does rescue by a catalytically inactive FERONIA receptor really show that its kinase activity is dispensable? Find an Arabidopsis complementation study that measures the inactive receptor's expression and contrasts near-normal with overexpression levels for rosette form and peptide-triggered stomatal responses. Keep these outcomes separate from root recovery under salt stress.",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "We are interpreting complementation with an inactive version of the Arabidopsis FERONIA receptor. Rescue could depend on how much inactive protein accumulates, rather than demonstrating that catalysis is irrelevant. We need evidence comparing expression close to the normal receptor level against overexpression in the mutant background, with both rosette morphology and ligand-responsive stomatal behavior measured. Results on root cell integrity after salinity would not alone answer this signaling question."
+      },
+      "expect": {
+        "required_ids": ["work:10.1002/1873-3468.13249"],
+        "forbidden_ids": ["work:10.1016/j.cub.2018.01.023"],
+        "gold_note": "FERK565R-GFP 表达接近 Col-0 内源 FER 水平时不能互补莲座和 RALF1 气孔运动表型，过表达时可以。该结果要求重新考虑单凭过表达救援推断激酶非依赖性的结论；也不能反过来断言所有 FER 功能均必需其激酶活性。近邻也是 FER 原始研究，但摘要针对高盐下根细胞壁完整性与钙信号，不能替代失活蛋白表达量分层的叶/气孔研究。摘要没有具体蛋白浓度或精确表达倍数。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1002/1873-3468.13249",
+            "quote": "Our quantification of FERK565R-GFP transcript and FERK565R-GFP protein in fer complementation lines reveal that, even within individual complementation lines, different levels of FERK565R expression prevail.",
+            "supports": "研究实际量化失活受体的转录本和蛋白，而不是假定所有互补株表达一致。"
+          },
+          {
+            "work_id": "work:10.1002/1873-3468.13249",
+            "quote": "FERK565R-GFP expression comparable to that of FER in Col-0 plants fail to elicit complementation of either fer rosette phenotypes or RALF1-elicited stomatal movements, whereas overexpression levels of FERK565R-GFP result in complementation.",
+            "supports": "同一失活构建体在不同表达量下具有不同的两类互补结果。"
+          },
+          {
+            "work_id": "work:10.1016/j.cub.2018.01.023",
+            "quote": "Here we report that FERONIA (FER), a plasma-membrane-localized receptor kinase from Arabidopsis, is necessary for the recovery of root growth after exposure to high salinity, a widespread soil stress.",
+            "supports": "同受体但不同组织、处理和结局，不能据此判断叶片互补是否激酶非依赖。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "scope_leaf_aridity_inference",
+      "slice": "scope_causality",
+      "baseline_query": "I want a within-lineage comparison of Californian Ceanothus that combines common-garden leaf anatomy and drought physiology with native climatic distributions. Find the study, distinguish its directly measured species set from the larger trait database, and explain whether it establishes that aridity experimentally caused the leaf differences rather than documenting evolutionary associations.",
+      "request": {
+        "input_type": "keywords",
+        "keywords": ["Ceanothus", "common garden", "leaf anatomy", "turgor loss", "native climatic aridity", "phylogenetic comparison", "measured sample versus trait database"]
+      },
+      "expect": {
+        "required_ids": ["work:10.1002/ajb2.1164"],
+        "forbidden_ids": ["work:10.1111/pce.13390"],
+        "gold_note": "目标直接测量共同园10个 Ceanothus 物种的解剖/生理，另分析35种的叶面积与LMA数据库，并用系统发育广义最小二乘检验性状与原生气候关联。膨压丧失点/饱和膨压渗透势与干旱指数、降水的关系是进化相关，不是摘要已经证明的干旱操纵因果效应；不能把35种都说成完成相同生理测量。近邻虽同为南加州木本植物、膨压丧失点和环境关联，却测18种并汇编89种再水化数据库，研究对象与核心指标不符。摘要未提供逐物种原始数据或足以识别干旱处理因果效应的设计。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1002/ajb2.1164",
+            "quote": "We analyzed the anatomy and physiology of 10 Ceanothus (Rhamnaceae) species grown in a common garden for variation between and within \"wet\" and \"dry\" subgenera (Ceanothus and Cerastes, respectively) and analyzed a database for 35 species for leaf size and leaf mass per area (LMA).",
+            "supports": "明确区分共同园10种的测量与35种数据库，并限定同一属内比较。"
+          },
+          {
+            "work_id": "work:10.1002/ajb2.1164",
+            "quote": "The osmotic potentials at turgor loss point (πTLP ) and full turgor (πo ) showed evolutionary correlations with the aridity index (AI) and precipitation of the 10 species' native distributions, and LMA with potential evapotranspiration for the 35 species in the larger database.",
+            "supports": "原文明确为进化相关，且不同指标对应不同物种集合。"
+          },
+          {
+            "work_id": "work:10.1111/pce.13390",
+            "quote": "We refined methods for quantifying the percent loss of rehydration capacity (PLRC), and for 18 Southern California woody species, we determined the relative water content and leaf water potential at PLRC of 10%, 25%, and 50%, and, additionally, the PLRC at important stages of dehydration including stomatal closure and turgor loss.",
+            "supports": "地域、干旱和膨压词汇相近，但研究是18种的再水化能力而非指定的属内共同园比较。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "multi_desktop_metagenomics",
+      "slice": "multi_object_comparison",
+      "baseline_query": "For shotgun microbial read classification on a desktop, compare two published approaches: a lower-memory successor to a k-mer classifier that adds translated search, and a classifier built on BWT/FM indexing. Find an original methods paper for each. Report the first approach's memory and speed changes relative to its predecessor, and the second's index sizes and database scales. Explain why these figures do not establish a head-to-head winner, and do not import a 16S amplicon study's speedup.",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "We must select a taxonomic classifier for shotgun sequencing under desktop memory limits. Two design families are of interest: improving an existing k-mer tool to lower resource use while adding protein-level search, and compressing sequence search with a Burrows-Wheeler/Ferragina-Manzini index. We need separate primary papers describing each approach, with a comparison of their reported memory and throughput evidence. Relative improvements against a predecessor and absolute index sizes for different databases are not automatically comparable, and a benchmark limited to 16S reads would address a different input regime."
+      },
+      "expect": {
+        "required_ids": ["work:10.1186/s13059-019-1891-0", "work:10.1101/gr.210641.116"],
+        "forbidden_ids": ["work:10.1186/s40168-020-00900-2"],
+        "gold_note": "必须分别找到 Kraken 2 与 Centrifuge 的原始方法记录。前者相对 Kraken 1 减少85%内存、速度提高5倍并增加translated search；后者BWT/FM索引对4078个细菌和200个古菌基因组为4.2GB，对1090亿碱基的NCBI核苷酸库为69GB，典型数百万读段可在数分钟处理。85%是相对内存减少而非剩余占比；这些摘要没有共同数据集/硬件下的两方法直接比较，不能宣称某者普遍更快。16S近邻的最高300倍分类速度是相对于QIIME 2等特定比较，不能移植为shotgun方法论文结论。数据库历史规模也不能当作当前NCBI规模。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1186/s13059-019-1891-0",
+            "quote": "Kraken 2 improves upon Kraken 1 by reducing memory usage by 85%, allowing greater amounts of reference genomic data to be used, while maintaining high accuracy and increasing speed fivefold. Kraken 2 also introduces a translated search mode, providing increased sensitivity in viral metagenomics analysis.",
+            "supports": "第一对象的相对基准、两项性能变化及新增搜索能力。"
+          },
+          {
+            "work_id": "work:10.1101/gr.210641.116",
+            "quote": "The system uses an indexing scheme based on the Burrows-Wheeler transform (BWT) and the Ferragina-Manzini (FM) index, optimized specifically for the metagenomic classification problem. Centrifuge requires a relatively small index (4.2 GB for 4078 bacterial and 200 archaeal genomes) and classifies sequences at very high speed, allowing it to process the millions of reads from a typical high-throughput DNA sequencing run within a few minutes.",
+            "supports": "第二对象的索引技术、4.2GB所对应的参考规模和定性处理时间。"
+          },
+          {
+            "work_id": "work:10.1101/gr.210641.116",
+            "quote": "Because of its space-optimized indexing schemes, Centrifuge also makes it possible to index the entire NCBI nonredundant nucleotide sequence database (a total of 109 billion bases) with an index size of 69 GB, in contrast to k-mer-based indexing schemes, which require far more extensive space.",
+            "supports": "69GB对应另一个1090亿碱基数据库，不能与4.2GB混用分母。"
+          },
+          {
+            "work_id": "work:10.1186/s40168-020-00900-2",
+            "quote": "For classification, using the same data as previous studies, Kraken 2 and Bracken are up to 300 times faster, use 100x less RAM, and generate results that more accurate at 16S rRNA profiling than QIIME 2's q2-feature-classifier.",
+            "supports": "近邻的显著性能数字针对16S与QIIME 2，不能转写为两篇shotgun原始论文的直接比较。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "identity_retinal_trial_review",
+      "slice": "literature_identity",
+      "baseline_query": "I am assessing how durable AAV-delivered RPE65 therapy is for inherited retinal degeneration. Find a primary study combining multi-year patient follow-up with a parallel dose experiment in dogs using ERG, and summarize visual function and ocular inflammation. Reviews may provide context but cannot substitute for original results; a patient-only follow-up report does not establish the combined human-and-dog design I need.",
+      "request": {
+        "input_type": "keywords",
+        "keywords": ["RPE65 retinal degeneration", "AAV delivery", "patient follow-up and parallel dog experiment", "multi-year outcomes", "dose response", "retinal sensitivity", "ERG", "intraocular inflammation"]
+      },
+      "expect": {
+        "required_ids": ["work:10.1056/nejmoa1414221"],
+        "background_ids": ["work:10.1016/j.preteyeres.2020.100915", "work:10.1136/bjophthalmol-2016-309975"],
+        "forbidden_ids": ["work:10.1016/j.ophtha.2019.06.017"],
+        "gold_note": "目标是有原始患者结果和并行犬剂量实验的I-II期开放标签研究：12人、3年随访，6人视网膜敏感度不同程度改善，6至12个月达峰后下降，未检出相应ERG改善，3人发生眼内炎症。犬模型中低剂量改善视觉引导行为，仅较高剂量获得ERG可测改善。两篇背景的Review元数据与自述一致，不能替代这些数据。2019年近邻确为有效原始临床研究，但其摘要不提供本题所需并行犬剂量/ERG设计，排除只针对本题组合条件，不能断言全文没有任何动物内容。炎症与改善衰减不能被写成已证实因果，也不能推论所有AAV疗法均无持久效果或具有终身安全性。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1056/nejmoa1414221",
+            "quote": "We performed a phase 1-2 open-label trial involving 12 participants to evaluate the safety and efficacy of gene therapy with a recombinant adeno-associated virus 2/2 (rAAV2/2) vector carrying the RPE65 complementary DNA, and measured visual function over the course of 3 years. Four participants were administered a lower dose of the vector, and 8 were administered a higher dose. In a parallel study in dogs, we investigated the relationship among vector dose, visual function, and electroretinography (ERG) findings.",
+            "supports": "直接支持原始临床试验、患者随访与平行犬模型剂量/ERG设计。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa1414221",
+            "quote": "Improvements in retinal sensitivity were evident, to varying extents, in six participants for up to 3 years, peaking at 6 to 12 months after treatment and then declining. No associated improvement in retinal function was detected by means of ERG. Three participants had intraocular inflammation, and two had clinically significant deterioration of visual acuity. The reduction in central retinal thickness varied among participants. In dogs, RPE65 gene therapy with the same vector at lower doses improved vision-guided behavior, but only higher doses resulted in improvements in retinal function that were detectable with the use of ERG.",
+            "supports": "患者与犬的不同测量结果必须分开叙述；炎症存在不证明它造成疗效下降。"
+          },
+          {
+            "work_id": "work:10.1016/j.preteyeres.2020.100915",
+            "quote": "This review evaluates AAV-related immune responses, toxicity and inflammation in studies of retinal gene therapy, identifies influencing variables of these responses and discusses potential strategies to modulate immune reactions to AAV vectors to increase the safety and efficacy of ocular gene therapy.",
+            "supports": "高度相关但明确为综述，可用于背景而非原始人犬数据。"
+          },
+          {
+            "work_id": "work:10.1136/bjophthalmol-2016-309975",
+            "quote": "This review describes the clinical and genetic characteristics of LCA/EOSRD and the differential diagnoses to be considered.",
+            "supports": "疾病临床背景综述，不能替代要求的实验记录。"
+          },
+          {
+            "work_id": "work:10.1016/j.ophtha.2019.06.017",
+            "quote": "Open-label phase 1 follow-on clinical trial and open-label, randomized, controlled phase 3 clinical trial.",
+            "supports": "确认近邻也是原始临床试验，排除不是因为它是综述，而是其完整摘要不能确认本题并行犬剂量实验。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "identity_wheat_imaging_correction",
+      "slice": "literature_identity",
+      "baseline_query": "For resistance screening in wheat, find the original vision study that estimates the proportion of diseased spikelets from ordinary colour photographs, builds spikelet-level annotations and compares its results with expert assessments using a lightweight model. Leaf-rust classification or visual question answering is not the same task. Check for an associated correction and distinguish it from the original experiment rather than counting it as a second study.",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "We are designing an image-based phenotype workflow for Fusarium head blight resistance breeding. The aim is to locate affected spikelets on densely packed wheat spikes in RGB photographs, estimate their fraction and compare the estimates with expert visual ratings. A compact model is important for devices with limited computing resources. We seek a primary study with spikelet annotations and measured detection performance, not leaf-disease classification or question answering. Our bibliography must also distinguish any linked correction notice from the experiment it amends."
+      },
+      "expect": {
+        "required_ids": ["work:10.1007/s42994-025-00245-0"],
+        "background_ids": ["work:10.55730/1300-0152.2761"],
+        "forbidden_ids": ["work:10.1007/s42994-025-00250-3", "work:10.1038/s41598-024-79793-2"],
+        "gold_note": "原始FHBDSR-Net研究构建620张RGB麦穗图像、5222个小穗级标注，病小穗检测average precision为93.8%，7.2M参数，与专家评分Pearson相关系数0.901。AP不是通用accuracy，相关系数也不是检测准确率。更正摘要直接指向原文DOI，双方related_dois也双向连接；更正的Published Erratum/correction类型不能因同时带Journal Article而被忽略。可且应解释更正，不能把它算第二项原始实验；不设置DOI提及禁令。移动模型综述和锈病叶片VQA研究均不能替代目标。摘要称适合移动部署，未证明已完成某设备实测。更正未说明改动内容，不得宣称只改排版、改动指标或推翻结论；原文corrected状态不等于撤稿。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1007/s42994-025-00245-0",
+            "quote": "To address these challenges, we constructed a dataset of 620 high-resolution RGB images of wheat spikes with 5,222 spikelet-level annotations to systematically analyze spikelet size distributions to fill small-object detection data gaps in this field.",
+            "supports": "确有原始RGB麦穗数据及小穗级标注，不只是一般图像分类。"
+          },
+          {
+            "work_id": "work:10.1007/s42994-025-00245-0",
+            "quote": "FHBDSR-Net detected diseased spikelets with an average precision of 93.8% with a lightweight design of 7.2 M parameters. The results were strongly correlated with expert evaluations, with a Pearson correlation coefficient of 0.901. Our method is suitable for deployment on resource-constrained mobile devices, facilitating portable plant phenotyping and smart breeding.",
+            "supports": "分别给出AP、参数量、专家相关与部署适用性表述，不得混淆指标或声称设备实测。"
+          },
+          {
+            "work_id": "work:10.55730/1300-0152.2761",
+            "quote": "This review summarizes best practices for dataset selection and model optimization for mobile platforms, emphasizing their role in improving the efficiency and accuracy of plant disease detection systems.",
+            "supports": "虽然主题相近且摘要有结构化章节，文献明确是移动病害模型综述。"
+          },
+          {
+            "work_id": "work:10.1007/s42994-025-00250-3",
+            "quote": "[This corrects the article DOI: 10.1007/s42994-025-00245-0.].",
+            "supports": "摘要直接确认更正与目标原文的关系；不支持猜测更正内容。"
+          },
+          {
+            "work_id": "work:10.1038/s41598-024-79793-2",
+            "quote": "We drafted a new, WheatRustDL2024 dataset (7998 images of healthy and infected leaves) specifically designed for VQA in the context of wheat rust detection and utilized it to retrieve the initial weights on the federated learning server.",
+            "supports": "近邻数据是锈病叶片并面向视觉问答，不是赤霉病麦穗病小穗占比。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "gap_fmt_ici_human_rct",
+      "slice": "evidence_gap",
+      "baseline_query": "Find an original randomized clinical trial in patients with advanced solid cancer that actually administers fecal microbiota transplantation alongside PD-1/PD-L1 blockade, compares it with a concurrent no-FMT control, and reports tumor response or survival. Either a positive or a negative trial is useful. Mouse recipients, patient microbiome associations and FMT trials in other diseases cannot substitute. If the current collection cannot establish such a trial, explain the evidence gap.",
+      "request": {
+        "input_type": "keywords",
+        "keywords": ["fecal microbiota transplantation", "advanced solid tumors", "PD-1/PD-L1 inhibitors", "human randomized controlled trial", "FMT add-on versus no FMT", "tumor response or survival"]
+      },
+      "expect": {
+        "required_ids": [],
+        "background_ids": ["work:10.1126/science.aan3706", "work:10.1038/s41591-021-01655-5", "work:10.1053/j.gastro.2018.12.001"],
+        "gold_note": "经多组移植、菌群、癌症、免疫治疗与试验同义表达扫描并阅读近邻，当前固定摘要快照未确认同时满足癌症患者实际接受FMT、联合PD-1/PD-L1治疗、随机同期无FMT对照及肿瘤临床结局的原始研究。合格阴性试验同样算答案，不要求获益。三篇背景分别是患者作供者而小鼠作受者的移植机制、338例晚期NSCLC菌群预测队列，以及81例溃疡性结肠炎患者的随机FMT试验。它们是真实研究，可以正确介绍，但不能拼接为本题临床试验。只能报告此快照不能确认，不能说全球没有相关试验、FMT对癌症无效，或摘要未提的内容全文必然没做。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1126/science.aan3706",
+            "quote": "Fecal microbiota transplantation (FMT) from cancer patients who responded to ICIs into germ-free or antibiotic-treated mice ameliorated the antitumor effects of PD-1 blockade, whereas FMT from nonresponding patients failed to do so.",
+            "supports": "包含患者来源与PD-1效果但移植受者是小鼠，不能当作患者随机FMT疗效。"
+          },
+          {
+            "work_id": "work:10.1038/s41591-021-01655-5",
+            "quote": "In the current study, we performed shotgun-metagenomics-based microbiome profiling in a large cohort of patients with advanced NSCLC (n = 338) treated with first- or second-line ICIs to prospectively validate the predictive value of fecal Akk.",
+            "supports": "真实患者菌群预测队列，不能替代随机实施FMT与无FMT对照。"
+          },
+          {
+            "work_id": "work:10.1053/j.gastro.2018.12.001",
+            "quote": "We performed a double-blind trial of 81 patients with active UC randomly assigned to groups that received an initial colonoscopic infusion and then intensive multidonor FMT or placebo enemas, 5 d/wk for 8 weeks.",
+            "supports": "有人体、随机、FMT和安慰剂，但疾病是活动性溃疡性结肠炎，不是联合癌症免疫治疗。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "gap_scd_in_vivo_editing",
+      "slice": "evidence_gap",
+      "baseline_query": "Find a primary human study reporting clinical outcomes after programmable DNA editing performed directly inside patients with sickle cell disease. I mean delivery of the editing components to the patient, not infusion of cells modified outside the body, lentiviral addition of a globin gene or RNA knockdown. If this collection only supports those neighboring treatment routes, state the specific gap rather than treating them as direct in-vivo editing.",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "We are evaluating direct in-vivo genome editing for sickle cell disease to avoid manufacturing and transplanting an ex-vivo cell product. Eligible evidence must report clinical outcomes in humans who received programmable DNA-editing components, such as a CRISPR system, for editing within the patient. Existing cell-transplant therapies, addition of a globin gene and suppression of an RNA transcript are relevant background, but they do not by themselves demonstrate this delivery route and molecular mechanism."
+      },
+      "expect": {
+        "required_ids": [],
+        "background_ids": ["work:10.1056/nejmoa2117175", "work:10.1056/nejmoa2029392", "work:10.1056/nejmoa1609677"],
+        "gold_note": "多组疾病/治疗别名、血红蛋白、造血细胞、编辑及递送扫描后，未在此固定摘要快照确认镰状细胞病患者直接体内可编程DNA编辑并报告临床结局的原始研究。已有临床成功结果不能抹去：LentiGlobin为转导后造血细胞自体移植并添加修改的β-globin；另一研究是BCL11A mRNA的shRNA敲低与自体CD34+细胞输注；早期个案亦为慢病毒添加抗镰变β-globin。三篇作为背景有价值，但不是指定机制与递送路线。不能把基因添加、RNA敲低和DNA编辑混同，也不能说此病没有有效基因治疗。本题缺口仅限快照中可由摘要确认的特定证据，不是全球不存在证明。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1056/nejmoa2117175",
+            "quote": "Gene therapy with the use of LentiGlobin for sickle cell disease (bb1111; lovotibeglogene autotemcel) consists of autologous transplantation of hematopoietic stem and progenitor cells transduced with the BB305 lentiviral vector encoding a modified β-globin gene, which produces an antisickling hemoglobin, HbAT87Q.",
+            "supports": "摘要把治疗定义为转导细胞自体移植和基因添加，不是直接递送DNA编辑组件。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa2029392",
+            "quote": "The investigational therapy involved infusion of autologous CD34+ cells transduced with the BCH-BB694 lentiviral vector, which encodes a short hairpin RNA (shRNA) targeting BCL11A mRNA embedded in a microRNA (shmiR), allowing erythroid lineage-specific knockdown.",
+            "supports": "原始临床路线是修饰细胞输注和mRNA敲低，不是患者直接体内DNA编辑。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa1609677",
+            "quote": "We describe our first patient treated with lentiviral vector-mediated addition of an antisickling β-globin gene into autologous hematopoietic stem cells.",
+            "supports": "真实患者治疗但分子机制为基因添加，不能当作可编程基因组编辑。"
+          }
+        ]
+      }
+    }
+  ]
+}

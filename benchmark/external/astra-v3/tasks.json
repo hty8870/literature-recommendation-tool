@@ -1,0 +1,852 @@
+{
+  "suite_id": "astra-independent-abstract-v3",
+  "corpus_path": "data/runtime/quality-corpus/large-corpus.json",
+  "max_retrieval_rounds": 3,
+  "repetitions": 3,
+  "stability_case_ids": [
+    "astra-v3-01",
+    "astra-v3-03",
+    "astra-v3-07",
+    "astra-v3-10"
+  ],
+  "tuning_case_ids": [],
+  "development_case_ids": [],
+  "tasks": [
+    {
+      "case_id": "astra-v3-01",
+      "slice": "exact_identity",
+      "baseline_query": "givosiran; symptomatic acute hepatic porphyria; main phase-III randomized placebo comparison; monthly treatment for six months; distinguish the earlier dose-escalation study; identify the primary report and separate the randomized population from the acute intermittent porphyria subgroup; summarize attack rates and reported safety limitations using only complete information in the supplied abstract.",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "givosiran",
+          "symptomatic acute hepatic porphyria",
+          "main phase-III randomized placebo comparison",
+          "monthly treatment for six months",
+          "distinguish the earlier dose-escalation study",
+          "identify the primary report and separate the randomized population from the acute intermittent porphyria subgroup",
+          "summarize attack rates and reported safety limitations using only complete information in the supplied abstract."
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1056/nejmoa1913147"
+        ],
+        "background_ids": [
+          "work:10.1016/j.bcp.2021.114432"
+        ],
+        "forbidden_ids": [
+          "work:10.1056/nejmoa1807838"
+        ],
+        "gold_note": "核心记录为给定语料中的2020年givosiran三期原始试验：有症状急性肝性卟啉病患者随机接受每月治疗或安慰剂，共六个月。摘要报告94人随机化，其中89人为急性间歇性卟啉病；不能把89人写成整个试验的随机化人数。该亚组平均年化发作率为3.2与12.5，摘要称降低74%，并报告肝、肾不良事件频率更高。结果段在“(PConclusions”处出现明显拼接/截断，不得补写精确P值、置信区间或不良事件人数。一期近邻同样研究givosiran、含随机化和每月注射，其79%降低来自探索性终点，不能替代三期报告或与三期74%混用。siRNA综述只能提供药物管线背景，不是本试验原始结果。所有结论限于库内摘要与元数据；unknown撤稿状态既不是撤稿证据，也不是已排除撤稿。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1056/nejmoa1913147",
+            "quote": "In this double-blind, placebo-controlled, phase 3 trial, we randomly assigned symptomatic patients with acute hepatic porphyria to receive either subcutaneous givosiran (2.5 mg per kilogram of body weight) or placebo monthly for 6 months.",
+            "supports": "支持：三期、双盲、随机、安慰剂对照、有症状患者与六个月每月给药这组身份条件。不能支持：超过六个月的长期疗效或与其他活性药物的优效比较。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa1913147",
+            "quote": "A total of 94 patients underwent randomization (48 in the givosiran group and 46 in the placebo group). Among the 89 patients with acute intermittent porphyria, the mean annualized attack rate was 3.2 in the givosiran group and 12.5 in the placebo group, representing a 74% lower rate in the givosiran group",
+            "supports": "支持：总随机化人数、两组人数、亚组分母及该亚组年化发作率与相对降低幅度。不能支持：把89人当总入组人数、把74%当绝对百分点下降，或补齐紧随其后的残缺P值。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa1913147",
+            "quote": "The increased efficacy was accompanied by a higher frequency of hepatic and renal adverse events.",
+            "supports": "支持：疗效描述必须同时保留肝、肾不良事件增加的限定。不能支持：具体发生人数、严重程度分级或长期安全性结论。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa1807838",
+            "quote": "We conducted a phase 1 trial of givosiran in patients with acute intermittent porphyria.",
+            "supports": "支持：同药同病近邻是一期试验，明确不满足本案三期原始报告的必要条件。不能支持：把一期探索结果作为三期结果，或据此认定一期研究科学无关。"
+          },
+          {
+            "work_id": "work:10.1016/j.bcp.2021.114432",
+            "quote": "Furthermore, this review presents comprehensive profiles of the three approved siRNA drugs (patisiran, givosiran, and lumasiran) and the seven other siRNA candidates in Phase 3 clinical trials",
+            "supports": "支持：该记录是涉及givosiran的综述，可作药物类别与研发背景。不能支持：将综述视为目标三期试验的原始报告；批准信息也只代表给定摘要的历史表述，不是当前监管核验。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "astra-v3-02",
+      "slice": "exact_identity",
+      "baseline_query": "SHERLOCK；新冠临床样本；Cas13a荧光检测；Khan、Barney与Tsongalis团队。请定位语料中标为期刊论文的临床验证记录，而不是其预印本记录；核对样本量、参照检测与准确率的适用范围。同研究的两个版本不能算两次独立验证，也不要把有限样本中的结果说成所有人群都能达到的准确率。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "SHERLOCK",
+          "新冠临床样本",
+          "Cas13a荧光检测",
+          "Khan、Barney与Tsongalis团队",
+          "请定位语料中标为期刊论文的临床验证记录，而不是其预印本记录",
+          "核对样本量、参照检测与准确率的适用范围",
+          "同研究的两个版本不能算两次独立验证",
+          "也不要把有限样本中的结果说成所有人群都能达到的准确率"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1016/j.jcv.2021.105019"
+        ],
+        "background_ids": [],
+        "forbidden_ids": [
+          "work:10.1101/2020.12.17.20228593"
+        ],
+        "gold_note": "根据库内authors、year和pub_types，核心为Khan、Barney、Tsongalis的2021年Journal Article记录；近邻为同作者、近乎同题的2020年Preprint记录。期刊记录摘要报告60份样本与100% detection accuracy，预印本报告50份样本；不能混用样本量、合并为110份独立样本或重复计为两个独立队列。期刊摘要说明从已通过RT-PCR验证的样本中选取，阳性样本覆盖不同循环阈值，故只能描述所评估样本中的表现，不能推导普遍准确率、真实世界筛查阳性预测值或随机临床结局获益。forbidden仅指不得作为所求期刊版本的替代答案，允许解释其版本差别。元数据版本辨识不是对当前出版社页面、全文、同行评审质量或撤稿状态的外部核实。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1016/j.jcv.2021.105019",
+            "quote": "The Specific High-Sensitivity Enzymatic Reporter UnLOCKing (SHERLOCK) technology forms the basis of the Sherlock CRISPR SARS-CoV-2 kit using the CRISPR-Cas13a system.",
+            "supports": "支持：目标验证使用SHERLOCK与Cas13a检测体系。不能支持：仅凭技术名称判定发表版本；期刊版本身份还须结合本记录year、authors与pub_types。"
+          },
+          {
+            "work_id": "work:10.1016/j.jcv.2021.105019",
+            "quote": "Our experimental strategy included selection of COVID-19 patient samples from previously validated RT-PCR assays. Positive samples were selected based on a broad range of cycle thresholds.",
+            "supports": "支持：样本选择与RT-PCR参照、阳性样本循环阈值覆盖范围。不能支持：随机人群招募、未经选择的前瞻性筛查或临床结局试验。"
+          },
+          {
+            "work_id": "work:10.1016/j.jcv.2021.105019",
+            "quote": "A total of 60 COVID-19 patient samples were correctly diagnosed with 100% detection accuracy",
+            "supports": "支持：期刊记录报告的样本量为60，所评估样本中的检测准确率为100%。不能支持：在人群中永远无假阳性或假阴性，或从该句单独还原完整列联表。"
+          },
+          {
+            "work_id": "work:10.1101/2020.12.17.20228593",
+            "quote": "A total of 50 COVID-19 patient samples were correctly diagnosed with 100% accuracy",
+            "supports": "支持：预印本摘要报告50份样本，构成易混淆的版本差异；其Preprint身份由同记录元数据确认。不能支持：把50替换成期刊版的60，或将两版本当作两个独立验证队列。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "astra-v3-03",
+      "slice": "semantic_ood",
+      "baseline_query": "我在设计感染淋巴结与小鼠肿瘤的空间表达分析：一个捕获位置混有多种细胞，但只知道各类细胞占多少还不够。我需要借助单细胞参考，进一步估计同一细胞类型内部随位置或条件变化的表达状态，并取得每种细胞在各位置的表达估计。请找出有相应应用验证的方法论文，说明它与只做整体空间降维、或根据邻近位置插补细胞组成的方法有何区别。不要把模型推断称为真正测到了每个单细胞，也不要外推为已经在人类临床试验中验证。",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "我在设计感染淋巴结与小鼠肿瘤的空间表达分析：一个捕获位置混有多种细胞，但只知道各类细胞占多少还不够。我需要借助单细胞参考，进一步估计同一细胞类型内部随位置或条件变化的表达状态，并取得每种细胞在各位置的表达估计。请找出有相应应用验证的方法论文，说明它与只做整体空间降维、或根据邻近位置插补细胞组成的方法有何区别。不要把模型推断称为真正测到了每个单细胞，也不要外推为已经在人类临床试验中验证。"
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1038/s41587-022-01272-8"
+        ],
+        "background_ids": [
+          "work:10.1038/s41587-022-01273-7"
+        ],
+        "forbidden_ids": [
+          "work:10.1038/s41467-022-34879-1"
+        ],
+        "gold_note": "核心为DestVI：必要条件是混合spot中同一细胞类型内部的连续表达变化、每类每spot表达估计，以及感染淋巴结与小鼠肿瘤应用。输入以分析需求改写，不给出方法名称。CARD可解释借助空间相关性进行组成反卷积与未测位置插补的相邻路线，但不能凭其摘要把它替换为已展示本案连续类型内状态建模与应用组合的核心答案。SpatialPCA的摘要明确以保留空间相关性的低维表征为方法输出，不能将这种整体降维直接当成题目所求的每类细胞、每spot表达反卷积。允许讨论这些近邻的局限，不应将它们判为普遍无关。摘要中的高分辨率推断、模拟比较和动物应用不等于直接单细胞测量、人类临床验证或在所有数据集上均占优。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1038/s41587-022-01272-8",
+            "quote": "To identify continuous variation of the transcriptome within cells of the same type, we developed Deconvolution of Spatial Transcriptomics profiles using Variational Inference (DestVI).",
+            "supports": "支持：核心方法针对同一细胞类型内部的连续转录变化，而非仅估计离散类型比例。不能支持：直接观察到了每个单细胞或已识别连续变化的因果机制。"
+          },
+          {
+            "work_id": "work:10.1038/s41587-022-01272-8",
+            "quote": "Using simulations, we demonstrate that DestVI outperforms existing methods for estimating gene expression for every cell type inside every spot.",
+            "supports": "支持：每种细胞类型在每个spot的表达估计是方法评估对象，且这里的优效证据来自模拟。不能支持：所有真实组织、测序平台和参数下都优于其他方法。"
+          },
+          {
+            "work_id": "work:10.1038/s41587-022-01272-8",
+            "quote": "Applied to a study of infected lymph nodes and of a mouse tumor model, DestVI provides high-resolution, accurate spatial characterization of the cellular organization of these tissues and identifies cell-type-specific changes in gene expression between different tissue regions or between conditions.",
+            "supports": "支持：感染淋巴结与小鼠肿瘤应用，以及区域或条件间的细胞类型特异表达变化。不能支持：人类临床试验效果、治疗获益或真实物理分辨率必然提升。"
+          },
+          {
+            "work_id": "work:10.1038/s41587-022-01273-7",
+            "quote": "Modeling spatial correlation allows us to borrow the cell-type composition information across locations, improving accuracy of deconvolution even with a mismatched scRNA-seq reference.",
+            "supports": "支持：CARD是利用跨位置空间相关性借用细胞组成信息的相关背景方法。不能支持：仅凭本句就证明其满足本案的连续类型内表达状态与特定应用验证要求。"
+          },
+          {
+            "work_id": "work:10.1038/s41587-022-01273-7",
+            "quote": "CARD can also impute cell-type compositions and gene expression levels at unmeasured tissue locations",
+            "supports": "支持：CARD摘要另有未测位置的组成和表达插补功能，可用于解释研究需求之间的差别。不能支持：插补值等于实际测量，或该功能本身就是同类型内部连续状态建模。"
+          },
+          {
+            "work_id": "work:10.1038/s41467-022-34879-1",
+            "quote": "Here, we develop a spatially-aware dimension reduction method, SpatialPCA, that can extract a low dimensional representation of the spatial transcriptomics data with biological signal and preserved spatial correlation structure",
+            "supports": "支持：SpatialPCA在摘要中明确提供保留空间相关性的低维表征，作为本案核心反卷积答案时输出任务不符。不能支持：声称它不适用于任何空间分析，或否认其摘要另述的区域识别和轨迹用途。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "astra-v3-04",
+      "slice": "semantic_ood",
+      "baseline_query": "For orphan proteins and newly designed sequences, obtaining useful evolutionary relatives may be impossible. I need a structure-prediction method that learns from individual, unaligned protein sequences and connects that representation to a differentiable geometric model of the backbone. Find an original method paper with evaluation on orphan or designed proteins. Distinguish this approach from improving alignments by searching larger sequence databases, and keep any comparative accuracy claim restricted to the protein classes actually reported.",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "For orphan proteins and newly designed sequences, obtaining useful evolutionary relatives may be impossible. I need a structure-prediction method that learns from individual, unaligned protein sequences and connects that representation to a differentiable geometric model of the backbone. Find an original method paper with evaluation on orphan or designed proteins. Distinguish this approach from improving alignments by searching larger sequence databases, and keep any comparative accuracy claim restricted to the protein classes actually reported."
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1038/s41587-022-01432-w"
+        ],
+        "background_ids": [],
+        "forbidden_ids": [
+          "work:10.1038/s41592-023-02130-4"
+        ],
+        "gold_note": "核心为使用AminoBERT与可微循环几何网络的RGN2方法论文；摘要同时给出未对齐蛋白输入、Cα骨架几何表达，以及孤儿蛋白和部分设计蛋白类别上的比较。需求不包含RGN2或AminoBERT名称，也不复述目标长标题。DeepMSA2是有实际价值但路线不同的近邻：摘要明确通过基因组和宏基因组数据库迭代搜索构建多序列比对，因而不满足无可用同源序列时不依赖此类比对的必要条件。不能把RGN2在限定类别上的平均优势外推成对全部蛋白、复合物或临床应用的全面优势。语料将计算加速幅度写作“106-fold”，存在上标格式丢失的可能；本案不要求该数值，也不得自行将它修复为某个指数或据此报告可靠的加速倍数。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1038/s41587-022-01432-w",
+            "quote": "Here we report development of an end-to-end differentiable recurrent geometric network (RGN) that uses a protein language model (AminoBERT) to learn latent structural information from unaligned proteins.",
+            "supports": "支持：可微循环几何网络与蛋白语言模型结合，并从未对齐蛋白学习结构信息，满足核心方法条件。不能支持：只凭本句推断所有训练语料来源、数据泄漏情况或从未利用任何进化相关统计信息。"
+          },
+          {
+            "work_id": "work:10.1038/s41587-022-01432-w",
+            "quote": "A linked geometric module compactly represents Cα backbone geometry in a translationally and rotationally invariant way.",
+            "supports": "支持：连接的几何模块表示Cα骨架，并具平移、旋转不变性。不能支持：全原子侧链精度、蛋白动力学或实验结构已获得验证。"
+          },
+          {
+            "work_id": "work:10.1038/s41587-022-01432-w",
+            "quote": "On average, RGN2 outperforms AlphaFold2 and RoseTTAFold on orphan proteins and classes of designed proteins",
+            "supports": "支持：摘要限定在孤儿蛋白和若干设计蛋白类别上的平均比较。不能支持：所有蛋白类别普遍更优，或从该片段给出精确误差、统计显著性与可靠加速倍数。"
+          },
+          {
+            "work_id": "work:10.1038/s41592-023-02130-4",
+            "quote": "Leveraging iterative alignment search through genomic and metagenome sequence databases, we report the DeepMSA2 pipeline for uniform protein single- and multichain multiple-sequence alignment (MSA) construction.",
+            "supports": "支持：DeepMSA2明确以数据库比对搜索与MSA构建为路线，不能充当本案不依赖可用同源比对的方法答案。不能支持：否定其在适合构建MSA的蛋白结构预测任务中的价值。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "astra-v3-05",
+      "slice": "chinese_cross_language",
+      "baseline_query": "我们正在筛选镰状细胞病的自体造血细胞治疗路线，希望通过红系选择性的RNA沉默，解除对胎儿血红蛋白表达的抑制，而不是额外加入抗镰状化的β-珠蛋白编码序列。请找出采用慢病毒递送、用微RNA骨架承载短发夹RNA的人体试点原始研究，说明沉默靶点、研究设计、已有随访的人群和HbF反应。应将基因添加路线作为机制对照，而不是满足上述条件的核心答案；不要把初步随访结果写成长久治愈或随机比较证明。",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "我们正在筛选镰状细胞病的自体造血细胞治疗路线，希望通过红系选择性的RNA沉默，解除对胎儿血红蛋白表达的抑制，而不是额外加入抗镰状化的β-珠蛋白编码序列。请找出采用慢病毒递送、用微RNA骨架承载短发夹RNA的人体试点原始研究，说明沉默靶点、研究设计、已有随访的人群和HbF反应。应将基因添加路线作为机制对照，而不是满足上述条件的核心答案；不要把初步随访结果写成长久治愈或随机比较证明。"
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1056/nejmoa2029392"
+        ],
+        "background_ids": [],
+        "forbidden_ids": [
+          "work:10.1056/nejmoa2117175"
+        ],
+        "gold_note": "核心是Esrick等在库内2021年记录中的BCL11A转录后沉默试点：自体CD34+细胞经BCH-BB694慢病毒载体转导，表达嵌于microRNA中的shRNA，实现红系选择性敲低，而非额外添加β-珠蛋白编码基因。研究为单中心、开放标签试点；摘要的时间截点为2020年10月，六名患者已获得至少六个月随访，中位18个月、范围7至29个月，不能将这一随访人数擅自扩大为其他分母。可完整评估者的HbF诱导范围为20.4%至41.3%，原文分母为HbF/(F+S)，不应改写成未经限定的总血红蛋白比例；F-cells和每F-cell的HbF量又是不同指标。临床表现改善只限所报告随访，不能推出永久治愈、无远期风险或优于其他路线。LentiGlobin近邻虽然同为镰状细胞病、自体移植与慢病毒治疗，但BB305编码修饰β-珠蛋白、产生HbAT87Q，机制明确不同；可讨论，不能替代核心。所有判断仅依据所给摘要和元数据，unknown撤稿状态未被解释为已排除撤稿。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1056/nejmoa2029392",
+            "quote": "We enrolled patients with sickle cell disease in a single-center, open-label pilot study.",
+            "supports": "支持：研究对象是镰状细胞病患者，设计为单中心开放标签试点。不能支持：随机对照、盲法比较或确证性的长期疗效判断。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa2029392",
+            "quote": "The investigational therapy involved infusion of autologous CD34+ cells transduced with the BCH-BB694 lentiviral vector, which encodes a short hairpin RNA (shRNA) targeting BCL11A mRNA embedded in a microRNA (shmiR), allowing erythroid lineage-specific knockdown.",
+            "supports": "支持：自体CD34+细胞、慢病毒载体、microRNA内嵌shRNA、BCL11A mRNA靶点与红系选择性敲低同时满足中文需求。不能支持：将其归为直接补充β-珠蛋白编码基因或直接改写BCL11A基因组序列的治疗。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa2029392",
+            "quote": "As of October 2020, six patients had been followed for at least 6 months after receiving BCH-BB694 gene therapy; median follow-up was 18 months (range, 7 to 29).",
+            "supports": "支持：摘要时间截点下的六名已随访患者及随访长度。不能支持：所有后来入组患者的结局、超过所述观察期的安全性，或将中位随访当作每个人的随访长度。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa2029392",
+            "quote": "All the patients who could be fully evaluated achieved robust and stable HbF induction (percentage HbF/(F+S) at most recent follow-up, 20.4 to 41.3%), with HbF broadly distributed in red cells (F-cells 58.9 to 93.6% of untransfused red cells) and HbF per F-cell of 9.0 to 18.6 pg per cell.",
+            "supports": "支持：可完整评估者的HbF诱导及三个不同分母或单位的指标。不能支持：把HbF/(F+S)、F-cell比例和每细胞pg数混为同一指标，或把这些观察解释为终身治愈。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa2117175",
+            "quote": "Gene therapy with the use of LentiGlobin for sickle cell disease (bb1111; lovotibeglogene autotemcel) consists of autologous transplantation of hematopoietic stem and progenitor cells transduced with the BB305 lentiviral vector encoding a modified β-globin gene, which produces an antisickling hemoglobin, HbAT87Q.",
+            "supports": "支持：近邻明确采用修饰β-珠蛋白基因添加路线，与本案要求的RNA沉默机制不符。不能支持：声称该研究与镰状细胞病无关，或据不同研究的摘要直接判断哪条路线更优。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "astra-v3-06",
+      "slice": "scope_causality",
+      "baseline_query": "I am evaluating the claim that gut microbes initiate Parkinson's disease. Find a primary human study comparing fecal microbial communities in patients and controls using deep whole-metagenome sequencing, with disease associations accepted only when two abundance-analysis methods agree. I need the cohort sizes, the levels of microbial features examined, and a clear distinction between association and causal direction. Amplicon profiling with predicted microbial functions is not a substitute for the requested sequencing design. Explain whether the observations themselves demonstrate that changing the microbiome would prevent or treat the disease.",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "I am evaluating the claim that gut microbes initiate Parkinson's disease. Find a primary human study comparing fecal microbial communities in patients and controls using deep whole-metagenome sequencing, with disease associations accepted only when two abundance-analysis methods agree. I need the cohort sizes, the levels of microbial features examined, and a clear distinction between association and causal direction. Amplicon profiling with predicted microbial functions is not a substitute for the requested sequencing design. Explain whether the observations themselves demonstrate that changing the microbiome would prevent or treat the disease."
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1038/s41467-022-34667-x"
+        ],
+        "background_ids": [
+          "work:10.1128/msystems.00561-20"
+        ],
+        "forbidden_ids": [
+          "work:10.1002/mds.26307"
+        ],
+        "gold_note": "核心为Wallen等2022年记录：490名PD患者与234名对照，粪便DNA深度shotgun测序，以ANCOM-BC和MaAsLin2两种方法均显著为疾病关联判据，并进行网络分析和功能分析。摘要所称超过30%发生丰度改变的对象是受测物种、基因和通路，不能转写为30%的患者由微生物致病或30%的总体疾病风险。研究提供人类疾病关联及可检验假说；即使摘要使用病理机制或disease permissive表述，也没有在此报告随机微生物干预、确定的因果方向或预防治疗获益。背景记录关联了菌群与粪便代谢物，并明确提醒因果关系尚待建立；它不能替代核心的测序及双方法筛选条件。Keshavarzian等近邻明确采用核糖体RNA基因扩增子测序并预测功能，不能冒充本案要求的深度shotgun研究。forbidden仅限制其作为合格核心答案，不禁止说明它的相关背景价值。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1038/s41467-022-34667-x",
+            "quote": "We enrolled 490 PD and 234 control individuals, conducted deep shotgun sequencing of fecal DNA, followed by metagenome-wide association studies requiring significance by two methods (ANCOM-BC and MaAsLin2) to declare disease association, network analysis to identify polymicrobial clusters, and functional profiling.",
+            "supports": "支持：病例和对照人数、真实shotgun测序、双方法显著性要求以及网络和功能分析。不能支持：随机化干预、微生物变化先于发病的时间证据或无混杂的因果效应。"
+          },
+          {
+            "work_id": "work:10.1038/s41467-022-34667-x",
+            "quote": "Here we show that over 30% of species, genes and pathways tested have altered abundances in PD, depicting a widespread dysbiosis.",
+            "supports": "支持：超过30%的表述针对受测微生物特征的丰度改变。不能支持：将分母改为人群、患者或疾病风险，也不能把丰度关联解释为某菌必然致病。"
+          },
+          {
+            "work_id": "work:10.1038/s41467-022-34667-x",
+            "quote": "provide a broad foundation with a wealth of concrete testable hypotheses to discern the role of the gut microbiome in PD.",
+            "supports": "支持：作者将研究产出定位为进一步辨明微生物作用的可检验假说基础。不能支持：这些假说已全部得到人体因果或治疗试验验证。"
+          },
+          {
+            "work_id": "work:10.1128/msystems.00561-20",
+            "quote": "Several studies report the association between intestinal dysbiosis and Parkinson's disease, although a cause-effect relationship remains to be established.",
+            "supports": "支持：背景文献明确区分菌群失调关联与尚待建立的因果关系。不能支持：据这篇背景摘要宣布现实世界永远不存在因果证据，也不能替代核心的双分析方法研究。"
+          },
+          {
+            "work_id": "work:10.1002/mds.26307",
+            "quote": "Mucosal-associated and feces microbiota compositions were characterized using high-throughput ribosomal RNA gene amplicon sequencing. Data were correlated with clinical measures of PD, and a predictive assessment of microbial community functional potential was used to identify microbial functions.",
+            "supports": "支持：近邻为扩增子测序与功能预测，测量方式明确不满足本案要求的深度shotgun数据。不能支持：将其预测功能称为直接测得的宏基因组功能，或否认该研究对PD菌群关联的背景价值。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "astra-v3-07",
+      "slice": "quantitative_methods",
+      "baseline_query": "人类细胞系的nanopore从头基因组组装；MinION数据中额外加入超长读段的连续性收益；核对初始序列数据量、理论测序深度和额外覆盖度；区分read N50与assembly NG50及各自单位；计算加入超长读段前后NG50的近似绝对增量、终值倍数和相对增幅；核对最终组装规模、参考覆盖率及其未覆盖比例；区分参考覆盖率与组装准确率并保留不等号；说明短读段信息对所报准确率的支持条件；不能用SMRT与其他映射技术的组装结果替代本方法。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "人类细胞系的nanopore从头基因组组装",
+          "MinION数据中额外加入超长读段的连续性收益",
+          "核对初始序列数据量、理论测序深度和额外覆盖度",
+          "区分read N50与assembly NG50及各自单位",
+          "计算加入超长读段前后NG50的近似绝对增量、终值倍数和相对增幅",
+          "核对最终组装规模、参考覆盖率及其未覆盖比例",
+          "区分参考覆盖率与组装准确率并保留不等号",
+          "说明短读段信息对所报准确率的支持条件",
+          "不能用SMRT与其他映射技术的组装结果替代本方法"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1038/nbt.4060"
+        ],
+        "background_ids": [],
+        "forbidden_ids": [
+          "work:10.1038/nature20098"
+        ],
+        "gold_note": "这是按独立审校M-01与用户授权进行的整案替换，不是原DeepConsensus案删除人类条件后的放行。原目标仅标识HG003，封闭语料未建立其人类身份，原案仍不能据此判为通过；不把它转成设计缺口案。新核心摘要直接明示human GM12878 Utah/Ceph cell line与MinION。初始91.2 Gb序列数据约对应30×理论深度；nanopore读段自身从头组装的NG50约3 Mb。新增超长读段的read N50严格大于100 kb、读长最高882 kb，额外覆盖5×后assembly NG50约6.4 Mb。按摘要近似数值派生：NG50绝对增加约3.4 Mb，终值约为初值2.13倍，相对增加约113%，不能称增加2.13倍或把read N50当assembly NG50。最终组装规模为2867 million bases，覆盖参考的85.8%；按该报告比例计算参考未覆盖部分为14.2%，不是错误碱基比例。组装准确率是在纳入互补短读段数据后严格超过99.8%，不可改成恰好99.8%、只靠nanopore就达此精度，或与参考覆盖率相减来计算性能增益。91.2 Gb是测序数据量，不能与最终组装规模混为同一对象；这些数字不证明无间隙、端粒到端粒、全二倍体解析或普遍临床准确率。近邻AK1研究采用SMRT、next-generation mapping、linked reads和BAC等路线，虽也是人类从头组装且给出contig/scaffold N50，仍不满足本案MinION超长读段增量比较，不能搬用其数值补齐核心。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1038/nbt.4060",
+            "quote": "We report the sequencing and assembly of a reference genome for the human GM12878 Utah/Ceph cell line using the MinION (Oxford Nanopore Technologies) nanopore sequencer.",
+            "supports": "支持：同一摘要直接建立人类细胞系GM12878与MinION测序及组装的联系，闭合身份和技术条件。不能支持：把该身份转移给HG003或其他编号样本，也不能补充该细胞系未报告的来源属性。"
+          },
+          {
+            "work_id": "work:10.1038/nbt.4060",
+            "quote": "91.2 Gb of sequence data, representing ∼30× theoretical coverage, were produced.",
+            "supports": "支持：初始序列数据量91.2 Gb和约30×理论覆盖深度。不能支持：这是最终组装长度、每个位置的实测覆盖都相同，或理论覆盖等于完整参考覆盖率。"
+          },
+          {
+            "work_id": "work:10.1038/nbt.4060",
+            "quote": "De novo assembly of nanopore reads alone yielded a contiguous assembly (NG50 ∼3 Mb). We developed a protocol to generate ultra-long reads (N50 > 100 kb, read lengths up to 882 kb). Incorporating an additional 5× coverage of these ultra-long reads more than doubled the assembly contiguity (NG50 ∼6.4 Mb).",
+            "supports": "支持：组装NG50约3至约6.4 Mb、额外5×超长读段，以及读段N50大于100 kb和最高882 kb；可据近似值派生约3.4 Mb、终值约2.13倍及相对增幅约113%。不能支持：将近似派生值报成精确实验效应，把终值倍数当增幅，或混用读段N50和组装NG50。"
+          },
+          {
+            "work_id": "work:10.1038/nbt.4060",
+            "quote": "The final assembled genome was 2,867 million bases in size, covering 85.8% of the reference.",
+            "supports": "支持：最终组装规模及85.8%的参考覆盖比例；在相同参考分母下其补集为14.2%。不能支持：14.2%是碱基错误率、全部缺失都属于某一种基因组区域，或组装规模等于原始测序数据量。"
+          },
+          {
+            "work_id": "work:10.1038/nbt.4060",
+            "quote": "Assembly accuracy, after incorporating complementary short-read sequencing data, exceeded 99.8%.",
+            "supports": "支持：准确率严格超过99.8%，且这一结果带有纳入互补短读段数据的前提。不能支持：只用nanopore即达此准确率、准确率恰等于99.8%，或该百分比与85.8%参考覆盖率具有相同分母。"
+          },
+          {
+            "work_id": "work:10.1038/nature20098",
+            "quote": "Here we report the de novo assembly and haplotype phasing of the Korean individual AK1 (ref. 1) using single-molecule real-time sequencing, next-generation mapping, microfluidics-based linked reads, and bacterial artificial chromosome (BAC) sequencing approaches.",
+            "supports": "支持：近邻有明确的人类个体组装背景，但方法是SMRT及其他映射、linked reads、BAC组合，不能替代本案MinION超长读段增量实验。不能支持：近邻属于非人类样本，或其组装及分相研究没有价值。"
+          },
+          {
+            "work_id": "work:10.1038/nature20098",
+            "quote": "Single-molecule sequencing coupled with next-generation mapping generated a highly contiguous assembly, with a contig N50 size of 17.9 Mb and a scaffold N50 size of 44.8 Mb, resolving 8 chromosomal arms into single scaffolds.",
+            "supports": "支持：近邻的17.9 Mb和44.8 Mb分别是contig N50与scaffold N50，存在容易错配的定量指标。不能支持：把这些数值当成目标研究的NG50前后值，或据跨研究摘要给出两种路线的直接性能排名。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "astra-v3-08",
+      "slice": "multi_object_comparison",
+      "baseline_query": "For a review of multi-year liver-directed factor-VIII delivery in adults with haemophilia A, retrieve both early-phase clinical reports covering SPK-8011 and AAV5-hFVIII-SQ. For each vector, distinguish the treated cohort from follow-up subsets and extract the observation horizon, persistence of factor expression, bleeding or prophylaxis outcomes, and immune or other safety limitations. AAV5 delivery of factor IX for haemophilia B is not an eligible substitute. Compare the two reports without treating separate dose cohorts, follow-up periods or assays as a randomized head-to-head study, and state whether the abstracts justify ranking one vector as safer or more durable.",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "For a review of multi-year liver-directed factor-VIII delivery in adults with haemophilia A, retrieve both early-phase clinical reports covering SPK-8011 and AAV5-hFVIII-SQ. For each vector, distinguish the treated cohort from follow-up subsets and extract the observation horizon, persistence of factor expression, bleeding or prophylaxis outcomes, and immune or other safety limitations. AAV5 delivery of factor IX for haemophilia B is not an eligible substitute. Compare the two reports without treating separate dose cohorts, follow-up periods or assays as a randomized head-to-head study, and state whether the abstracts justify ranking one vector as safer or more durable."
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1056/nejmoa2104205",
+          "work:10.1056/nejmoa1908490"
+        ],
+        "background_ids": [
+          "work:10.1056/nejmoa2113708"
+        ],
+        "forbidden_ids": [
+          "work:10.1182/blood-2017-09-804419"
+        ],
+        "gold_note": "两个required均须覆盖，不能只找出其中一个。SPK-8011原始报告为18名血友病A男性的一至二期试验，中位安全观察36.6个月；两人因抗AAV衣壳细胞免疫反应丧失全部VIII因子表达，其余16人维持表达，其中12人随访超过两年。摘要报告年化出血率降低91.5%，对应原文annualized bleeding rate，不是VIII因子输注次数的变化，也不擅自添加treated限定；不能从前后中位出血率自行重算一个不同百分数冒充该报告的效应估计。结论的no major safety concerns不能抹掉免疫介导的表达丢失及摘要中的治疗相关不良事件。AAV5-hFVIII-SQ报告15名重度血友病A成人，最长三年；结果按剂量和观察期分层，七人三年时VIII因子表达中位20 IU/dL、六人两年时13 IU/dL。七人组的中位年化需治疗出血事件数（treated bleeding events）为0，六人组的中位年化出血事件率（bleeding events，原句没有treated限定）为0，不能抹平两者原文口径。七人组外源VIII因子年输注次数中位数从138.5降至0，六人组VIII因子年输注次数中位数从155.5降至0.5；这些次数不能专指预防性用药，也不等于出血次数。摘要结论另称这两个剂量组所有参与者均完全停止预防性VIII因子使用；这是独立于输注次数统计的结论，不与0.5次/年矛盾，也不能据此断言剩余输注的具体用途。两组观察期不能混并，中位数为0不等于每个人都无事件。摘要还报告三年时另两名较低剂量者表达低于1 IU/dL，不能概括为15人均获得相同持续表达。肝定向设计由work:10.1056/nejmoa2113708中同名AAV5-hFVIII-SQ载体的肝选择性启动子背景句补足；该记录为三期研究，不能将其受试者、随访、疗效或安全性结果移入早期15人报告，临床多年结果仍仅取两个required。两项核心试验各自的参与者、剂量分组、随访长度与检测语境不同，不构成随机直接比较，不足以给出跨载体安全性或持久性排名。AMT-060近邻明确是血友病B、IX因子，即使同为AAV5也不满足本案疾病和因子条件。剂量字符串照录原摘要，不自行恢复上标。所涉记录撤稿状态均为unknown，未作当前安全性、监管或出版社状态核验。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1056/nejmoa2104205",
+            "quote": "In this phase 1-2 trial, we infused an investigational adeno-associated viral (AAV) vector (SPK-8011) for hepatocyte expression of factor VIII in 18 men with hemophilia A.",
+            "supports": "支持：SPK-8011、肝细胞VIII因子表达、18名血友病A男性与早期试验身份。不能支持：这是与另一载体直接随机比较的试验，或人群已覆盖所有血友病亚型。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa2104205",
+            "quote": "The median safety observation period was 36.6 months (range, 5.5 to 50.3).",
+            "supports": "支持：该队列安全观察的中位数和范围。不能支持：所有18人均观察36.6个月或均超过两年，也不能等同另一试验的最长三年随访。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa2104205",
+            "quote": "Two participants lost all factor VIII expression because of an anti-AAV capsid cellular immune response that was not sensitive to immune suppression. In the remaining 16 participants, factor VIII expression was maintained; 12 of these participants were followed for more than 2 years",
+            "supports": "支持：免疫介导表达丢失、16人维持表达及其中12人超过两年随访，三个分母不可混用。不能支持：全部受试者都持续表达，或免疫抑制在每位受试者中都能预防表达丢失。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa2104205",
+            "quote": "The participants had a 91.5% reduction (95% CI, 88.8 to 94.1) in the annualized bleeding rate",
+            "supports": "支持：该摘要报告的annualized bleeding rate相对降低及其置信区间，原句未加treated限定。不能支持：将91.5%当作因子输注次数或预防用药的降低、相对另一载体的优势，或直接用两个中位数重算替代该估计。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa1908490",
+            "quote": "We report durable efficacy, long-term safety, and clinical and biologic results in 15 adults with severe hemophilia A (factor VIII level, ≤1 IU per deciliter) who had received a single infusion of AAV5-hFVIII-SQ at various dose levels. We evaluated the factor VIII level, annualized rate of bleeding events, use of factor VIII, safety, expression kinetics, and biologic markers of AAV transduction for up to 3 years.",
+            "supports": "支持：第二个必要报告的15人队列、疾病严重度、多剂量单次输注与最长三年观察。不能支持：所有人均获得三年随访，或剂量组之间已按随机比较证明优劣。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa1908490",
+            "quote": "Seven participants (who had received 6×1013 vg per kilogram) had a median factor VIII expression of 20 IU per deciliter; the median number of annualized treated bleeding events was 0, and the median use of exogenous factor VIII was reduced from 138.5 infusions to 0 infusions per year.",
+            "supports": "支持：同摘要三年结果段中七人组的VIII因子表达、年化需治疗出血事件数中位数为0，以及外源VIII因子年输注次数中位数138.5至0。不能支持：删除treated限定、把输注次数专指预防用药、把中位数为0说成每人均无事件，或自行修复原始剂量上标。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa1908490",
+            "quote": "Two years after infusion, six participants (who had received 4×1013 vg per kilogram) had a median factor VIII expression of 13 IU per deciliter; the median annualized rate of bleeding events was 0, and the median use of factor VIII was reduced from 155.5 infusions to 0.5 infusions per year.",
+            "supports": "支持：两年六人组的年化出血事件率中位数为0，原句没有treated限定，VIII因子年输注次数中位数155.5至0.5。不能支持：把0.5解释为预防性输注或出血事件数、把两年改为三年，或将其与七人组混为同一观察期；剂量字符串仅照录。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa1908490",
+            "quote": "No inhibitor development, thromboses, deaths, or persistent changes in liver-function tests were observed.",
+            "supports": "支持：这项报告在所述观察中未见所列事件。不能支持：没有任何不良事件、终身风险为零，或因此可判定比另一载体更安全。"
+          },
+          {
+            "work_id": "work:10.1182/blood-2017-09-804419",
+            "quote": "Gene therapy for hemophilia B aims to ameliorate bleeding risk and provide endogenous factor IX (FIX) activity/synthesis through a single treatment, eliminating the requirement for FIX concentrate. AMT-060 combines an adeno-associated virus-5 (AAV5) vector with a liver-specific promoter driving expression of a codon-optimized wild-type human FIX gene.",
+            "supports": "支持：易混近邻虽使用AAV5和肝特异启动子，但对应血友病B与IX因子，疾病和产物明确不符。不能支持：它可替代任一VIII因子报告，或不同血友病亚型之间可直接比较获益百分比。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa2113708",
+            "quote": "Valoctocogene roxaparvovec (AAV5-hFVIII-SQ) is an adeno-associated virus 5 (AAV5)-based gene-therapy vector containing a coagulation factor VIII complementary DNA driven by a liver-selective promoter.",
+            "supports": "支持：同名AAV5-hFVIII-SQ载体采用肝选择性启动子驱动VIII因子编码序列，补足肝定向设计的背景条件。不能支持：将这项三期研究的受试者、随访时间、疗效或安全性结果归入早期15人报告，也不能替代任一required目标。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa1908490",
+            "quote": "complete cessation of prophylactic factor VIII use in all participants who had received 4×1013 vg per kilogram or 6×1013 vg per kilogram of the gene therapy.",
+            "supports": "支持：摘要结论明确两个所述剂量组的所有参与者完全停止预防性VIII因子使用，证据独立于各组年输注次数中位数。不能支持：两组所有用途的因子输注次数都为零、剩余输注用途已知，或较低剂量的另两名受试者也满足同样结论；原剂量排版不修复。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "astra-v3-09",
+      "slice": "literature_role",
+      "baseline_query": "shotgun宏基因组学端到端综述；从采样到分析的研究路线概览；assembly-based与mapping-based profiling；高复杂度样本和与已测序基因组相似性有限的环境；识别综述与原始benchmark研究的文献角色；只用综述摘要支持方法范围与研究空白，不把它当成单一软件的实验结果。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "shotgun宏基因组学端到端综述",
+          "从采样到分析的研究路线概览",
+          "assembly-based与mapping-based profiling",
+          "高复杂度样本和与已测序基因组相似性有限的环境",
+          "识别综述与原始benchmark研究的文献角色",
+          "只用综述摘要支持方法范围与研究空白，不把它当成单一软件的实验结果"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1038/nbt.3935"
+        ],
+        "background_ids": [],
+        "forbidden_ids": [
+          "work:10.1038/nmeth.4458"
+        ],
+        "gold_note": "核心记录是Quince等的综述：其pub_types同时标为Review和Journal Article，摘要从微生物群落、shotgun测序、assembly-based与mapping-based profiling的挑战和应用前景展开，属于方法领域的综合性角色，不是某个软件在一个数据集上的原始benchmark。CAMI记录是research-article，摘要明确报告挑战组织的benchmark及软件在不同分类层级和相关菌株下的表现，因此是容易混淆但角色不同的原始评估记录。不能把综述中提出的需求、方法概览或应用前景改写成该综述亲自产生的样本性能，也不能把CAMI的具体数字归给综述。结论只限题录与摘要；没有据此核验全文、引用网络或当前发表状态。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1038/nbt.3935",
+            "quote": "Diverse microbial communities of bacteria, archaea, viruses and single-celled eukaryotes have crucial roles in the environment and in human health.",
+            "supports": "支持：综述摘要的主题范围覆盖多类微生物群落及环境和人类健康。不能支持：该记录对某一种群落或某一疾病给出了新的实验数据。"
+          },
+          {
+            "work_id": "work:10.1038/nbt.3935",
+            "quote": "High-throughput sequencing technologies and a suite of computational pipelines have been combined into shotgun metagenomics methods that have transformed microbiology.",
+            "supports": "支持：记录是在方法领域概览高通量测序与计算流程如何构成shotgun宏基因组学。不能支持：把综述本身当作一个新建的计算pipeline或单一工具的性能报告。"
+          },
+          {
+            "work_id": "work:10.1038/nbt.3935",
+            "quote": "Still, computational approaches to overcome the challenges that affect both assembly-based and mapping-based metagenomic profiling, particularly of high-complexity samples or environments containing organisms with limited similarity to sequenced genomes, are needed.",
+            "supports": "支持：摘要明确提出assembly-based和mapping-based profiling在高复杂度样本及低参考相似性环境中的方法需求。不能支持：该句已经证明某个软件解决了这些挑战，或给出可比较的准确率。"
+          },
+          {
+            "work_id": "work:10.1038/nmeth.4458",
+            "quote": "The Critical Assessment of Metagenome Interpretation (CAMI) challenge has engaged the global developer community to benchmark their programs on highly complex and realistic data sets",
+            "supports": "支持：CAMI近邻的角色是组织程序benchmark的原始评估研究，而不是本案所求的综合综述。不能支持：仅凭benchmark身份就断言所有程序在所有问题上都无效。"
+          },
+          {
+            "work_id": "work:10.1038/nmeth.4458",
+            "quote": "Taxonomic profiling and binning programs were proficient at high taxonomic ranks, with a notable performance decrease below family level.",
+            "supports": "支持：近邻摘要报告了具体分类层级的性能观察，说明其与综述的证据角色不同。不能支持：把该观察概括成所有宏基因组软件的普遍规律，或回填到综述记录中。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "astra-v3-10",
+      "slice": "scope_causality",
+      "baseline_query": "我想评估一种针对原发性高草酸尿症1型的RNA干预候选物：要求是靶向乙醛酸代谢中的底物供应，并在小鼠、大鼠和非人灵长类模型中报告药效；请区分单次给药和多次给药的尿草酸结果，判断摘要能否支持进入临床试验的理由。不要把这项多物种临床前研究误认成随机、双盲的人体三期疗效试验，也不要把模型中的草酸下降直接说成患者肾衰竭已经被治疗。",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "我想评估一种针对原发性高草酸尿症1型的RNA干预候选物：要求是靶向乙醛酸代谢中的底物供应，并在小鼠、大鼠和非人灵长类模型中报告药效；请区分单次给药和多次给药的尿草酸结果，判断摘要能否支持进入临床试验的理由。不要把这项多物种临床前研究误认成随机、双盲的人体三期疗效试验，也不要把模型中的草酸下降直接说成患者肾衰竭已经被治疗。"
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1681/asn.2016030338"
+        ],
+        "background_ids": [],
+        "forbidden_ids": [
+          "work:10.1056/nejmoa2021712"
+        ],
+        "gold_note": "核心记录是ALN-GO1的临床前多物种研究：摘要说明其靶向glycolate oxidase以耗竭草酸合成底物，并在野生型小鼠、大鼠和非人灵长类中观察mRNA沉默、血清或尿glycolate变化，在PH1遗传小鼠和高草酸尿大鼠模型中报告尿草酸下降。单次给药的遗传PH1小鼠最高下降为50%，大鼠多次给药最高为98%；不能把两种模型、给药次数或终点混成一个人体效应值。摘要结尾只说这些结果为临床试验提供理由，研究角色和证据范围仍是临床前模型，不能推出患者肾功能获益或因果治愈。Lumasiran记录则是6岁及以上PH1患者的双盲三期随机安慰剂试验，虽靶点同为glycolate oxidase，但它是人体临床证据，不能作为本案临床前研究的替代答案。所有结论仅依据摘要与元数据，不把unknown撤稿状态解释为撤稿或已排除撤稿。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1681/asn.2016030338",
+            "quote": "In this report, we discuss the development of ALN-GO1, an investigational RNA interference (RNAi) therapeutic targeting glycolate oxidase, to deplete the substrate for oxalate synthesis.",
+            "supports": "支持：候选物为RNAi，靶向glycolate oxidase并通过耗竭草酸合成底物发挥作用。不能支持：它已经在患者中获批或已证明能逆转肾衰竭。"
+          },
+          {
+            "work_id": "work:10.1681/asn.2016030338",
+            "quote": "Subcutaneous administration of ALN-GO1 resulted in potent, dose-dependent, and durable silencing of the mRNA encoding glycolate oxidase and increased serum glycolate concentrations in wild-type mice, rats, and nonhuman primates.",
+            "supports": "支持：给药后mRNA沉默具有剂量依赖和持续性，并且涉及野生型小鼠、大鼠和非人灵长类。不能支持：这些动物药效等于患者剂量反应、长期安全性或人体临床获益。"
+          },
+          {
+            "work_id": "work:10.1681/asn.2016030338",
+            "quote": "Notably, ALN-GO1 reduced urinary oxalate concentration up to 50% after a single dose in the genetic mouse model of PH1, and up to 98% after multiple doses in a rat model of hyperoxaluria.",
+            "supports": "支持：单次给药的小鼠模型最高50%、多次给药的大鼠模型最高98%，以及两个数字的模型和给药次数边界。不能支持：把98%外推到人体，或将两个模型结果合并成同一个临床试验终点。"
+          },
+          {
+            "work_id": "work:10.1681/asn.2016030338",
+            "quote": "These data demonstrate the ability of ALN-GO1 to reduce oxalate production in preclinical models of PH1 across multiple species and provide a clear rationale for clinical trials with this compound.",
+            "supports": "支持：作者将证据定位为多物种PH1临床前模型，并认为其支持开展临床试验。不能支持：临床试验已经成功、患者获益已经确立，或动物结果直接证明因果治疗效果。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa2021712",
+            "quote": "In this double-blind, phase 3 trial, we randomly assigned (in a 2:1 ratio) patients with PH1 who were 6 years of age or older to receive subcutaneous lumasiran or placebo for 6 months",
+            "supports": "支持：易混近邻是6岁以上患者的双盲三期随机试验，与本案的动物临床前角色不同。不能支持：把lumasiran的临床设计或结果归给ALN-GO1的动物研究。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "astra-v3-11",
+      "slice": "semantic_ood",
+      "baseline_query": "I need a structural-variant caller for low-depth Oxford Nanopore whole-genome data, not a caller whose central output is phased diploid single-nucleotide variants. The method should be evaluated on low-depth simulated data and then checked in patient samples, including the possibility of finding ordinary alternative sequences or alleles in healthy people. Find the original method paper, explain which variant class and evidence boundary make it different from the SNV-phasing near-neighbor, and do not turn the reported validation into a claim of universal clinical diagnostic accuracy.",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "I need a structural-variant caller for low-depth Oxford Nanopore whole-genome data, not a caller whose central output is phased diploid single-nucleotide variants. The method should be evaluated on low-depth simulated data and then checked in patient samples, including the possibility of finding ordinary alternative sequences or alleles in healthy people. Find the original method paper, explain which variant class and evidence boundary make it different from the SNV-phasing near-neighbor, and do not turn the reported validation into a claim of universal clinical diagnostic accuracy."
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1186/s13059-020-01968-7"
+        ],
+        "background_ids": [],
+        "forbidden_ids": [
+          "work:10.1038/s41467-019-12493-y"
+        ],
+        "gold_note": "核心为NanoVar方法论文：目标是低深度（8X）Oxford Nanopore全基因组数据上的结构变异调用，摘要说其在低深度模拟数据中与现有工具比较，并在患者样本中验证所表征的结构变异，同时发现健康个体的正常替代序列或等位基因。Longshot是容易误选的长读长近邻，但其摘要明确针对二倍体基因组中的单核苷酸变异检测与分相；长读长平台相同不等于变异类别和输出任务相同。不能把NanoVar摘要中的患者样本验证改写成普遍临床诊断准确率、对所有结构变异均适用，或把Longshot的SNV结果当成结构变异证据。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1186/s13059-020-01968-7",
+            "quote": "Here, we present NanoVar, an optimized structural variant caller utilizing low-depth (8X) whole-genome sequencing data generated by Oxford Nanopore Technologies.",
+            "supports": "支持：核心方法是NanoVar，面向低深度8X Oxford Nanopore全基因组数据的结构变异调用。不能支持：它是单核苷酸变异分相器，或已在所有测序深度和平台上验证。"
+          },
+          {
+            "work_id": "work:10.1186/s13059-020-01968-7",
+            "quote": "NanoVar exhibits higher structural variant calling accuracy when benchmarked against current tools using low-depth simulated datasets.",
+            "supports": "支持：摘要报告低深度模拟数据上的结构变异调用准确性比较。不能支持：从该比较推导真实临床人群中的普遍准确率或所有工具、所有数据集上的排名。"
+          },
+          {
+            "work_id": "work:10.1186/s13059-020-01968-7",
+            "quote": "In patient samples, we successfully validate structural variants characterized by NanoVar and uncover normal alternative sequences or alleles which are present in healthy individuals.",
+            "supports": "支持：患者样本中的结构变异验证，以及健康个体正常替代序列或等位基因这一结果范围。不能支持：诊断了某种疾病、证明所有候选变异有临床意义，或存在未经摘要支持的前瞻性临床结局。"
+          },
+          {
+            "work_id": "work:10.1038/s41467-019-12493-y",
+            "quote": "We introduce a variant calling method, Longshot, which leverages the haplotype information present in SMS reads to accurately detect and phase single-nucleotide variants (SNVs) in diploid genomes.",
+            "supports": "支持：Longshot近邻的核心输出是二倍体基因组单核苷酸变异检测和分相，与本案结构变异调用条件不同。不能支持：因任务不同就断言Longshot在其SNV问题上无效。"
+          },
+          {
+            "work_id": "work:10.1038/s41467-019-12493-y",
+            "quote": "We demonstrate that Longshot achieves very high accuracy for SNV detection using whole-genome Pacific Biosciences data",
+            "supports": "支持：近邻的精度证据是全基因组PacBio数据上的SNV检测，进一步说明不能将其结果转成NanoVar的结构变异结论。不能支持：比较两个摘要而声称某一方法在所有长读长任务上更准确。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "astra-v3-12",
+      "slice": "quantitative_methods",
+      "baseline_query": "深度变分自编码器用于宏基因组binning；整合sequence coabundance与k-mer distribution后再聚类；分别核对模拟数据和真实数据中near-complete genome的相对提升；报告可分离的菌株ANI上限；核对两种Bacteroides的样本特异基因组数量、样本总量和NC bins数量；区分binning工具与PacBio HiFi宏基因组组装器；不要把相对百分比当成绝对新增基因组数，也不要把地理分布观察写成因果结论。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "深度变分自编码器用于宏基因组binning",
+          "整合sequence coabundance与k-mer distribution后再聚类",
+          "分别核对模拟数据和真实数据中near-complete genome的相对提升",
+          "报告可分离的菌株ANI上限",
+          "核对两种Bacteroides的样本特异基因组数量、样本总量和NC bins数量",
+          "区分binning工具与PacBio HiFi宏基因组组装器",
+          "不要把相对百分比当成绝对新增基因组数",
+          "也不要把地理分布观察写成因果结论"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1038/s41587-020-00777-4"
+        ],
+        "background_ids": [],
+        "forbidden_ids": [
+          "work:10.1038/s41587-023-01983-6"
+        ],
+        "gold_note": "核心为VAMB的宏基因组binning方法：深度变分自编码器在聚类前编码sequence coabundance和k-mer distribution，并将两类信息整合。摘要给出的相对结果是模拟数据中多29–98%、真实数据中多45%的near-complete genomes；这是相对现有binner的提升范围，不是绝对新增基因组数量。摘要还报告可分离到99.5% ANI的近缘菌株、从1000份人类肠道微生物组样本中分别重建255和91个Bacteroides样本特异NC genomes，并用2606个NC bins观察地理分布。不得把这些分母、对象层级或相对百分比混写，也不能把地理分布关联解释为微生物导致地理差异。metaMDBG是PacBio HiFi宏基因组组装器，摘要说复杂群落中最多得到两倍高质量环化原核MAG，任务是assembly而不是VAMB的binning；可作近邻但不满足核心条件。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1038/s41587-020-00777-4",
+            "quote": "Here we develop variational autoencoders for metagenomic binning (VAMB), a program that uses deep variational autoencoders to encode sequence coabundance and k-mer distribution information before clustering.",
+            "supports": "支持：核心工具是面向宏基因组binning的深度变分自编码器，输入信息为序列共丰度与k-mer分布并在聚类前编码。不能支持：把它归类为PacBio读段组装器或只使用单一类型特征。"
+          },
+          {
+            "work_id": "work:10.1038/s41587-020-00777-4",
+            "quote": "VAMB outperforms existing state-of-the-art binners, reconstructing 29-98% and 45% more near-complete (NC) genomes on simulated and real data, respectively.",
+            "supports": "支持：模拟和真实数据对应的29-98%与45%相对提升，以及比较对象是binners。不能支持：这些百分比是绝对新增基因组数、适用于所有数据集，或可以从摘要推回基线总数。"
+          },
+          {
+            "work_id": "work:10.1038/s41587-020-00777-4",
+            "quote": "VAMB is able to separate closely related strains up to 99.5% average nucleotide identity (ANI), and reconstructed 255 and 91 NC Bacteroides vulgatus and Bacteroides dorei sample-specific genomes as two distinct clusters from a dataset of 1,000 human gut microbiome samples.",
+            "supports": "支持：99.5% ANI的菌株分离上限、两种Bacteroides的255和91个样本特异NC genomes，以及1000份人类肠道微生物组样本这一分母。不能支持：每个样本都含有这些基因组、ANI是检测准确率，或两种菌的数量是总体患病率。"
+          },
+          {
+            "work_id": "work:10.1038/s41587-020-00777-4",
+            "quote": "We use 2,606 NC bins from this dataset to show that species of the human gut microbiome have different geographical distribution patterns.",
+            "supports": "支持：地理分布观察使用2606个NC bins，结论是不同分布模式。不能支持：地理因素造成菌群差异的因果关系，或这些bins代表全部人类肠道微生物组。"
+          },
+          {
+            "work_id": "work:10.1038/s41587-023-01983-6",
+            "quote": "We introduce metaMDBG, a metagenomics assembler for PacBio HiFi reads.",
+            "supports": "支持：易混近邻是PacBio HiFi宏基因组组装器，而非本案所求的VAMB binning工具。不能支持：因其同属宏基因组软件就可替代VAMB的聚类和binner指标。"
+          },
+          {
+            "work_id": "work:10.1038/s41587-023-01983-6",
+            "quote": "For complex communities, we obtained up to twice as many high-quality circularized prokaryotic metagenome-assembled genomes as existing methods",
+            "supports": "支持：近邻报告的是复杂群落中高质量环化原核MAG的组装数量比较，任务和结果对象不同。不能支持：把最多两倍的assembly结果与VAMB的29-98%或45% binner提升直接换算或横向排名。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "astra-v3-13",
+      "slice": "semantic_ood",
+      "baseline_query": "我们想改良水稻株型，却不想用增加每穗籽粒数来交换分蘖数下降。请寻找通过分段缺失筛选定位一个局部顺式调控片段、删除后能够缓解这项性状取舍的原始研究，并说明哪个转录因子通过该片段调控穗与根中的基因表达。只报道多个产量基因被编辑、或不同突变体分蘖有增有减的论文不能替代这条机制证据。请区分摘要直接报告的单株产量收益与尚未给出的多地区田间推广、稳定增产幅度等信息。",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "我们想改良水稻株型，却不想用增加每穗籽粒数来交换分蘖数下降。请寻找通过分段缺失筛选定位一个局部顺式调控片段、删除后能够缓解这项性状取舍的原始研究，并说明哪个转录因子通过该片段调控穗与根中的基因表达。只报道多个产量基因被编辑、或不同突变体分蘖有增有减的论文不能替代这条机制证据。请区分摘要直接报告的单株产量收益与尚未给出的多地区田间推广、稳定增产幅度等信息。"
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1038/s41587-022-01281-7"
+        ],
+        "background_ids": [],
+        "forbidden_ids": [
+          "work:10.3389/fpls.2016.00377"
+        ],
+        "gold_note": "核心为IPA1顺式调控片段研究：CRISPR-Cas9平铺缺失筛选定位54 bp区域，删除后缓解每穗籽粒数和分蘖数之间的取舍，摘要报告单株产量显著提高；被删除片段是An-1抑制穗与根中IPA1表达的靶位点。不能从该摘要补出增产百分比、跨地区田间重复、对所有水稻品种都有效或无任何代价。近邻同样使用CRISPR/Cas9并涉及IPA1，但摘要解释的是OsmiR156靶区改变对应的相反分蘖表型，以及多产量基因编辑；不能把它当作已经提供An-1结合片段删除与取舍解除这条证据链的核心。输入以科研需求改写，不提供目标基因名、片段长度、DOI或长标题。判断限于给定摘要和元数据，unknown不代表撤稿或已排除撤稿。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1038/s41587-022-01281-7",
+            "quote": "IPA1 (Ideal Plant Architecture 1), a typical pleiotropic gene in rice that increases grains per panicle but reduces tillers.",
+            "supports": "支持：研究针对IPA1多效性带来的每穗籽粒数与分蘖数取舍。不能支持：所有调控IPA1的干预都必然同幅度改变两个性状，或已量化全部育种代价。"
+          },
+          {
+            "work_id": "work:10.1038/s41587-022-01281-7",
+            "quote": "In this study, we identified a 54-base pair cis-regulatory region in IPA1 via a tiling-deletion-based CRISPR-Cas9 screen that, when deleted, resolves the tradeoff between grains per panicle and tiller number, leading to substantially enhanced grain yield per plant.",
+            "supports": "支持：54 bp顺式调控区域、平铺缺失筛选、删除后的取舍解除与单株产量提升构成直接核心证据。不能支持：自行给出增产百分比、地区试验数量或所有品种中的稳定推广效果。"
+          },
+          {
+            "work_id": "work:10.1038/s41587-022-01281-7",
+            "quote": "Mechanistic studies revealed that the deleted fragment is a target site for the transcription factor An-1 to repress IPA1 expression in panicles and roots.",
+            "supports": "支持：被删除片段与An-1对穗和根中IPA1表达的抑制有关。不能支持：在摘要未报告的组织中有相同作用，或已经排除所有其他调控机制。"
+          },
+          {
+            "work_id": "work:10.3389/fpls.2016.00377",
+            "quote": "The ipa1 mutants showed two contrasting phenotypes, having either fewer tillers or more tillers, depending on the changes induced in the OsmiR156 target region.",
+            "supports": "支持：近邻将不同分蘖表型归于OsmiR156靶区改变，与本案要求的An-1顺式片段删除证据不同。不能支持：把相反分蘖表型自动解释为单个编辑同时解除籽粒数和分蘖数的取舍，或认定这篇相关研究普遍无价值。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "astra-v3-14",
+      "slice": "multi_object_comparison",
+      "baseline_query": "For planning genome reconstruction from complex microbiomes, find two original method reports with different read strategies. The first should combine nanopore long-read assembly with short-read correction and include both a synthetic bacterial mixture and human stool samples. The second should assemble PacBio HiFi metagenomes using minimizer-space de Bruijn graphs, with explicit handling of coverage variation and strain complexity. Compare their input requirements and the reported evidence for closed or circularized genomes. Distinguish contiguity from nucleotide accuracy, keep each paper's counts and relative gains separate, and do not replace either assembler with a tool for phasing single-nucleotide variants in diploid genomes.",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "For planning genome reconstruction from complex microbiomes, find two original method reports with different read strategies. The first should combine nanopore long-read assembly with short-read correction and include both a synthetic bacterial mixture and human stool samples. The second should assemble PacBio HiFi metagenomes using minimizer-space de Bruijn graphs, with explicit handling of coverage variation and strain complexity. Compare their input requirements and the reported evidence for closed or circularized genomes. Distinguish contiguity from nucleotide accuracy, keep each paper's counts and relative gains separate, and do not replace either assembler with a tool for phasing single-nucleotide variants in diploid genomes."
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1038/s41587-020-0422-6",
+          "work:10.1038/s41587-023-01983-6"
+        ],
+        "background_ids": [],
+        "forbidden_ids": [
+          "work:10.1038/s41467-019-12493-y"
+        ],
+        "gold_note": "本案有两个互补子需求，两个required分别覆盖，必须同时检出而不能要求某一篇单独满足两条路线。Lathe结合nanopore长读段组装和短读段纠错：12种细菌合成混合物中7个基因组为单contig、另3个至多4个contigs；另在人类13份粪便样本中组装20个环状基因组。这些数值属于两个不同数据集合，不能合并为每样本20个，也不能声称12种都闭合；摘要还明确较替代路线核苷酸准确性下降，连续性改善不等于碱基准确率也改善。metaMDBG是PacBio HiFi组装器，以minimizer空间的de Bruijn图、迭代组装和丰度过滤处理覆盖变化及菌株复杂性；摘要报告复杂群落中高质量环化原核MAG数量最多达现有方法的两倍，并改善病毒和质粒恢复。该相对数值不能直接与Lathe的20个环状基因组比较，摘要也没有给出两工具在同一数据、同一预算下的直接排名。Longshot的摘要输出是二倍体SNV检测与分相，不是任一所需的宏基因组闭合组装路线。metaMDBG曾在第三批充当另一案的近邻，但不是此前required；本案不重复此前的VAMB binning问题。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1038/s41587-020-0422-6",
+            "quote": "We applied nanopore sequencing and our workflow, named Lathe, which incorporates long-read assembly and short-read error correction, to assemble closed bacterial genomes from complex microbiomes.",
+            "supports": "支持：第一条路线的nanopore长读段组装、短读段纠错与复杂微生物组闭合细菌基因组用途。不能支持：仅长读段而无短读段纠错的输入假设，或所有样本均达到无误差闭合。"
+          },
+          {
+            "work_id": "work:10.1038/s41587-020-0422-6",
+            "quote": "We validated our approach with a synthetic mixture of 12 bacterial species. Seven genomes were completely assembled into single contigs and three genomes were assembled into four or fewer contigs.",
+            "supports": "支持：合成混合物12种细菌、7个单contig及另3个至多4个contigs的数量关系。不能支持：12种全部闭合，或把合成混合物结果当作人类粪便队列结果。"
+          },
+          {
+            "work_id": "work:10.1038/s41587-020-0422-6",
+            "quote": "Next, we used our methods to analyze metagenomics data from 13 human stool samples. We assembled 20 circular genomes, including genomes of Prevotella copri and a candidate Cibiobacter sp.",
+            "supports": "支持：13份人类粪便样本合计组装20个环状基因组及所述例子。不能支持：每份样本均有20个、20个代表全部群落成员，或这些基因组均有相同完整性指标。"
+          },
+          {
+            "work_id": "work:10.1038/s41587-020-0422-6",
+            "quote": "Despite the decreased nucleotide accuracy compared with alternative sequencing and assembly approaches, our methods improved assembly contiguity",
+            "supports": "支持：摘要明确区分核苷酸准确性下降与组装连续性提升。不能支持：把连续性获益当作碱基准确率获益，或无条件宣布该路线优于全部替代方法。"
+          },
+          {
+            "work_id": "work:10.1038/s41587-023-01983-6",
+            "quote": "We introduce metaMDBG, a metagenomics assembler for PacBio HiFi reads. MetaMDBG combines a de Bruijn graph assembly in a minimizer space with an iterative assembly over sequences of minimizers to address variations in genome coverage depth and an abundance-based filtering strategy to simplify strain complexity.",
+            "supports": "支持：第二条路线的PacBio HiFi输入、minimizer空间图组装、迭代过程与丰度过滤。不能支持：这是nanopore加短读段纠错流程，或已证明各种菌株复杂性都能完全解析。"
+          },
+          {
+            "work_id": "work:10.1038/s41587-023-01983-6",
+            "quote": "For complex communities, we obtained up to twice as many high-quality circularized prokaryotic metagenome-assembled genomes as existing methods and had better recovery of viruses and plasmids.",
+            "supports": "支持：该摘要报告复杂群落中最多两倍的高质量环化原核MAG数量及病毒、质粒恢复改善。不能支持：所有样本都翻倍、绝对数量已知，或这是相对Lathe在同一实验中的直接比较。"
+          },
+          {
+            "work_id": "work:10.1038/s41467-019-12493-y",
+            "quote": "We introduce a variant calling method, Longshot, which leverages the haplotype information present in SMS reads to accurately detect and phase single-nucleotide variants (SNVs) in diploid genomes.",
+            "supports": "支持：近邻明确为二倍体SNV检测和分相，输出任务不同于本案两个微生物组组装子需求。不能支持：因为也使用长读段就把其结果当成闭合MAG证据，或否定其变异检测价值。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "astra-v3-15",
+      "slice": "evidence_gap",
+      "baseline_query": "lumasiran；原发性高草酸尿症1型；随机安慰剂对照原始人体试验；主要终点必须是开始透析或接受肾移植的时间或发生率；提取两组该主要临床终点的比较结果；尿草酸或血浆草酸变化不能替代事件终点；仅判断给定语料能否提供所需直接证据，若不能请明确缺项并解释相关近邻。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "lumasiran",
+          "原发性高草酸尿症1型",
+          "随机安慰剂对照原始人体试验",
+          "主要终点必须是开始透析或接受肾移植的时间或发生率",
+          "提取两组该主要临床终点的比较结果",
+          "尿草酸或血浆草酸变化不能替代事件终点",
+          "仅判断给定语料能否提供所需直接证据，若不能请明确缺项并解释相关近邻"
+        ]
+      },
+      "expect": {
+        "required_ids": [],
+        "background_ids": [
+          "work:10.1124/jpet.122.001234"
+        ],
+        "forbidden_ids": [
+          "work:10.1056/nejmoa2021712"
+        ],
+        "gold_note": "库内证据缺口是随机人体试验的主要终点与结果类型，不是药物、疾病或临床研究完全缺失。最接近的lumasiran三期试验确有39名随机化患者、6个月安慰剂比较，但摘要明确其主要终点为24小时尿草酸排泄百分比变化；所列次要终点仍为草酸指标。它不满足本案必须以透析或肾移植事件为主要终点并报告组间比较的条件，不能将-53.5个百分点的尿草酸变化差改称透析风险下降，也不能从背景所说肾衰竭病理机制推导事件获益。RNAi综述仅提供药物和技术背景，批准描述也不等于目标事件终点证据。对全库11002条标题和摘要用lumasiran、ALN-GO1、ILLUMINATE A/B/C、PH1、hyperoxalur、HAO1及其连接符变体筛查，得到6条候选；核读后为4篇综述、1篇动物研究、1篇上述人体试验，未发现满足必要事件终点的记录。核查未因排除名单预先删除候选，空required不是排除造成的假缺口；本案只标注允许使用的近邻。结果段存在(PConclusions拼接，未补写缺失统计量。结论只能是给定题录摘要未提供所需直接证据，不能断言现实世界没有该研究、药物没有肾脏获益或原文绝不含其他结局。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1056/nejmoa2021712",
+            "quote": "In this double-blind, phase 3 trial, we randomly assigned (in a 2:1 ratio) patients with PH1 who were 6 years of age or older to receive subcutaneous lumasiran or placebo for 6 months",
+            "supports": "支持：近邻确实具有目标药物、PH1患者、随机安慰剂对照与人体三期设计，因此缺口不在这些条件。不能支持：主要终点是肾替代治疗事件、已获得长期事件比较，或任何未报告年龄组的结果。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa2021712",
+            "quote": "The primary end point was the percent change in 24-hour urinary oxalate excretion from baseline to month 6 (mean percent change across months 3 through 6).",
+            "supports": "支持：摘要明确主要终点是尿草酸变化，与本案透析或肾移植事件主要终点不符。不能支持：用生化指标的变化替代透析发生率、移植风险或到事件时间。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa2021712",
+            "quote": "Secondary end points included the percent change in the plasma oxalate level from baseline to month 6 (mean percent change across months 3 through 6) and the percentage of patients with 24-hour urinary oxalate excretion no higher than 1.5 times the upper limit of the normal range at month 6.",
+            "supports": "支持：已列出的次要终点也属于血浆或尿草酸指标，不能补足所需的主要临床事件终点。不能支持：原始全文绝不分析其他结局，或草酸指标没有任何生物学意义。"
+          },
+          {
+            "work_id": "work:10.1124/jpet.122.001234",
+            "quote": "In this review, we provide an examination of the mechanisms of action of endogenous miRNAs and exogenous siRNAs, the physiologic and pharmacokinetic barriers to therapeutic RNA delivery, and a summary of the chemical modifications and delivery platforms in use.",
+            "supports": "支持：背景文献是机制、递送与修饰的综述，不是本案所求的原始随机临床终点报告。不能支持：把综述中的机制或技术前景当作透析或移植事件的试验结果。"
+          },
+          {
+            "work_id": "work:10.1124/jpet.122.001234",
+            "quote": "We overview the pharmacology of the four FDA-approved siRNA medications (patisiran, givosiran, lumasiran, and inclisiran) as well as five siRNAs and several miRNA-based therapeutics currently in clinical trials.",
+            "supports": "支持：综述涉及lumasiran药理背景，说明它与检索主题相关。不能支持：由摘要中的批准或在研状态推出目标事件终点已经被证明，或将此历史表述作为当前监管核验。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "astra-v3-16",
+      "slice": "evidence_gap",
+      "baseline_query": "A hospital is considering replacing its usual PCR-based pathway for suspected COVID-19 with rapid point-of-care CRISPR testing. Find a primary human randomized comparison assigning patients or clinical sites to these diagnostic strategies and reporting a between-group mortality outcome. Faster assay readout, analytical sensitivity, or agreement on stored samples alone is not sufficient. Use only the supplied corpus: if it cannot support that clinical-outcome claim, state the missing design and endpoint evidence and explain what the closest diagnostic papers actually establish, without claiming that no such research exists elsewhere.",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "A hospital is considering replacing its usual PCR-based pathway for suspected COVID-19 with rapid point-of-care CRISPR testing. Find a primary human randomized comparison assigning patients or clinical sites to these diagnostic strategies and reporting a between-group mortality outcome. Faster assay readout, analytical sensitivity, or agreement on stored samples alone is not sufficient. Use only the supplied corpus: if it cannot support that clinical-outcome claim, state the missing design and endpoint evidence and explain what the closest diagnostic papers actually establish, without claiming that no such research exists elsewhere."
+      },
+      "expect": {
+        "required_ids": [],
+        "background_ids": [
+          "work:10.1016/j.cell.2020.12.001",
+          "work:10.3389/fmicb.2022.1070940"
+        ],
+        "forbidden_ids": [],
+        "gold_note": "库内缺少的是将患者或临床机构随机分配到CRISPR与常规PCR诊疗路径、再报告组间死亡结局的原始证据，不是CRISPR检测方法或临床样本数据完全不存在。Fozouni等报告免扩增Cas13a检测、手机显微镜读出与预提取阳性样本RNA的检测性能；CALIBURN-v2报告提取RNA上的25分钟诊断、便携设备和云端数据管理，以及野生型/变异株检测敏感度。这些都是相关技术近邻，仅作background，均不能满足随机诊疗策略与死亡结局这组必要条件。临床样本验证、试剂反应时间短和高敏感度不等于临床结局改善，也不能把提取后测量时间当作完整就诊到结果时间。全库标题摘要以CRISPR及Cas9/Cas12/Cas13/Cas3、SHERLOCK、DETECTR、CARMEN、clustered regularly等变体与SARS-CoV-2/COVID-19/coronavirus交集筛查得到34条候选，逐条核读摘要；未见符合随机分配的描述或随机对照pub_types，更未见所需的策略间死亡比较。该筛查未预先剔除禁用目标，因此缺口不是人为排除造成；没有把关键词零命中单独当成科学不存在证明。只可回答给定语料摘要未提供所需证据，不能声称现实世界没有试验、CRISPR不能改善临床结局，或这些近邻没有诊断研究价值。所有标注记录retraction_status为unknown，未据此作正反判断。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1016/j.cell.2020.12.001",
+            "quote": "Here, we report the development of an amplification-free CRISPR-Cas13a assay for direct detection of SARS-CoV-2 from nasal swab RNA that can be read with a mobile phone microscope.",
+            "supports": "支持：相关近邻建立Cas13a病毒检测与手机读出技术，符合快速检测主题。不能支持：患者或机构已随机分配诊疗路径，或已经测得策略间死亡率差异。"
+          },
+          {
+            "work_id": "work:10.1016/j.cell.2020.12.001",
+            "quote": "The assay achieved ∼100 copies/μL sensitivity in under 30 min of measurement time and accurately detected pre-extracted RNA from a set of positive clinical samples in under 5 min.",
+            "supports": "支持：检测限、测量时间以及预提取阳性临床样本RNA的检测结果，说明已具备的证据层级。不能支持：小于五分钟是完整就诊流程耗时、死亡风险已降低，或该样本验证等同随机临床结局试验。"
+          },
+          {
+            "work_id": "work:10.3389/fmicb.2022.1070940",
+            "quote": "This platform, which was referred to as CALIBURN-v2, could complete the diagnosis on extracted RNA samples within 25 min in a closed-lid reaction mode and had 100-fold increase in detection sensitivity in comparison with previous platforms.",
+            "supports": "支持：另一近邻的时间与敏感性指标基于提取RNA样本的检测平台比较。不能支持：这是随机分配医院诊疗策略的设计，或一百倍检测敏感性提升对应一百倍临床生存获益。"
+          },
+          {
+            "work_id": "work:10.3389/fmicb.2022.1070940",
+            "quote": "It was found that IoMT-enabled CALIBURN-v2 could achieve 95.56% (172 out of 180) sensitivity for SARS-CoV-2 wild type and 94.38% (84 out of 89) overall sensitivity for SARS-CoV-2 variants including Delta and Omicron strains.",
+            "supports": "支持：记录报告野生型与变异株检测敏感度及各自样本分母。不能支持：把两组病毒样本当作随机诊疗组、将检测敏感度当作死亡率降低，或补写未提供的死亡事件数。"
+          }
+        ]
+      }
+    }
+  ]
+}

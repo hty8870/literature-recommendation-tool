@@ -1,0 +1,557 @@
+{
+  "suite_id": "astra-independent-abstract-v2",
+  "corpus_path": "data/runtime/quality-corpus/large-corpus.json",
+  "max_retrieval_rounds": 3,
+  "repetitions": 3,
+  "stability_case_ids": ["exact_helios_b", "ood_kidney_cell_origin", "zh_pet_recycling", "scope_metformin_microbiome"],
+  "tuning_case_ids": [],
+  "development_case_ids": [],
+  "tasks": [
+    {
+      "case_id": "exact_helios_b",
+      "slice": "exact_entity",
+      "baseline_query": "Find the HELIOS-B study of vutrisiran for ATTR cardiomyopathy. I need the human trial with blinded, concurrent placebo allocation and its primary clinical endpoint, not the polyneuropathy study that used an external placebo group. Explain that design distinction when recommending the paper.",
+      "request": {
+        "input_type": "keywords",
+        "keywords": ["HELIOS-B", "vutrisiran", "ATTR cardiomyopathy", "blinded concurrent placebo", "primary clinical endpoint"]
+      },
+      "expect": {
+        "required_ids": ["work:10.1056/nejmoa2409134"],
+        "forbidden_ids": ["work:10.1080/13506129.2022.2091985"],
+        "gold_note": "目标摘要明确为ATTR-CM患者1:1随机接受vutrisiran或同期安慰剂的双盲试验，主要终点是全因死亡与复发心血管事件的复合终点，并以HELIOS-B标识。干扰项是遗传性ATTR伴多发性神经病的HELIOS-A：组内随机比较给药方案，但疗效的安慰剂参照来自外部APOLLO组，不能替代本题的同期双盲心肌病试验。允许正确提及HELIOS-A以解释区别。目标摘要在后段次要终点P值处存在拼接/截断，不能补出缺失P值；可以使用完整报告的设计和主要终点，不把复合终点风险比当成单独死亡风险比。unknown撤稿状态没有被额外核查。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1056/nejmoa2409134",
+            "quote": "In this double-blind, randomized trial, we assigned patients with ATTR-CM in a 1:1 ratio to receive vutrisiran (25 mg) or placebo every 12 weeks for up to 36 months. The primary end point was a composite of death from any cause and recurrent cardiovascular events.",
+            "supports": "支持人群、同期随机双盲设计、方案及复合主要终点；不支持用单一死亡终点替代复合终点。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa2409134",
+            "quote": "HELIOS-B ClinicalTrials.gov number, NCT04153149",
+            "supports": "精确试验标识是HELIOS-B，而非同药物的其他研究。"
+          },
+          {
+            "work_id": "work:10.1080/13506129.2022.2091985",
+            "quote": "HELIOS-A was a phase 3, global, open-label study comparing the efficacy and safety of vutrisiran with an external placebo group (APOLLO study).",
+            "supports": "同药物近邻是开放标签、外部安慰剂参照，不是所需的同期双盲试验。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "exact_bindprofx",
+      "slice": "exact_entity",
+      "baseline_query": "Find the original BindProfX method paper. I want to understand how its interface-derived score can be combined with FoldX for changes in partner binding after mutations, including multiple substitutions. Do not replace it with a folding-stability review or a different deep-learning predictor.",
+      "request": {
+        "input_type": "keywords",
+        "keywords": ["BindProfX", "protein partner binding", "multiple substitutions", "interface-derived score", "FoldX combination"]
+      },
+      "expect": {
+        "required_ids": ["work:10.1016/j.jmb.2016.11.022"],
+        "background_ids": ["work:10.1016/j.csbj.2018.01.002"],
+        "forbidden_ids": ["work:10.1371/journal.pcbi.1009284"],
+        "gold_note": "BindProfX原始摘要描述由结构界面比对概率和三个pseudo-counts构成的结合自由能变化估计，与FoldX组合后相关系数由0.46到0.74；多位点情形保留与实验的相关性。不得把相关系数表述成准确率，也不能把这些结果直接变成GeoPPI与BindProfX的同基准优劣比较。FoldX综述讨论蛋白稳定性和算法优缺点，仅能作背景；GeoPPI也是突变结合亲和力预测，但使用自监督几何表征和梯度提升树，是另一方法，不能因主题相近替代指定标识的论文。摘要不能支持任意蛋白或任意突变组合均有同样性能。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1016/j.jmb.2016.11.022",
+            "quote": "The structure-based profile score is found complementary to the physical potentials, where a linear combination of the profile score with the FoldX potential could increase the ΔΔG correlation from 0.46 to 0.74.",
+            "supports": "支持指定方法与FoldX互补及所报告的相关系数变化，而非分类准确率。"
+          },
+          {
+            "work_id": "work:10.1016/j.jmb.2016.11.022",
+            "quote": "For the mutations involving more than two mutation sites where the correlation between FoldX and experimental data vanishes, the profile-based calculation retains a strong correlation with the experimental measurements.",
+            "supports": "支持摘要报告的多位点适用情形；不能补充未报告的数据集规模或误差区间。"
+          },
+          {
+            "work_id": "work:10.1016/j.csbj.2018.01.002",
+            "quote": "In this review different algorithms for the prediction of beneficial mutation sites to enhance protein stability are summarized and the advantages and disadvantages of FoldX are highlighted.",
+            "supports": "这是稳定性算法综述，可解释FoldX背景但不是BindProfX原始结合能研究。"
+          },
+          {
+            "work_id": "work:10.1371/journal.pcbi.1009284",
+            "quote": "In this study, we develop GeoPPI, a novel structure-based deep-learning framework to predict the change of binding affinity upon mutations.",
+            "supports": "科学问题相近但方法身份不同，不能替代明确请求的BindProfX。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "ood_gut_sterol",
+      "slice": "semantic_ood",
+      "baseline_query": "I am investigating how uncultivated gut organisms convert cholesterol into a sterol that is poorly absorbed by the host. Find work that links paired human microbiome and metabolite data to experimental identification of the microbial enzymes, rather than only correlating a cultured bacterial genus with blood lipids. Separate enzyme evidence from evidence about human health effects.",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "We are developing a mechanism-focused account of intestinal sterol disposal. The working idea is that organisms not yet available as routine laboratory cultures can alter cholesterol before it is absorbed. We need a precedent that uses matched community sequencing and metabolite measurements from human cohorts to nominate a biochemical function, then experimentally checks the proposed enzymes. Associations with host circulating lipids are relevant but would not by themselves demonstrate a treatment benefit. The priority is a route from uncultivated community members to an experimentally supported sterol-conversion mechanism."
+      },
+      "expect": {
+        "required_ids": ["work:10.1016/j.chom.2020.05.013"],
+        "forbidden_ids": ["work:10.1016/j.cell.2024.03.014"],
+        "gold_note": "目标把配对宏基因组/代谢组与生化实验结合，鉴定并验证促进coprostanol形成的胆固醇脱氢酶；编码它们的ismA来自未培养微生物类群。输入未泄露ismA。人群粪便及血清胆固醇较低是人群关联，不能写成人体随机补菌治疗有效。Framingham近邻同样有组学和胆固醇代谢实验证据，但摘要的实验对象是Oscillibacter分离株，报告糖基化和脱氢等能力，不是本题指定的未培养类群—酶—coprostanol链；它可作对照讨论，但不能当成满足全部条件的目标。不要由该近邻摘要未写coprostanol推断其全文从未涉及。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1016/j.chom.2020.05.013",
+            "quote": "By integrating paired metagenomics and metabolomics data from existing cohorts with biochemical knowledge and experimentation, we predict and validate a group of microbial cholesterol dehydrogenases that contribute to coprostanol formation. These enzymes are encoded by ismA genes in a clade of uncultured microorganisms, which are prevalent in geographically diverse human cohorts.",
+            "supports": "完整支持所需材料、验证策略、酶功能与未培养类群；不提供人体干预获益证据。"
+          },
+          {
+            "work_id": "work:10.1016/j.cell.2024.03.014",
+            "quote": "characterization of multiple representative human gut Oscillibacter isolates, we uncovered conserved cholesterol-metabolizing capabilities, including glycosylation and dehydrogenation.",
+            "supports": "强近邻也研究胆固醇代谢，但摘要实验路径针对分离株，不能替代指定未培养类群的功能鉴定。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "ood_kidney_cell_origin",
+      "slice": "semantic_ood",
+      "baseline_query": "Find a study that resolves which cell populations supply scar-producing cells in fibrotic human kidneys, rather than merely testing a drug against renal scarring. I need human cell-resolved mapping connected to lineage or time-course experiments in animals. Explain which evidence comes from people and which comes from mice.",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "Our renal fibrosis project asks whether matrix-producing populations arise mainly from tubular epithelial compartments or from distinct stromal precursors. We want to integrate cell-resolved human tissue maps with experiments that follow cellular origins over time. A useful precedent would sample healthy and diseased human kidneys broadly, connect the resulting cell populations to spatial context, and use a tractable animal system for lineage evidence. A change in fibrosis markers after a molecular inhibitor would not by itself resolve the origin question."
+      },
+      "expect": {
+        "required_ids": ["work:10.1038/s41586-020-2941-1"],
+        "forbidden_ids": ["work:10.1038/s12276-024-01159-5"],
+        "gold_note": "目标以健康和纤维化人肾单细胞图谱识别周细胞及成纤维细胞亚群为主要肌成纤维细胞来源，并结合小鼠遗传命运追踪、时间序列单细胞及ATAC-seq和人肾空间转录组。输入没有透露标志性靶点NKD2。必须分清来源证据：不能说在人身上做了遗传命运追踪，也不能说所有肌成纤维细胞只有一种起源。METTL3近邻使用TGF-β处理HK-2细胞与UUO小鼠，另有人CKD组织表达观察；摘要支持抗纤维化机制干预，不支持完成所需的人肾细胞来源图谱。人组织出现不等于人体给药试验。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1038/s41586-020-2941-1",
+            "quote": "This analysis enabled us to map all matrix-producing cells at high resolution, and to identify distinct subpopulations of pericytes and fibroblasts as the main cellular sources of scar-forming myofibroblasts during human kidney fibrosis.",
+            "supports": "支持人肾图谱所识别的主要来源，不能改写成唯一来源。"
+          },
+          {
+            "work_id": "work:10.1038/s41586-020-2941-1",
+            "quote": "We used genetic fate-tracing, time-course single-cell RNA sequencing and ATAC-seq (assay for transposase-accessible chromatin using sequencing) experiments in mice, and spatial transcriptomics in human kidney fibrosis, to shed light on the cellular origins and differentiation of human kidney myofibroblasts and their precursors at high resolution.",
+            "supports": "明确动物与人体材料的证据分工，不能将小鼠命运追踪移植为人体实验。"
+          },
+          {
+            "work_id": "work:10.1038/s12276-024-01159-5",
+            "quote": "We investigated m6A profile alterations and the inhibitory effect of RNA methylation in kidney fibrosis in vitro (TGF-β-treated HK-2 cells) and in vivo (unilateral ureteral obstruction [UUO] mouse model).",
+            "supports": "肾纤维化主题近邻的核心实验是细胞及小鼠分子干预，不是所需的人肾细胞起源解析。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "ood_melanoma_nuclear_bodies",
+      "slice": "semantic_ood",
+      "baseline_query": "I want mechanistic evidence in ocular melanoma connecting a lactate-associated chromatin change to removal of an RNA chemical mark and loss of tumor-suppressive nuclear assemblies. Find work with perturbation evidence for that chain, not just a general cancer metabolism signature, and state how far the therapeutic claim goes.",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "We are studying how high glycolytic activity might alter nuclear organization in eye melanoma. Our hypothesis is that a metabolite-linked histone modification changes the abundance of an RNA-modifying enzyme, destabilizing a component needed for tumor-suppressive nuclear bodies. We need experimental precedent connecting these layers and testing whether downstream depletion reverses the effect of suppressing the upstream enzyme. A feedback loop between glycolysis and RNA modification in a different cancer would be related background, but would not establish this nuclear-body mechanism."
+      },
+      "expect": {
+        "required_ids": ["work:10.1093/nar/gkad1193"],
+        "forbidden_ids": ["work:10.1002/advs.202309840"],
+        "gold_note": "目标摘要的具体链条是组蛋白乳酰化上调ALKBH3，去除SP100A转录本m1A标记，削弱抑癌PML凝聚体；沉默ALKBH3的体内外效应可被SP100A耗竭逆转，YTHDF1参与识别及稳定/翻译。输入隐藏ALKBH3、SP100A、PML和YTHDF1。近邻研究结直肠癌中NSUN2/YBX1/m5C-ENO1与糖代谢正反馈，虽共享乳酰化和RNA修饰主题，却不是眼部黑色素瘤的m1A—核内凝聚体机制。目标只提供摘要所述体内外机制/治疗潜力，不能说完成患者给药疗效试验，亦不能猜测未明确写出的体内物种。摘要末句较概括，方向判断以其明确描述的去甲基化与凝聚体减弱结果为准。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1093/nar/gkad1193",
+            "quote": "Herein, we found that histone lactylation enhances ALKBH3 expression and simultaneously attenuates the formation of tumor-suppressive promyelocytic leukemia protein (PML) condensates by removing the m1A methylation of SP100A, promoting the malignant transformation of cancers.",
+            "supports": "支持染色质改变、RNA去修饰、凝聚体减弱的明确方向，不可反转。"
+          },
+          {
+            "work_id": "work:10.1093/nar/gkad1193",
+            "quote": "First, ALKBH3 is specifically upregulated in high-risk ocular melanoma due to excessive histone lactylation levels, referring to m1A hypomethylation status.",
+            "supports": "支持疾病背景是高风险眼部黑色素瘤。"
+          },
+          {
+            "work_id": "work:10.1093/nar/gkad1193",
+            "quote": "Therapeutically, the silencing of ALKBH3 exhibits efficient therapeutic efficacy in melanoma both in vitro and in vivo, which could be reversed by the depletion of SP100A.",
+            "supports": "支持上下游扰动及逆转实验的摘要表述，不证明人体临床疗效。"
+          },
+          {
+            "work_id": "work:10.1002/advs.202309840",
+            "quote": "Mechanistically, NSUN2 and YBX1 are identified as the \"writer\" and \"reader\" of ENO1, culminating in the reprogramming of the glucose metabolism and increased production of lactic acid in an m5C-dependent manner.",
+            "supports": "相邻乳酸/RNA机制使用不同修饰与轴，不能充当所需m1A—核内结构证据。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "zh_crc_stromal_niche",
+      "slice": "chinese_cross_language",
+      "baseline_query": "我想找结直肠癌中成纤维细胞与巨噬细胞共同形成免疫排斥微环境的原始研究：既要有单细胞分析，也要有空间共定位证据，并涉及与免疫治疗获益的关系。请区分细胞间互作的推测和已验证的疗效，别用癌细胞在侵袭前沿与巨噬细胞的互作研究替代这个问题。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": ["结直肠癌", "成纤维细胞与巨噬细胞", "单细胞与空间共定位", "免疫排斥和T细胞浸润", "免疫治疗获益关联"]
+      },
+      "expect": {
+        "required_ids": ["work:10.1038/s41467-022-29366-6"],
+        "forbidden_ids": ["work:10.1016/j.celrep.2022.111929"],
+        "gold_note": "目标是FAP+成纤维细胞与SPP1+巨噬细胞的正相关和相邻定位：单细胞、独立CRC队列、免疫荧光及空间转录组相互支持。摘要对chemerin/TGF-β/IL-1调控使用might，对高表达与anti-PD-L1获益较少作队列关联；不支持声称阻断互作已在CRC患者中改善疗效，亦不能擅自断言文中anti-PD-L1治疗队列的病种。干扰项虽也有CRC、空间和SPP1+巨噬细胞，但核心是侵袭前沿HLA-G+癌细胞，不是指定的成纤维细胞—巨噬细胞组合。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1038/s41467-022-29366-6",
+            "quote": "We demonstrate that the tumor-specific FAP+ fibroblasts and SPP1+ macrophages were positively correlated in 14 independent CRC cohorts containing 2550 samples and validate their close localization by immuno-fluorescent staining and spatial transcriptomics.",
+            "supports": "支持指定细胞组合、队列相关及空间定位，不能据此单独断言因果疗效。"
+          },
+          {
+            "work_id": "work:10.1038/s41467-022-29366-6",
+            "quote": "Furthermore, we find patients with high FAP or SPP1 expression achieved less therapeutic benefit from an\u00a0anti-PD-L1 therapy cohort.",
+            "supports": "支持表达与治疗获益关联，非阻断互作的临床干预结果；摘要未明确该治疗队列的病种。"
+          },
+          {
+            "work_id": "work:10.1016/j.celrep.2022.111929",
+            "quote": "These cells induce human leukocyte antigen G (HLA-G) to produce secreted phosphoprotein 1 (SPP1)+ macrophages while conferring CRC cells with anti-tumor immunity, as well as proliferative and invasive properties.",
+            "supports": "摘要核心对象为CRC癌细胞与巨噬细胞；不能因共同出现SPP1而替代指定的成纤维细胞互作研究。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "zh_pet_recycling",
+      "slice": "chinese_cross_language",
+      "baseline_query": "请找用统一且接近放大生产的反应条件，横向实测比较多种工程化聚酯降解酶的研究。我关心聚对苯二甲酸乙二醇酯回收：谁表现更好、还做了哪些节酶或降温优化。不要只给最初酶结构表征或设计原则综述，也不要把实验室放大相关条件说成已经商业投产。",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "我们准备选择用于聚酯包装废弃物酶法回收的候选催化剂。不同团队的实验协议差异很大，单看各自论文中的降解率难以决定工艺路线。需要一项把多种已经工程改造的酶放在可比条件下测试的原始研究，并报告解聚表现以及降低酶用量和反应温度的尝试。机制综述可以帮助理解，但不能代替同一实验体系中的比较；与大规模反应相关的条件也不等于商业工厂运行验证。"
+      },
+      "expect": {
+        "required_ids": ["work:10.1021/acscatal.3c02922"],
+        "background_ids": ["work:10.1021/acscatal.1c05856"],
+        "forbidden_ids": ["work:10.1073/pnas.1718804115"],
+        "gold_note": "目标在统一的放大相关条件下比较LCCICCG、FAST-PETase、HotPETase和PES-H1L92F/Q94Y，摘要报告LCCICCG在24小时将98% PET转成单体、PES变体80%，并将LCCICCG所需酶量降低3倍、温度72降至68摄氏度。不能把这些数值泛化为所有底物和工艺条件的固有排名，也不能声称商业投产完成。Mechanism-Based Design是Perspective/Review，作机制背景；PNAS近邻是PETase结构、两位点突变及底物特异性研究，不是所需的多工程酶统一工艺比较。输入没有列出目标的特有酶变体名。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1021/acscatal.3c02922",
+            "quote": "Here, we pave the way for a standardized enzymatic PET hydrolysis protocol using reaction conditions relevant for larger scale hydrolysis and apply these parameters to four recently reported PET hydrolases (LCCICCG, FAST-PETase, HotPETase, and PES-H1L92F/Q94Y).",
+            "supports": "支持统一反应协议、多工程酶横向比较及放大相关条件，而非已投产。"
+          },
+          {
+            "work_id": "work:10.1021/acscatal.3c02922",
+            "quote": "LCCICCG outperforms the other enzymes, converting 98% of PET into the monomeric products terephthalic acid (TPA) and ethylene glycol (EG) in 24 h. In addition, we optimized the reaction conditions of LCCICCG toward economic viability, reducing the required amount of enzyme by a factor of 3 and the temperature of the reaction from 72 to 68 °C.",
+            "supports": "支持本实验的相对表现及两项优化数字，不能据此重建未报告的完整操作协议。"
+          },
+          {
+            "work_id": "work:10.1021/acscatal.1c05856",
+            "quote": "To overcome these limitations, successful protein engineering studies using innovative experimental and computational approaches have been published extensively in recent years in this thriving research field and are summarized and discussed in detail here.",
+            "supports": "该文汇总已有工程研究，配合Review元数据限定为背景，不是同体系新比较。"
+          },
+          {
+            "work_id": "work:10.1073/pnas.1718804115",
+            "quote": "By narrowing the binding cleft via mutation of two active-site residues to conserved amino acids in cutinases, we surprisingly observe improved PET degradation, suggesting that PETase is not fully optimized for crystalline PET degradation, despite presumably evolving in a PET-rich environment.",
+            "supports": "近邻确为原始酶工程研究，但针对PETase位点改造，不满足多种工程酶统一放大相关条件比较。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "scope_metformin_microbiome",
+      "slice": "scope_causality",
+      "baseline_query": "Our type 2 diabetes stool metagenomic signal might reflect treatment rather than disease. Find human evidence that separates the disease-associated pattern from metformin exposure, explain what remains after accounting for treatment, and distinguish that analysis from proof that microbes cause diabetes. A general catalogue of prescription–microbiome associations is not enough.",
+      "request": {
+        "input_type": "keywords",
+        "keywords": ["type 2 diabetes metagenomes", "metformin exposure", "treatment confounding", "disease-associated microbiota", "association versus causation"]
+      },
+      "expect": {
+        "required_ids": ["work:10.1038/nature15766"],
+        "background_ids": ["work:10.1038/s41467-019-14177-z"],
+        "gold_note": "目标重新分析784个人肠道宏基因组，解释未按治疗分层的T2D研究分歧，控制metformin后报告产丁酸菌减少的疾病特征；对短链脂肪酸中介和Escherichia相关不良反应是支持/潜在机制，不是人体微生物致病随机因果证明。背景研究跨人群和胃肠疾病队列分析药物使用，强调多药校正，支持问题动机，但不能替代本题T2D疾病与metformin的拆分结果。不能把药物引起的信号归为未经治疗的疾病标志，也不能把metformin相关作用自动当成所有降糖药的共同作用。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1038/nature15766",
+            "quote": "Here we show, using 784 available human gut metagenomes, how antidiabetic medication confounds these results, and analyse in detail the effects of the most widely used antidiabetic drug metformin.",
+            "supports": "支持人类再分析及治疗混杂这一问题，而非新随机微生物干预。"
+          },
+          {
+            "work_id": "work:10.1038/nature15766",
+            "quote": "Controlling for metformin treatment, we report a unified signature of gut microbiome shifts in T2D with a depletion of butyrate-producing taxa.",
+            "supports": "支持控制用药后仍存在的疾病相关信号，不能反转减少方向或升级为病因证明。"
+          },
+          {
+            "work_id": "work:10.1038/s41467-019-14177-z",
+            "quote": "While 19 of 41 drugs are found to be associated with microbial features, when controlling for the use of multiple medications, proton-pump inhibitors, metformin, antibiotics and laxatives show the strongest associations with the microbiome.",
+            "supports": "支持多药使用需校正的背景；并非所需的T2D治疗分层疾病特征研究。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "scope_tomato_br_response",
+      "slice": "scope_causality",
+      "baseline_query": "In tomato drought experiments, should applying a brassinosteroid and genetically strengthening its receptor be treated as equivalent interventions? Find a study that directly compares those routes, including constitutive and stress-induced receptor expression. Explain the directions of drought resistance and stomatal aperture rather than assuming that stronger signalling or more closure is always protective.",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "We are choosing between external hormone pretreatment and receptor overexpression for a tomato drought experiment. Both are often described loosely as increasing steroid signalling, but they may have different effects on water balance. The literature comparison should distinguish hormone abundance from receptor-mediated signal strength, consider both constitutive and stress-inducible expression, and relate stomatal behaviour to the observed drought phenotype. Evidence from a different plant species or only a downstream transcription factor would not settle this design choice."
+      },
+      "expect": {
+        "required_ids": ["work:10.1016/j.plaphy.2019.02.014"],
+        "forbidden_ids": ["work:10.1105/tpc.17.00364"],
+        "gold_note": "目标的非直觉比较是：番茄干旱前三天施EBR提高BR含量，ABA及ROS降低，气孔开度和抗旱性最终升高；35S:SlBRI1过表达增强信号，ABA/ROS略升，气孔开度与抗旱性反而均降低；Atrd29A应激启动子驱动SlBRI1同样降低抗旱性。弱BR信号abs突变体抗旱性提高。必须区分激素含量、受体信号强度、启动子和表型方向，不能把闭孔简单等同抗旱增强，也不能将本文推广到所有作物。WRKY近邻是拟南芥三突变体及下游转录调控，不能替代番茄施药与受体操纵比较。摘要不能确定完整施药剂量、田间产量收益或所提出新分支的全套分子机制。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1016/j.plaphy.2019.02.014",
+            "quote": "Our results showed that EBR application 3 days before drought stress increased the contents of BRs and decreased abscisic acid (ABA) and reactive oxygen species (ROS), after which stomatal aperture and drought resistance eventually increased.",
+            "supports": "支持外源处理、时间和ABA/ROS/气孔/抗旱的方向。"
+          },
+          {
+            "work_id": "work:10.1016/j.plaphy.2019.02.014",
+            "quote": "Astonishingly, overexpression of 35S:SlBRI1, which increased BR signaling intensity, led to slightly improved contents of ABA and ROS and ultimately reduced both stomatal aperture and drought resistance. Moreover, plants expressing SlBRI1 driven by a stress-inducible promoter (Atrd29A) also exhibited reduced plant drought resistance.",
+            "supports": "支持两类启动子操纵及与外源施药不相同的抗旱方向，不可把受体过表达说成保护性。"
+          },
+          {
+            "work_id": "work:10.1105/tpc.17.00364",
+            "quote": "Here, we found that three Arabidopsis thaliana group III WRKY transcription factors, WRKY46, WRKY54, and WRKY70, are involved in both BR-regulated plant growth and drought response as the wrky46 wrky54 wrky70 triple mutant has defects in BR-regulated growth and is more tolerant to drought stress.",
+            "supports": "干扰项是另一物种及下游转录因子多突变体，并非指定番茄两种干预路线。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "multi_hemophilia_vectors",
+      "slice": "multipart_comparison",
+      "baseline_query": "Compare two early human AAV reports published in 2017: factor VIII replacement in severe hemophilia A and factor IX replacement using an activity-enhancing point substitution in hemophilia B. For each, identify the vector or payload, enrollment and dose design, clotting-factor and bleeding outcomes, and liver-related safety observations. Keep the cohort statistics separate and explain why these reports do not establish which treatment is superior. Antithrombin silencing is not a substitute for either gene-transfer study.",
+      "request": {
+        "input_type": "keywords",
+        "keywords": ["hemophilia A factor VIII gene transfer", "hemophilia B factor IX activity-enhancing variant", "AAV human studies 2017", "dose cohorts and enrollment", "factor activity and bleeding", "liver safety", "cross-study comparison limits"]
+      },
+      "expect": {
+        "required_ids": ["work:10.1056/nejmoa1708483", "work:10.1056/nejmoa1708538"],
+        "forbidden_ids": ["work:10.1056/nejmoa1616569"],
+        "gold_note": "必须分别发现两篇。A研究为9名重度患者，AAV5-hFVIII-SQ、三个顺序剂量队列1/1/7人；高剂量7人中6人一年时维持正常范围因子VIII活性，高剂量先前预防治疗者年化出血中位数16到1。B研究为10名男性、同剂量含IX Padua/R338L载荷的AAV，稳态IX活性均值33.7±18.5%，年化出血均值11.1到0.4；个体随访28至78周，492周为累计，绝不能说每人随访492周。A有轻度ALT升高，B有2人无症状肝酶升高并短期prednisone缓解；A摘要明确小样本不能下安全结论。不同患者/载荷/剂量/随访和中位数对均值不允许跨试验宣称优效。fitusiran近邻也是血友病人体研究，但下调antithrombin的RNAi不是补入凝血因子基因。不能把该文的随机标签套到两项AAV研究。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1056/nejmoa1708483",
+            "quote": "We infused a single intravenous dose of a codon-optimized adeno-associated virus serotype 5 (AAV5) vector encoding a B-domain-deleted human factor VIII (AAV5-hFVIII-SQ) in nine men with severe hemophilia A. Participants were enrolled sequentially into one of three dose cohorts (low dose [one participant], intermediate dose [one participant], and high dose [seven participants]) and were followed through 52 weeks.",
+            "supports": "支持A队列的载荷、总人数、非随机顺序剂量安排和随访。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa1708483",
+            "quote": "In the high-dose cohort, the median annualized bleeding rate among participants who had previously received prophylactic therapy decreased from 16 events before the study to 1 event after gene transfer",
+            "supports": "此处是特定高剂量亚群的中位数，不能与B的全组均值混合。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa1708483",
+            "quote": "In this small study, no safety events were noted, but no safety conclusions can be drawn.",
+            "supports": "原文结论自限；正文摘要另有ALT及关节病事件，不能把此句扩写成零不良事件或已证安全。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa1708538",
+            "quote": "We infused a single-stranded adeno-associated viral (AAV) vector consisting of a bioengineered capsid, liver-specific promoter and factor IX Padua (factor IX-R338L) transgene at a dose of 5×1011 vector genomes per kilogram of body weight in 10 men with hemophilia B who had factor IX coagulant activity of 2% or less of the normal value.",
+            "supports": "支持B队列的同剂量、载荷及入组范围；剂量在快照中显示为5×1011，指数排版不清，不将精确量级复原作为本题必答或评分条件。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa1708538",
+            "quote": "On cumulative follow-up of 492 weeks among all the participants (range of follow-up in individual participants, 28 to 78 weeks), the annualized bleeding rate was significantly reduced (mean rate, 11.1 events per year [range, 0 to 48] before vector administration vs. 0.4 events per year [range, 0 to 4] after administration; P=0.02)",
+            "supports": "支持累计与个体随访的区别，以及B报告的是年化出血均值。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa1616569",
+            "quote": "Fitusiran, an investigational RNA interference (RNAi) therapy that targets antithrombin (encoded by SERPINC1), is in development to address these and other limitations.",
+            "supports": "同疾病治疗的机制是antithrombin RNAi，不是VIII或IX基因补充。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "patisiran_primary_trial_role",
+      "slice": "literature_identity_role",
+      "baseline_query": "Find the original placebo-controlled phase III report assessing neuropathy and disease-related quality of life with patisiran in hereditary transthyretin amyloidosis with polyneuropathy. I need the primary clinical efficacy report, not a review of the development programme or a cardiac substudy; reviews can be listed separately as background.",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "We are preparing an evidence table on RNA-interference treatment for hereditary transthyretin amyloidosis with polyneuropathy. For patisiran, the table should cite the primary phase III placebo-controlled report addressing neurological impairment and disease-related quality of life. A report focused on a cardiac subpopulation is not a substitute for the main clinical efficacy report. Reviews of the clinical development programme can provide background but should be identified separately from the trial report."
+      },
+      "expect": {
+        "required_ids": ["work:10.1056/nejmoa1716153"],
+        "background_ids": ["work:10.2217/nmt-2018-0033"],
+        "forbidden_ids": ["work:10.1161/circulationaha.118.035831"],
+        "gold_note": "目标是patisiran的III期安慰剂对照主试验，225人2:1随机，主要神经终点为18个月mNIS+7变化，另评估Norfolk生活质量。Review记录汇总临床开发项目，只能作背景。心脏报告确实含原始分析，但明确针对APOLLO预设心脏受累亚组，并非所需神经病变主疗效报告；它与主报告的注册号均为NCT01960348，不应被当成独立新试验，也不是主报告的另一出版版本。两份原始摘要都有PConclusions式截断，身份、主要终点和亚组边界仍清楚；不要求补全缺失P值、生活质量效应量或安全性结果。允许正确解释两类相关文献，不能仅凭RCT标签互相替代。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1056/nejmoa1716153",
+            "quote": "In this phase 3 trial, we randomly assigned patients with hereditary transthyretin amyloidosis with polyneuropathy, in a 2:1 ratio, to receive intravenous patisiran (0.3 mg per kilogram of body weight) or placebo once every 3 weeks. The primary end point was the change from baseline in the modified Neuropathy Impairment Score+7 (mNIS+7; range, 0 to 304, with higher scores indicating more impairment) at 18 months.",
+            "supports": "支持原始III期主试验、随机分配和神经功能主要终点，不能被心脏亚组分析替代。"
+          },
+          {
+            "work_id": "work:10.2217/nmt-2018-0033",
+            "quote": "Here, we highlight efficacy and safety data from the patisiran clinical trial programme.",
+            "supports": "结合Review元数据和其摘要对II、III期及延长期研究的汇总，支持综述背景角色。"
+          },
+          {
+            "work_id": "work:10.1161/circulationaha.118.035831",
+            "quote": "The effects of patisiran on cardiac structure and function in a prespecified subpopulation of patients with evidence of cardiac amyloid involvement at baseline were assessed.",
+            "supports": "支持同试验预设心脏亚组的报告角色，并非神经病变主疗效报告；不是说此文没有原始分析。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "metagenomic_classifier_origin_role",
+      "slice": "literature_identity_role",
+      "baseline_query": "Find an original methods paper introducing read-level microbial taxonomic classification through amino-acid matching when reference organisms are evolutionarily distant, with validation that withholds reference genomes. I need the method-introduction paper rather than a survey or comparative evaluation of existing classifiers. Reviews and benchmarks may be background; methods aimed at assembled contigs or genome bins are not substitutes.",
+      "request": {
+        "input_type": "keywords",
+        "keywords": ["taxonomic assignments for metagenomic reads", "protein sequence matching", "evolutionarily distant reference organisms", "genome-exclusion validation", "original method-development paper", "reviews and comparative benchmarks as background", "not contig or genome-bin annotation"]
+      },
+      "expect": {
+        "required_ids": ["work:10.1038/ncomms11257"],
+        "background_ids": ["work:10.1016/j.cell.2019.07.010"],
+        "forbidden_ids": ["work:10.1186/s13059-019-1817-x"],
+        "gold_note": "Kaiju记录直接提出蛋白层级匹配的reads分类方法，并进行基因组排除评测，符合方法开发论文的角色。Cell近邻兼有综述与20种分类器的原始比较评测，其pub_types同时含Review和research-article，不能简单说它没有原始研究；本题仅将它列为方法选型背景，不能替代所求方法的提出论文。CAT/BAT也是原始方法研究且针对新颖谱系，但摘要输入层级为长序列/contigs和宏基因组组装基因组，不是本题的reads级分类。Kaiju所报更高敏感度、相似precision及真实宏基因组可多分类的reads数限于其评测，不代表所有数据集普遍优于所有工具。不得根据CAT/BAT摘要未讨论的功能断言全文绝无其他能力。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1038/ncomms11257",
+            "quote": "Here we present the novel metagenome classifier Kaiju, which finds maximum (in-)exact matches on the protein-level using the Burrows-Wheeler transform. We show in a genome exclusion benchmark that Kaiju classifies reads with higher sensitivity and similar precision compared with current k-mer-based classifiers, especially in genera that are underrepresented in reference databases.",
+            "supports": "支持方法提出、蛋白匹配、reads输入及基因组排除评测，不是对既有方法的纯汇总。"
+          },
+          {
+            "work_id": "work:10.1016/j.cell.2019.07.010",
+            "quote": "Here, we review current approaches for metagenomic analysis and evaluate the performance of 20 metagenomic classifiers using simulated and experimental datasets.",
+            "supports": "兼有综述和比较评测，可作背景但不承担所求方法首次提出角色。"
+          },
+          {
+            "work_id": "work:10.1186/s13059-019-1817-x",
+            "quote": "We present a classification method that integrates multiple signals to classify sequences (Contig Annotation Tool, CAT) and metagenome-assembled genomes (Bin Annotation Tool, BAT).",
+            "supports": "同为原始方法且主题近似，但摘要强调contigs/MAGs而不是所需reads级分类。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "quant_nanopore_cohort_runtime",
+      "slice": "quantitative_methods",
+      "baseline_query": "Find an original human nanopore assembly study demonstrated on at least ten genomes, with at least 99.9% sequence identity after polishing without short reads and single-node assembly in under one day. Summarize sequencing depth and flow-cell use, distinguish assembly runtime from the cohort timeline, and identify extra data needed for chromosome-scale scaffolding.",
+      "request": {
+        "input_type": "keywords",
+        "keywords": ["human nanopore genome assembly", "at least ten genomes", "polishing without short reads", "sequence identity at least 99.9%", "single-node assembly under one day", "sequencing depth and flow cells", "chromosome-scale scaffolding"]
+      },
+      "expect": {
+        "required_ids": ["work:10.1038/s41587-020-0503-6"],
+        "forbidden_ids": ["work:10.1038/nbt.4060", "work:10.1038/s41587-020-0711-0"],
+        "gold_note": "目标以单台PromethION和Shasta工具对11个人类基因组报告9天的队列级结果，约63×覆盖、42 kb read N50、每样本三个flow cells；单商业计算节点的单倍体组装时间低于6小时，纳米孔读段单独抛光超过99.9% identity，并用proximity-ligation sequencing得到近染色体级scaffolds。必须分清9天队列级时间与低于6小时的计算组装时间，不能把近染色体级步骤说成只用纳米孔完成，也不能将complete haploid等同于端粒到端粒双倍体组装。GM12878近邻是单一细胞系，且其超过99.8%的准确率证据包含短读数据；这个下界不能证明它低于99.9%，排除依据是规模和短读条件。DipAsm近邻只应用于四个公共人类基因组，摘要的98–99%是相位准确率而非本题的序列identity。题目不要求补出未报告的完整硬件或成本信息。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1038/s41587-020-0503-6",
+            "quote": "Using a single PromethION nanopore sequencer and our toolkit, we assembled 11 highly contiguous human genomes de novo in 9 d. We achieved roughly 63× coverage, 42-kb read N50 values and 6.5× coverage in reads >100 kb using three flow cells per sample.",
+            "supports": "支持至少十个基因组及输入规模，9天是队列级陈述，不能当成每个样本的纯计算耗时。"
+          },
+          {
+            "work_id": "work:10.1038/s41587-020-0503-6",
+            "quote": "Shasta produced a complete haploid human genome assembly in under 6 h on a single commercial compute node. MarginPolish and HELEN polished haploid assemblies to more than 99.9% identity (Phred quality score QV = 30) with nanopore reads alone.",
+            "supports": "支持单节点组装时间、纳米孔单独抛光和99.9%以上identity，不能把计算时间扩大为整个项目时长。"
+          },
+          {
+            "work_id": "work:10.1038/s41587-020-0503-6",
+            "quote": "Addition of proximity-ligation sequencing enabled near chromosome-level scaffolds for all 11 genomes.",
+            "supports": "明确近染色体级scaffolding加入了另一类测序证据，不能声称全程只用纳米孔。"
+          },
+          {
+            "work_id": "work:10.1038/nbt.4060",
+            "quote": "Assembly accuracy, after incorporating complementary short-read sequencing data, exceeded 99.8%.",
+            "supports": "支持近邻的准确率依赖短读数据；不据下界把它武断写成未达到99.9%。"
+          },
+          {
+            "work_id": "work:10.1038/s41587-020-0711-0",
+            "quote": "Applied to four public human genomes, PGP1, HG002, NA12878 and HG00733, DipAsm produced haplotype-resolved assemblies",
+            "supports": "支持近邻的四基因组规模与输入层级不同，不能替代11基因组的目标研究。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "quant_nodule_noninferiority",
+      "slice": "quantitative_methods",
+      "baseline_query": "Find a multicenter randomized comparison of navigational bronchoscopy and CT-guided transthoracic needle biopsy for intermediate- or high-risk peripheral lung nodules measuring 10–30 mm. Report accuracy confirmed over 12 months, a 10-percentage-point noninferiority margin, and pneumothorax outcomes, with arm-level denominators and confidence intervals where reported. Distinguish noninferiority from superiority.",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "We are planning a diagnostic study for patients with intermediate- or high-risk peripheral pulmonary nodules between 10 and 30 mm. We need randomized multicenter evidence comparing an airway-based navigational biopsy with CT-guided biopsy through the chest wall. Diagnoses should be checked during a year of follow-up. A 10-percentage-point noninferiority margin is relevant. We need arm-level denominators, confidence intervals and pneumothorax outcomes; retrospective yield comparisons cannot replace the required trial evidence."
+      },
+      "expect": {
+        "required_ids": ["work:10.1056/nejmoa2414059"],
+        "background_ids": ["work:10.1016/j.lungcan.2023.107196"],
+        "forbidden_ids": ["work:10.1111/resp.14368"],
+        "gold_note": "目标是七个美国中心的随机平行组非劣试验，纳入10–30 mm中高风险周围肺结节，主要终点是经12个月临床随访确认的诊断准确性，非劣效界值10个百分点。摘要报告准确诊断94/119（79.0%）对81/110（73.6%），差5.4个百分点，95% CI为−6.5至17.2，非劣P=0.003、优效P=0.17；气胸4/121（3.3%）对32/113（28.3%），导致胸管、住院或两者的患者为1（0.8%）对13（11.5%）。必须保留不同结局的分母，不能把非劣写成优效或完全相等，也不能把234名主要终点分析患者和各结局分母强行统一。综述的95项研究汇总不是本试验结果；回顾性RAB/CTTB比较不满足随机非劣设计。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1056/nejmoa2414059",
+            "quote": "In this multicenter, randomized, parallel-group, noninferiority trial, we assigned patients with an intermediate-risk or high-risk peripheral pulmonary nodule measuring 10 to 30 mm in diameter to undergo navigational bronchoscopy or transthoracic needle biopsy at seven centers across the United States.",
+            "supports": "支持研究设计、对象、结节尺寸和中心数；不是回顾性得率比较。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa2414059",
+            "quote": "Among the 234 patients included in the primary-outcome analysis (5 of whom were lost to follow-up), biopsy resulted in a specific diagnosis that was confirmed to be accurate through month 12 in 94 of 119 patients (79.0%) in the navigational bronchoscopy group and in 81 of 110 patients (73.6%) in the transthoracic needle biopsy group (absolute difference, 5.4 percentage points; 95% confidence interval, -6.5 to 17.2; P = 0.003 for noninferiority; P = 0.17 for superiority).",
+            "supports": "支持准确率分母、12个月确认、效应差、置信区间及非劣/优效检验方向。"
+          },
+          {
+            "work_id": "work:10.1056/nejmoa2414059",
+            "quote": "Pneumothorax occurred in 4 of 121 patients (3.3%) in the navigational bronchoscopy group and in 32 of 113 patients (28.3%) in the transthoracic needle biopsy group and led to the placement of a chest tube, hospital admission, or both in 1 patient (0.8%) and 13 patients (11.5%), respectively.",
+            "supports": "支持气胸及其严重后果复合表述的分母和方向，不能拆成未报告的独立结局。"
+          },
+          {
+            "work_id": "work:10.1016/j.lungcan.2023.107196",
+            "quote": "A total of 95 studies (n = 10,381 patients; n = 10,682 nodules) were included.",
+            "supports": "支持背景是系统综述/荟萃分析的总体规模，不得冒充目标随机试验的样本。"
+          },
+          {
+            "work_id": "work:10.1111/resp.14368",
+            "quote": "A multicenter retrospective review of consecutive patients who underwent RAB and CTTB for evaluating pulmonary nodules from January 2019 to March 2021 at Mayo Clinic Florida and Mayo Clinic Rochester, United States.",
+            "supports": "支持强近邻为多中心回顾性研究，不满足本题随机、非劣及12个月确认设计。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "gap_otof_randomized_control",
+      "slice": "evidence_gap",
+      "baseline_query": "请在当前文献库中寻找 OTOF 相关遗传性耳聋的 AAV 基因治疗研究：必须是人类患者随机分配、设置同期对照并比较听力改善的临床试验。单臂儿童试验和小鼠听力恢复不能替代。若题录和摘要不能确认全部条件，请明确证据缺口，不推断现实文献不存在。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": ["OTOF / otoferlin / DFNB9", "AAV基因治疗", "人类遗传性耳聋", "随机分配", "同期对照", "听力改善"]
+      },
+      "expect": {
+        "required_ids": [],
+        "forbidden_ids": ["work:10.1016/s0140-6736(23)02874-x", "work:10.1073/pnas.1817537116"],
+        "gold_note": "这是固定摘要快照中的证据缺口案，不是现实世界不存在相应试验的证明。完整扫描OTOF/otoferlin/DFNB9、听力/耳聋、AAV/基因治疗及随机/对照词的组合后，没有记录的摘要同时确认人类患者、AAV、随机分配、同期对照和听力改善比较。单臂儿童试验是人类OTOF/AAV并有听力改善，但明确single-arm、single-centre；双AAV研究在Otof−/−小鼠中恢复听力。不得把这些近邻写成满足全部条件，也不得将摘要未提供说成全文没有做。空required不计Hit或nDCG命中，回答应解释缺口和近邻边界。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1016/s0140-6736(23)02874-x",
+            "quote": "This single-arm, single-centre trial enrolled children (aged 1-18 years) with severe-to-complete hearing loss and confirmed mutations in both alleles of OTOF, and without bilateral cochlear implants.",
+            "supports": "支持人类OTOF/AAV近邻明确为单臂单中心，缺少本题要求的随机同期对照。"
+          },
+          {
+            "work_id": "work:10.1073/pnas.1817537116",
+            "quote": "A single delivery of the vector pair into the mature cochlea of Otof-/- mutant mice reconstituted the otoferlin cDNA coding sequence through recombination of the 5' and 3' cDNAs, leading to the durable restoration of otoferlin expression in transduced cells and a reversal of the deafness phenotype",
+            "supports": "支持动物双AAV近邻及听力表型恢复，不能替代人类随机临床试验。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "gap_crispr_tb_outcomes",
+      "slice": "evidence_gap",
+      "baseline_query": "当前文献库是否有前瞻性、设同期常规诊疗对照的研究（随机试验优先），支持在疑似结核患者的诊断路径中采用 CRISPR 能改善治疗成功率、治愈率或死亡率？不要以诊断准确性、菌种鉴别或计算设计替代患者结局证据；结论限于题录和摘要。",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "我们拟评估把 CRISPR 检测纳入疑似结核患者的诊断流程是否改善患者结局。需要前瞻性、设同期常规诊疗对照的研究，随机试验优先，并以治疗成功率、治愈率或死亡率等至少一项患者结局支持临床获益。敏感度、特异度、分枝杆菌物种鉴别、实验内参或计算设计不能替代这种证据。请依据当前库的题录和摘要判断，并明确材料不足的边界。"
+      },
+      "expect": {
+        "required_ids": [],
+        "forbidden_ids": ["work:10.1016/j.diagmicrobio.2025.117059", "work:10.1126/scitranslmed.aef2648", "work:10.7759/cureus.101851"],
+        "gold_note": "这是当前快照内的证据缺口案。对结核/分枝杆菌与CRISPR及随机、前瞻、对照、患者结局词做多组实体和同义词扫描，未发现摘要同时支持前瞻性诊疗路径比较、同期常规对照和治疗成功率/治愈率/死亡率等患者获益。结核CRISPR评估研究是case-control且报告敏感度、特异度和准确率；CANDI研究以230份临床标本报告3.5小时、97.08%敏感度和99.7%特异度，标本数不等于患者结局试验；gRNA研究是in silico且明确需要未来实验和临床验证。不能把背景中的mortality词当成研究降低死亡率，不能把摘要未报告说成全文没有做。空required不计命中或完美排序，回答应明确证据限于摘要快照。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1016/j.diagmicrobio.2025.117059",
+            "quote": "A case-control study was conducted on hospitalized patients with suspected tuberculosis from June 2023 to September 2023.",
+            "supports": "仅支持住院患者的case-control检测评估；不能仅凭此句断言回顾性，也不能将它确认为前瞻性诊疗路径患者结局比较。"
+          },
+          {
+            "work_id": "work:10.1016/j.diagmicrobio.2025.117059",
+            "quote": "Sensitivity, specificity, accuracy, false positive rate, and false negative rate were calculated for each test across strata.",
+            "supports": "支持该摘要报告的是诊断性能指标，不是治疗成功率、治愈率或死亡率获益。"
+          },
+          {
+            "work_id": "work:10.1126/scitranslmed.aef2648",
+            "quote": "When applied to 230 clinical specimens, including sputum, tracheal aspirates, and other respiratory fluids, CANDI delivered subspecies-level results within 3.5 hours, achieving 97.08% sensitivity and 99.7% specificity relative to culture-based identification.",
+            "supports": "支持CANDI的标本规模、速度和诊断准确性范围；230是标本而非同期患者结局试验。"
+          },
+          {
+            "work_id": "work:10.7759/cureus.101851",
+            "quote": "Future laboratory validation and clinical testing are essential for translation into diagnostic practice.",
+            "supports": "支持该记录仍是计算设计并明确需要实验/临床验证，不能作为已完成患者结局证据。"
+          }
+        ]
+      }
+    }
+  ]
+}

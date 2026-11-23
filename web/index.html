@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#f7f8f5">
+  <title>文献推荐工具 · 让引用有据可查</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./workspace.css">
+  <link rel="stylesheet" href="./project-workspace.css">
+</head>
+<body data-view="home">
+  <a class="skip-link" href="#main-content">跳到主要内容</a>
+
+  <header class="site-header">
+    <span class="site-title">文献推荐工具</span>
+    <div class="site-header__actions">
+      <div class="history-cluster" id="history-cluster">
+        <button type="button" class="button button--quiet header-button" id="new-search-button" hidden>
+          <span id="session-label">新建会话</span><svg data-icon="chevron-down" id="session-chevron" aria-hidden="true" hidden></svg>
+        </button>
+      </div>
+      <div class="profile-control" id="profile-control" hidden>
+        <button type="button" class="icon-button profile-button" id="profile-button" aria-label="用户菜单" aria-expanded="false" aria-controls="profile-menu">
+          <svg data-icon="user-circle" aria-hidden="true" id="profile-icon"></svg><span id="profile-initial" aria-hidden="true" hidden></span>
+        </button>
+        <div class="profile-menu" id="profile-menu" hidden>
+          <div class="profile-menu__identity"><strong id="profile-label">公共工作区</strong><small id="profile-detail">访客</small></div>
+          <button type="button" id="profile-login">登录或注册</button>
+          <button type="button" id="profile-settings" hidden>账户设置</button>
+          <button type="button" id="model-settings-button"><svg data-icon="adjustments-horizontal" aria-hidden="true"></svg>模型设置</button>
+          <button type="button" id="profile-logout" hidden>退出登录</button>
+        </div>
+      </div>
+      <button type="button" class="button button--quiet header-button" id="logout-button" hidden>退出</button>
+    </div>
+  </header>
+
+  <main id="main-content" hidden>
+    <section class="home-view" id="search-home" aria-labelledby="home-title">
+      <h1 id="home-title">检索文献，核对证据。</h1>
+
+      <form id="search-form" class="home-search" novalidate>
+        <div class="search-composer" id="search-composer">
+          <div class="mode-picker" id="mode-picker">
+            <button type="button" class="mode-trigger" id="mode-summary" aria-label="切换检索模式"
+              aria-expanded="false" aria-controls="mode-menu">
+              <span id="mode-label">关键词</span><svg data-icon="chevron-down" aria-hidden="true"></svg>
+            </button>
+            <div class="mode-menu" id="mode-menu" role="group" aria-label="检索模式" hidden>
+              <button type="button" data-mode="keywords" aria-pressed="true">关键词</button>
+              <button type="button" data-mode="abstract" aria-pressed="false">Abstract</button>
+              <button type="button" data-mode="full_text" aria-pressed="false">全文</button>
+            </div>
+          </div>
+
+          <div class="composer__input" id="text-input-wrap">
+            <label class="sr-only" for="keywords" id="query-input-label">输入检索关键词</label>
+            <textarea id="keywords" name="keywords" rows="1" spellcheck="false"
+              placeholder="输入研究主题，例如：LFY2, soybean floral development"
+              aria-describedby="input-help"></textarea>
+          </div>
+
+          <div class="upload-control" id="upload-control" hidden>
+            <input class="sr-only" type="file" id="manuscript-file" tabindex="-1"
+              accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+            <button type="button" class="upload-zone" id="upload-zone" aria-describedby="full-text-note">
+              <svg data-icon="arrow-up-tray" aria-hidden="true"></svg>
+              <span><strong id="upload-label">选择 PDF 或 DOCX</strong><small id="file-meta">单文件不超过 50 MB</small></span>
+            </button>
+            <button type="button" class="icon-button icon-button--small" id="clear-file" aria-label="移除已选文件" title="移除文件" hidden>
+              <svg data-icon="x-mark" aria-hidden="true"></svg>
+            </button>
+          </div>
+
+          <button type="button" class="send-button" id="start-button" aria-label="开始检索" title="开始检索" disabled>
+            <svg data-icon="paper-airplane" aria-hidden="true"></svg>
+          </button>
+        </div>
+        <p class="home-search__help" id="input-help">多个关键词可用逗号分隔；Enter 发送。</p>
+        <div class="form-error home-error" id="form-error" role="alert" hidden></div>
+        <p class="full-text-note" id="full-text-note" hidden></p>
+        <p class="manuscript-status" id="manuscript-status" role="status" hidden></p>
+        <button type="button" class="button button--quiet upload-retry" id="upload-retry" hidden>重试</button>
+
+        <div class="source-selector">
+          <div class="source-pills" id="library-list" role="group" aria-label="选择数据源" aria-busy="true">
+            <span class="source-loading">正在读取数据源…</span>
+          </div>
+          <p class="source-note" id="library-note" hidden></p>
+        </div>
+      </form>
+    </section>
+
+    <aside class="history-panel" id="history-panel" aria-labelledby="history-title" hidden>
+      <div class="history-panel__header">
+        <h2 id="history-title" tabindex="-1">对话历史</h2>
+        <button type="button" class="button button--quiet history-panel__new" id="history-new" hidden><svg data-icon="plus" aria-hidden="true"></svg>新建会话</button>
+      </div>
+      <div class="projects-control" id="projects-control" hidden>
+        <label class="sr-only" for="project-picker">项目</label>
+        <select id="project-picker"><option value="other">其它</option></select>
+        <button type="button" class="button button--quiet project-button" id="project-settings">设置</button>
+      </div>
+      <p id="history-state" class="history-panel__state" role="status" hidden></p>
+      <ul id="history-items" class="history-list"></ul>
+      <button type="button" class="button button--quiet history-panel__more" id="history-more" hidden>加载更多</button>
+    </aside>
+
+    <section class="search-workspace" id="search-workspace" data-pane="chat" aria-labelledby="results-heading" hidden>
+      <div class="pane-switch-bar">
+        <div class="pane-switch" id="pane-switch" role="tablist" aria-label="切换对话与结果">
+          <button type="button" id="pane-chat" role="tab" data-pane="chat" aria-selected="true"
+            aria-controls="chat-pane">对话</button>
+          <button type="button" id="pane-results" role="tab" data-pane="results" aria-selected="false"
+            aria-controls="results-pane">结果</button>
+        </div>
+      </div>
+
+      <div class="conversation-layout" id="conversation-layout">
+        <aside class="chat-pane" id="chat-pane" aria-labelledby="chat-heading">
+          <div class="chat-pane__head">
+            <h2 id="chat-heading">对话</h2>
+            <button type="button" class="button button--quiet project-button" id="chat-project" hidden></button>
+            <button type="button" class="chat-stop" id="cancel-run" hidden>停止本轮</button>
+          </div>
+          <div class="chat-log" id="chat-log" role="log" tabindex="0" aria-live="polite" aria-relevant="additions text"
+            aria-label="对话记录"></div>
+          <div class="form-error chat-error" id="chat-error" role="alert" hidden></div>
+          <form class="chat-composer" id="chat-form" novalidate>
+            <div class="chat-composer__bar">
+              <label class="sr-only" for="chat-input">继续追问</label>
+              <textarea id="chat-input" rows="1" spellcheck="false" enterkeyhint="send"
+                placeholder="继续追问，例如：比较这两篇的方法差异" aria-describedby="chat-note"></textarea>
+              <button type="submit" class="chat-send" id="chat-send" aria-label="发送消息" title="发送消息" disabled>
+                <svg data-icon="paper-airplane" aria-hidden="true"></svg>
+              </button>
+            </div>
+            <p class="chat-note" id="chat-note" hidden></p>
+          </form>
+        </aside>
+
+        <section class="results-panel" id="results-pane" aria-label="流式推荐结果" tabindex="0">
+          <div class="attempt-tabs" id="attempt-tabs" role="group" aria-label="对话中的多次检索" hidden></div>
+          <header class="results-toolbar">
+            <div class="results-heading">
+              <h1 id="results-heading">检索结果</h1>
+              <p class="results-count"><strong id="metric-results">0</strong><span id="metric-results-label">已发布结果</span></p>
+            </div>
+            <span class="results-status" id="results-status" role="status" aria-live="polite" hidden></span>
+          </header>
+          <details class="source-progress" id="source-progress" hidden>
+            <summary><span>来源进度</span><strong id="worker-progress-count" title="已完成的数据源；不包含统一排序和 Agent 后续处理">0/0</strong></summary>
+            <div class="source-progress__body">
+              <progress class="worker-progress" id="worker-progress" max="1" value="0" aria-label="数据源完成进度"></progress>
+              <p class="empty-inline" id="workers-empty">等待任务派发。</p>
+              <ul class="worker-list" id="worker-list"></ul>
+            </div>
+          </details>
+          <p class="results-note" id="results-note" hidden></p>
+          <ul class="notice-list" id="notice-list" aria-live="polite" aria-relevant="additions text"></ul>
+          <div id="fatal-error" class="form-error" role="alert" hidden></div>
+          <div class="sr-only" id="announcements" role="status" aria-live="polite" aria-atomic="false"></div>
+          <div id="results" class="results"></div>
+        </section>
+      </div>
+    </section>
+    <div id="source-request-dock" class="source-request-dock" hidden>
+      <button type="button" class="button button--quiet project-button" id="source-requests-toggle" aria-haspopup="dialog" aria-controls="source-requests-dialog">数据源申请</button>
+    </div>
+  </main>
+
+  <section class="login-view" id="login-view" aria-labelledby="login-title" hidden>
+    <form id="login-form" class="login-form">
+      <h1 id="login-title">文献推荐工具</h1>
+      <label for="access-token">访问令牌</label>
+      <input id="access-token" name="token" type="password" autocomplete="current-password" required>
+      <button type="submit" class="button button--primary" id="login-button">登录</button>
+      <p class="form-error" id="login-error" role="alert" hidden></p>
+    </form>
+  </section>
+
+  <dialog id="result-dialog" class="dialog dialog--result" aria-labelledby="result-dialog-title">
+    <div class="dialog__head">
+      <div><h2 id="result-dialog-title">证据详情</h2></div>
+      <button type="button" class="icon-button" id="close-result-dialog" aria-label="关闭证据详情" title="关闭">
+        <svg data-icon="x-mark" aria-hidden="true"></svg>
+      </button>
+    </div>
+    <div class="dialog__body" id="result-dialog-body"></div>
+  </dialog>
+
+  <dialog id="citation-dialog" class="dialog dialog--citation" aria-labelledby="citation-dialog-title">
+    <div class="dialog__head">
+      <div><h2 id="citation-dialog-title">引用建议</h2></div>
+      <button type="button" class="icon-button" id="close-citation-dialog" aria-label="关闭引用建议" title="关闭">
+        <svg data-icon="x-mark" aria-hidden="true"></svg>
+      </button>
+    </div>
+    <div class="dialog__body" id="citation-dialog-body" aria-live="polite"></div>
+  </dialog>
+
+  <dialog id="account-dialog" class="dialog dialog--workspace-form" aria-labelledby="account-dialog-title">
+    <div class="dialog__head"><h2 id="account-dialog-title">账户</h2><button type="button" class="icon-button" id="account-close" aria-label="关闭账户弹窗"><svg data-icon="x-mark"></svg></button></div>
+    <div id="account-dialog-body" class="dialog__body"></div>
+  </dialog>
+
+  <dialog id="history-editor" class="dialog dialog--workspace-form" aria-labelledby="history-editor-title">
+    <form id="history-editor-form">
+      <div class="dialog__head"><h2 id="history-editor-title">重命名对话</h2></div>
+      <div class="dialog__body">
+        <p id="history-editor-message" class="field-help" hidden></p>
+        <label class="form-field">对话标题<input id="history-editor-name" maxlength="120"></label>
+        <p class="form-error" id="history-editor-error" role="alert" hidden></p>
+        <div class="form-actions"><button type="button" class="button button--quiet" id="history-editor-cancel">取消</button><button type="submit" class="button button--primary" id="history-editor-confirm">保存</button></div>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="model-dialog" class="dialog dialog--workspace-form" aria-labelledby="model-dialog-title">
+    <form id="model-form" novalidate>
+      <div class="dialog__head"><h2 id="model-dialog-title">模型设置</h2><button type="button" class="icon-button" value="cancel" aria-label="关闭模型设置"><svg data-icon="x-mark"></svg></button></div>
+      <div class="dialog__body">
+        <label class="form-field" for="model-provider">使用模型
+          <select id="model-provider"><option value="">服务端默认模型</option></select>
+        </label>
+        <div id="model-custom-fields" hidden>
+          <label class="form-field" id="model-protocol-field">API 协议<select id="model-protocol"></select></label>
+          <label class="form-field" id="model-url-field">接口地址（URL）<input id="model-url" type="url" maxlength="512" spellcheck="false" autocomplete="off" placeholder="https://api.example.com/v1"></label>
+          <label class="form-field" for="model-name">模型名称
+            <input id="model-name" type="text" maxlength="128" spellcheck="false" autocomplete="off" placeholder="填入提供方的模型标识">
+          </label>
+          <label class="form-field" for="model-api-key">API Key
+            <input id="model-api-key" type="password" maxlength="512" spellcheck="false" autocomplete="new-password">
+          </label>
+        </div>
+        <p class="field-help">查询与必要证据由所选模型处理。选用在线库时，检索词会发给该数据源。请勿在公共工作区提交私稿。</p>
+        <p class="field-help" id="model-key-note" hidden>Key 只保留在当前标签页，退出或切换账户后清除。请只填写信任的服务。</p>
+        <p class="form-error" id="model-error" role="alert" hidden></p>
+        <div class="form-actions">
+          <button type="button" class="button button--quiet" value="cancel">取消</button>
+          <button type="submit" class="button button--primary" id="save-model-button">应用到后续请求</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="project-dialog" class="dialog dialog--workspace-form" aria-labelledby="project-dialog-title">
+    <form id="project-form" novalidate>
+      <div class="dialog__head">
+        <h2 id="project-dialog-title">项目设置</h2>
+        <button type="button" id="project-close" class="icon-button" aria-label="关闭项目设置"><svg data-icon="x-mark" aria-hidden="true"></svg></button>
+      </div>
+      <div class="dialog__body project-form-body">
+        <label class="form-field" id="project-name-field" for="project-name">项目名称
+          <input id="project-name" type="text" maxlength="72" autocomplete="off" aria-required="true" aria-describedby="project-error">
+        </label>
+        <div id="project-share-row" class="project-setting" hidden>
+          <div><strong id="project-share-label">共享数据源选择</strong><p id="project-share-help">项目内的新会话和后续消息沿用已保存的选库。</p></div>
+          <button type="button" class="workspace-switch" id="project-share" role="switch" aria-checked="false" aria-labelledby="project-share-label" aria-describedby="project-share-help"></button>
+        </div>
+        <div id="project-learn-row" class="project-setting" hidden>
+          <div><strong id="project-learn-label">发现新数据源</strong><p id="project-learn-help">默认模型分析开启之后的普通对话；联网只查公开库和学科，不发对话原文。</p></div>
+          <button type="button" class="workspace-switch" id="project-learn" role="switch" aria-checked="false" aria-labelledby="project-learn-label" aria-describedby="project-learn-help"></button>
+        </div>
+        <p class="form-error" id="project-error" role="alert" hidden></p>
+        <div class="form-actions">
+          <button type="button" id="project-archive" class="button button--quiet" title="保留对话与榜单，暂停新检索和追问" hidden>归档项目</button>
+          <button type="submit" id="project-save" class="button button--primary" hidden>保存名称</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="source-requests-dialog" class="dialog dialog--workspace-form" aria-labelledby="source-requests-title">
+    <div class="dialog__head">
+      <h2 id="source-requests-title">数据源申请</h2>
+      <button type="button" class="icon-button" id="source-requests-close" aria-label="关闭数据源申请"><svg data-icon="x-mark" aria-hidden="true"></svg></button>
+    </div>
+    <div class="dialog__body">
+      <p class="form-error" id="source-request-error" role="alert" hidden></p>
+      <div id="source-request-list" class="source-request-list" aria-live="polite"></div>
+    </div>
+  </dialog>
+
+  <dialog id="new-search-dialog" class="dialog dialog--confirm" aria-labelledby="new-search-title">
+    <form method="dialog">
+      <div class="dialog__head"><h2 id="new-search-title">结束当前对话？</h2></div>
+      <div class="dialog__body">
+        <p>当前对话仍在处理。返回首页会请求取消本轮运行；旧对话结果仍保留在服务端。</p>
+        <div class="form-actions">
+          <button class="button button--primary" value="confirm">取消并返回首页</button>
+          <button class="button button--quiet" value="cancel">留在此页</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="action-toast" role="status" aria-live="polite" hidden></div>
+
+  <script>
+    window.addEventListener('error', (event) => {
+      const target = document.body.dataset.view === 'home'
+        ? document.getElementById('form-error') : document.getElementById('fatal-error');
+      if (!target) return;
+      target.hidden = false;
+      target.textContent = `页面初始化失败：${event.message}（${event.filename}:${event.lineno}）`;
+    });
+    window.addEventListener('unhandledrejection', (event) => {
+      const target = document.body.dataset.view === 'home'
+        ? document.getElementById('form-error') : document.getElementById('fatal-error');
+      if (!target) return;
+      target.hidden = false;
+      target.textContent = `页面请求失败：${event.reason && event.reason.message ? event.reason.message : '未知错误'}`;
+    });
+  </script>
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

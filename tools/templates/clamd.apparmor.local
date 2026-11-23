@@ -1,0 +1,3 @@
+/opt/citation-tool/security/clamd.conf r,
+/{,var/}run/citation-av/ rw,
+/{,var/}run/citation-av/** rwk,

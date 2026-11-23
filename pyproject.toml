@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "citation-tool"
+version = "0.1.0"
+description = "Local, evidence-first literature recommendation walking skeleton"
+readme = "README.md"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+  "citeproc-py>=0.9,<1",
+  "fastapi>=0.115,<1",
+  "fastembed>=0.7,<1",
+  "google-re2>=1.1.20251105,<2",
+  "langchain>=1.0,<2",
+  "langchain-openai>=1,<2",
+  "numpy>=2,<3",
+  "pydantic>=2.10,<3",
+  "pypdfium2>=4,<6",
+  "rapidocr-onnxruntime>=1.4,<2",
+  "uvicorn>=0.30,<1",
+]
+
+[dependency-groups]
+dev = [
+  "httpx>=0.27,<1",
+  "lightgbm>=4.6,<5",
+  "pytest>=8,<10",
+  "pytest-asyncio>=0.24,<2",
+  "ruff>=0.9,<1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/citation_tool"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers --strict-config"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "tests", "tools"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "ASYNC", "S"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"tools/**" = ["S603"]

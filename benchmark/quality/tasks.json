@@ -1,0 +1,122 @@
+{
+  "suite_id": "abiotech-abstract-ood-v1",
+  "corpus_path": "data/runtime/quality-corpus/real-corpus.json",
+  "max_retrieval_rounds": 3,
+  "repetitions": 3,
+  "stability_case_ids": ["semantic_homeotic", "chinese_flower", "genotype_contrast"],
+  "tuning_case_ids": ["rare_lfy", "semantic_homeotic", "chinese_flower", "nutrient_nodules", "genotype_contrast", "association_not_causal", "correction_exclusion", "review_identity"],
+  "tasks": [
+    {
+      "case_id": "rare_lfy",
+      "slice": "exact_identifier",
+      "baseline_query": "在这批真实论文中找 LEAFY/LFY1/LFY2 控制大豆花器官形成的原始功能研究。请给出最相关候选、DOI 和依据摘要的推荐理由；不要把只分析开花期关联的论文混作功能验证。",
+      "request": {"input_type": "keywords", "keywords": ["LEAFY", "LFY1", "LFY2", "Glycine max", "floral organ formation"]},
+      "expect": {"required_ids": ["work:10.1007/s42994-024-00192-2"], "forbidden_ids": ["work:10.1007/s42994-025-00241-4", "work:10.1007/s42994-025-00249-w"], "gold_note": "目标摘要包含 lfy1/lfy2 单突变、双突变、花器官表型与 AP 基因表达；GWAS 开花期关联和番茄花期副作用不是同类功能证据。"}
+    },
+    {
+      "case_id": "semantic_homeotic",
+      "slice": "semantic_ood",
+      "baseline_query": "我在研究大豆花器官身份的决定机制。哪项原始研究通过单基因和双基因功能缺失材料，解析了 homeotic 转录因子级联，而不只是统计开花期关联？请推荐并解释。",
+      "request": {"input_type": "keywords", "keywords": ["soybean", "floral organ identity", "homeotic transcription factors", "single and double loss-of-function mutants"]},
+      "expect": {"required_ids": ["work:10.1007/s42994-024-00192-2"], "forbidden_ids": ["work:10.1007/s42994-025-00241-4", "work:10.1007/s42994-025-00249-w"], "gold_note": "此问故意不使用 LEAFY 基因名；应由功能实验与花器官语义找到 192，不靠表面 LFY 词匹配。"}
+    },
+    {
+      "case_id": "chinese_flower",
+      "slice": "cross_lingual",
+      "baseline_query": "请找大豆花器官建成中 LEAFY 同源基因的功能研究，最好同时有单突变、双突变以及下游花同源异型基因表达证据。用中文说明推荐理由，不要把其他作物的花期 GWAS 当作答案。",
+      "request": {"input_type": "keywords", "keywords": ["大豆", "LEAFY 同源基因", "花器官建成", "单突变", "双突变"]},
+      "expect": {"required_ids": ["work:10.1007/s42994-024-00192-2"], "forbidden_ids": ["work:10.1007/s42994-025-00241-4"], "gold_note": "跨语言、基因家族与功能实验组合约束；同一真实论文 192，不能用中文没有词形命中作为库中不存在的理由。"}
+    },
+    {
+      "case_id": "nutrient_nodules",
+      "slice": "reasoning_ood",
+      "baseline_query": "以下是我们的研究方向，请找真正对应的原始研究并说明理由：我们关注大豆根瘤里未感染细胞怎样通过胞间连丝与胼胝质沉积调节养分向感染细胞运输，进而影响共生固氮。综述可以另外列为背景，但不能替代这项实验研究。",
+      "request": {"input_type": "abstract", "abstract": "We investigate how uninfected soybean nodule cells regulate nutrient transfer to infected cells through plasmodesmata and callose deposition, thereby altering symbiotic nitrogen fixation."},
+      "expect": {"required_ids": ["work:10.1007/s42994-025-00247-y"], "background_ids": ["work:10.1007/s42994-024-00193-1", "work:10.1007/s42994-025-00208-5"], "gold_note": "目标 247 有未感染细胞、胞间连丝、胼胝质与养分运输的直接实验；193/208 只能作共生固氮背景综述。"}
+    },
+    {
+      "case_id": "genotype_contrast",
+      "slice": "conflicting_phenotypes",
+      "baseline_query": "找 SlGAD3 基因编辑提高商业番茄 GABA 的研究，并比较 SFT1、SFT2、SFT3 的 GABA 与开花表型。不能笼统说所有突变体都延迟开花，也不能把 GABA 增加写成所有品种都牺牲产量。",
+      "request": {"input_type": "abstract", "abstract": "We edited SlGAD3 in commercial tomato cultivars SFT1, SFT2 and SFT3 to increase GABA. We need to compare cultivar-specific flowering and agronomic trade-offs without overgeneralization."},
+      "expect": {"required_ids": ["work:10.1007/s42994-025-00249-w"], "required_response_terms": ["SFT1", "SFT2", "SFT3"], "gold_note": "三个品种 GABA 均提高；SFT2/SFT3 延迟开花，SFT1 保持野生型花期，不能全称化。"}
+    },
+    {
+      "case_id": "association_not_causal",
+      "slice": "causal_fidelity",
+      "baseline_query": "找直接检验 GmMYB93 在大豆香味形成中功能的研究。请准确区分基因沉默与过表达、BADH 调控与 2-AP 含量变化，不要只看标题就声称任何方向的过表达都必然增香。",
+      "request": {"input_type": "keywords", "keywords": ["GmMYB93", "soybean aroma", "BADH", "2-AP", "gene silencing"]},
+      "expect": {"required_ids": ["work:10.1007/s42994-025-00236-1"], "gold_note": "236 的摘要支持 GmMYB93 直接抑制 GmBADH2，沉默 GmMYB93 降低 2-AP；没有提供所有方向过表达都增香的证明。"}
+    },
+    {
+      "case_id": "correction_exclusion",
+      "slice": "publication_identity",
+      "baseline_query": "找自动测量小麦赤霉病病穗小穗比例的原始方法研究，排除更正声明。请返回原始研究的 DOI、方法和数据集规模；不要把 correction 当成第二项独立实验。",
+      "request": {"input_type": "keywords", "keywords": ["Fusarium head blight", "wheat", "diseased spikelet rate", "automated measurement", "original research"]},
+      "expect": {"required_ids": ["work:10.1007/s42994-025-00245-0"], "excluded_dois_in_answer": ["10.1007/s42994-025-00250-3"], "gold_note": "245 是原始 FHBDSR-Net 研究；250 是其更正声明。原始摘要报告 620 张图像和 5222 个小穗标注。"}
+    },
+    {
+      "case_id": "review_identity",
+      "slice": "review_vs_primary",
+      "baseline_query": "需要一篇专门讨论植物 RNA N6-methyladenosine 分子机制和作物改良潜力的综述，同时区分研究多种 RNA 修饰协同作用的原始论文。请说明各自文献类型，不要混为原始实验。",
+      "request": {"input_type": "keywords", "keywords": ["RNA N6-methyladenosine", "plants", "crop improvement", "review", "combinatorial RNA modifications"]},
+      "expect": {"required_ids": ["work:10.1007/s42994-025-00228-1"], "background_ids": ["work:10.1007/s42994-025-00248-x"], "gold_note": "228 是 m6A 综述；248 是拟南芥和水稻多种 RNA 修饰协同作用的原始研究，只能作为区分的背景。"}
+    },
+    {
+      "case_id": "unseen_segmentation",
+      "slice": "holdout_computational",
+      "baseline_query": "我需要一种轻量级图像分割方法，能分析苜蓿茎叶和枝条表型，并兼顾 DeepLabV3+ 与 U-Net 的优点。不要推荐只针对拟南芥叶片/角果或纯代谢组学的工作。",
+      "request": {"input_type": "keywords", "keywords": ["alfalfa", "lightweight image segmentation", "stem leaf branch phenotyping", "DeepLabV3+", "U-Net"]},
+      "expect": {"required_ids": ["work:10.1007/s42994-025-00235-2"], "forbidden_ids": ["work:10.1007/s42994-025-00239-y", "work:10.1007/s42994-024-00194-0"], "gold_note": "235 是苜蓿 DU-Net-L；239 虽同为图像表型工具但对象不同，194 是代谢组学综述。"}
+    },
+    {
+      "case_id": "proteomics_ood",
+      "slice": "holdout_method",
+      "baseline_query": "哪项原始研究提出同一蛋白质组学流程同时分析蛋白磷酸化和 S-nitrosylation？请给候选及理由；一般代谢组学综述不能回答这个方法学问题。",
+      "request": {"input_type": "keywords", "keywords": ["proteomics workflow", "simultaneous protein phosphorylation", "S-nitrosylation"]},
+      "expect": {"required_ids": ["work:10.1007/s42994-025-00227-2"], "forbidden_ids": ["work:10.1007/s42994-024-00194-0"], "gold_note": "227 直接对应两种蛋白修饰的同步蛋白质组学流程，不能用植物代谢组学大综述替代。"}
+    },
+    {
+      "case_id": "graph_pangenome",
+      "slice": "holdout_concept",
+      "baseline_query": "我们研究高度分化材料中的结构变异，希望超越单一线性参考基因组，了解图泛基因组的构建、比对与基因分型方法。请推荐最相关的综述，不要把玉米多性状 GWAS 当作图泛基因组方法。",
+      "request": {"input_type": "keywords", "keywords": ["graph pangenome", "structural variation", "highly divergent genomes", "read alignment", "genotyping"]},
+      "expect": {"required_ids": ["work:10.1007/s42994-025-00206-7"], "forbidden_ids": ["work:10.1007/s42994-025-00241-4"], "gold_note": "206 专述植物图泛基因组技术；241 是多性状 GWAS 和遗传网络，不是图泛基因组方法。"}
+    },
+    {
+      "case_id": "rare_proteasome",
+      "slice": "holdout_identifier",
+      "baseline_query": "找 OsRGLG6 通过 OsOTUB1 泛素化及 26S 蛋白酶体降解影响水稻每穗粒数的研究。请解释分子链条与一般产量 GWAS 有何不同。",
+      "request": {"input_type": "keywords", "keywords": ["OsRGLG6", "OsOTUB1", "26S proteasome", "rice grain number"]},
+      "expect": {"required_ids": ["work:10.1007/s42994-025-00232-5"], "forbidden_ids": ["work:10.1007/s42994-025-00241-4"], "gold_note": "232 有互作、泛素化、26S 降解和突变体每穗粒数证据；241 是统计遗传网络。"}
+    },
+    {
+      "case_id": "rice_negation",
+      "slice": "holdout_negation",
+      "baseline_query": "只找水稻 OsbHLH062 调控铁稳态和缺铁响应的研究，排除开花期、粒数或一般产量 GWAS 主题。保留其正负调控方向与组织差异，不要混入其他基因。",
+      "request": {"input_type": "keywords", "keywords": ["OsbHLH062", "rice", "iron homeostasis", "iron deficiency", "exclude flowering and grain-yield GWAS"]},
+      "expect": {"required_ids": ["work:10.1007/s42994-025-00203-w"], "forbidden_ids": ["work:10.1007/s42994-025-00232-5", "work:10.1007/s42994-025-00241-4"], "gold_note": "203 是 OsbHLH062 负调控缺铁响应且根/茎表达不同；232/241 是粒数产量主题。"}
+    },
+    {
+      "case_id": "out_of_domain_zero",
+      "slice": "holdout_zero_answer",
+      "baseline_query": "在这 50 篇植物生物技术论文中找人体 PD-1 免疫检查点抑制剂的随机临床试验，用来支持肿瘤免疫治疗结论。若没有真正相关研究，请明确零结果，不要拿植物免疫、抗病或人体健康泛泛应用来凑数。",
+      "request": {"input_type": "keywords", "keywords": ["human PD-1 checkpoint inhibitor", "randomized clinical trial", "cancer immunotherapy"]},
+      "expect": {"required_ids": [], "gold_note": "本库没有人体 PD-1 随机临床试验；植物 PRR/抗病和人体健康远景均不支持此临床命题。"}
+    },
+    {
+      "case_id": "inversion_causality_limit",
+      "slice": "holdout_answerability",
+      "baseline_query": "我要找直接证明 6.49-Mb 倒位导致马铃薯紫色胚斑，并且已经通过编辑倒位断点恢复表型的实验。请区分定位/关联证据与功能救援；如果没有后者，不要宣称倒位已被功能验证为因果。",
+      "request": {"input_type": "keywords", "keywords": ["potato", "purple embryo spot", "6.49-Mb inversion", "breakpoint editing", "phenotype rescue"]},
+      "expect": {"required_ids": [], "background_ids": ["work:10.1007/s42994-025-00197-5"], "gold_note": "197 支持定位、结构变异关联和断点位于高表达 MYB 启动子；摘要没有断点编辑或表型救援，不能升级为直接因果证明。"}
+    },
+    {
+      "case_id": "single_cell_ood",
+      "slice": "holdout_computational_semantics",
+      "baseline_query": "哪项工作用生成式深度学习处理高维、稀疏且有生物噪声的植物单细胞转录组，并进行细胞聚类与去噪？不要把图像分割或普通 bulk RNA-seq 方法当成答案。",
+      "request": {"input_type": "keywords", "keywords": ["generative deep learning", "plant single-cell transcriptomics", "sparse noisy data", "cell clustering", "denoising"]},
+      "expect": {"required_ids": ["work:10.1007/s42994-025-00196-6"], "forbidden_ids": ["work:10.1007/s42994-025-00235-2", "work:10.1007/s42994-025-00239-y"], "gold_note": "196 的 PhytoCluster 直接对应植物 scRNA-seq 聚类、去噪和潜特征；235/239 是图像分割。"}
+    }
+  ]
+}

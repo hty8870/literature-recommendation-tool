@@ -1,0 +1,1025 @@
+{
+  "suite_id": "astra-independent-abstract-v4",
+  "corpus_path": "data/runtime/quality-corpus/large-corpus.json",
+  "stability_case_ids": [
+    "v4-01",
+    "v4-03",
+    "v4-06",
+    "v4-14"
+  ],
+  "repetitions": 3,
+  "tuning_case_ids": [],
+  "development_case_ids": [],
+  "tasks": [
+    {
+      "case_id": "v4-01",
+      "slice": "精确身份/中文跨语言/分子诊断",
+      "baseline_query": "EXP-J；Cas12j 的三个变体及旁切活性；肺癌患者血浆中的 miRNA 检测原始研究；说明酶、报告底物、待测分子和临床材料，不把结直肠癌 circRNA 的 Cas13 双靶检测或 HSV-1 的 Cas12a 检测替代它；只按摘要回答，不补造灵敏度、样本量或检测限",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "EXP-J",
+          "Cas12j 的三个变体及旁切活性",
+          "肺癌患者血浆中的 miRNA 检测原始研究",
+          "说明酶、报告底物、待测分子和临床材料，不把结直肠癌 circRNA 的 Cas13 双靶检测或 HSV-1 的 Cas12a 检测替代它",
+          "只按摘要回答，不补造灵敏度、样本量或检测限"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1002/advs.202402580"
+        ],
+        "background_ids": [
+          "work:10.1002/ctm2.70482"
+        ],
+        "forbidden_ids": [
+          "work:10.1002/advs.202506159",
+          "work:10.1002/advs.78445"
+        ],
+        "gold_note": "核心是2024年EXP-J原始研究：考察Cas12j1、2、3的旁切行为、靶偏好和错配特异性，利用Cas12j对短ssDNA的旁切检测miRNA，并在肺癌患者血浆检测致癌miRNA。短ssDNA是旁切底物，不应改写成待测RNA或患者病原。摘要没有临床样本量、灵敏度百分比或检测限，须说明未报告。CRISPR诊断综述仅作机制与转化背景。Casµchip是Cas13a/13b-RPA检测结直肠癌circRNA；Phos-CRISPR是Cas12a报告探针工程及HSV-1检测，都不能替代EXP-J。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1002/advs.202402580",
+            "role": "required",
+            "field": "abstract",
+            "quote": "Here, the trans-cleavage behavior of Cas12j1, 2, and 3 variants and evaluate their suitability for nucleic acid detection is unveiled.",
+            "supports": "支持三个Cas12j变体的研究身份；不能据此推出每个变体具有相同临床性能。"
+          },
+          {
+            "work_id": "work:10.1002/advs.202402580",
+            "role": "required",
+            "field": "abstract",
+            "quote": "As a result, the EXP-J assay for miRNA detection by harnessing the robust trans-cleavage activity of Cas12j on short ssDNA is developed.",
+            "supports": "支持EXP-J、miRNA待测分子和短ssDNA旁切底物的对应；不能把ssDNA当成患者样本中的待测miRNA。"
+          },
+          {
+            "work_id": "work:10.1002/advs.202402580",
+            "role": "required",
+            "field": "abstract",
+            "quote": "Furthermore, the translational potential of the EXP-J assay is validated by detecting oncogenic miRNAs in plasma samples from lung cancer patients.",
+            "supports": "支持肺癌患者血浆应用；不能支持摘要未列出的样本量、诊断准确率或检测限。"
+          },
+          {
+            "work_id": "work:10.1002/ctm2.70482",
+            "role": "background",
+            "field": "abstract",
+            "quote": "This article reviews the recent research progress in the CRISPR/Cas system for detecting nucleic acids, with an emphasis on CRISPR/Cas9, CRISPR/Cas12, and CRISPR/Cas13.",
+            "supports": "支持CRISPR检测综述背景；不是EXP-J原始实验，不得移植其中泛称的性能给EXP-J。"
+          },
+          {
+            "work_id": "work:10.1002/advs.202506159",
+            "role": "forbidden",
+            "field": "abstract",
+            "quote": "Leveraging the distinct base-cutting preferences of these two Cas proteins, it is successfully expressed and purified LwaCas13a and PsmCas13b, and developed a one-pot Cas13a/13b-RPA assay for the simultaneous detection of circCK1γ3 and circWDR37.",
+            "supports": "支持另一项Cas13双circRNA检测身份；不支持Cas12j/EXP-J或肺癌miRNA检测，排除仅限本案核心替代。"
+          },
+          {
+            "work_id": "work:10.1002/advs.78445",
+            "role": "forbidden",
+            "field": "abstract",
+            "quote": "Applied to herpes simplex virus 1 detection, the Phos-CRISPR combined with recombinase polymerase amplification achieved a limit of detection of 20 aM and accurately identified clinical swab samples.",
+            "supports": "支持Phos-CRISPR对HSV-1及拭子样本的结果；其20 aM不能移给EXP-J血浆miRNA检测。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "v4-02",
+      "slice": "语义OOD/材料电催化/机制边界",
+      "baseline_query": "I am looking for an experimental carbon-catalyst study relevant to both oxygen reduction and oxygen evolution. The design question is whether changing the geometry of the carbon rings, rather than adding nitrogen or a metal, can explain a favorable overpotential. A food-derived carbon precursor is acceptable, but this is an electrocatalysis question, not crop physiology or sunlight-driven hydrogen generation. Identify the material preparation and the particular ring arrangement supported by the abstract; do not invent a numerical overpotential or generalize the result to every carbon defect.",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "I am looking for an experimental carbon-catalyst study relevant to both oxygen reduction and oxygen evolution. The design question is whether changing the geometry of the carbon rings, rather than adding nitrogen or a metal, can explain a favorable overpotential. A food-derived carbon precursor is acceptable, but this is an electrocatalysis question, not crop physiology or sunlight-driven hydrogen generation. Identify the material preparation and the particular ring arrangement supported by the abstract; do not invent a numerical overpotential or generalize the result to every carbon defect."
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1002/adma.201601406"
+        ],
+        "background_ids": [],
+        "forbidden_ids": [
+          "work:10.1021/jacs.7b08416"
+        ],
+        "gold_note": "核心报告用天然糊化糯米碳化制得富含拓扑缺陷的双功能石墨烯催化剂；无氮、相邻五元与七元碳环构型被报告对氧还原及析氧具有最低过电位。摘要不提供数值或全部比较构型，不能声称所有缺陷都更优，也不能补充未述及的实验/计算细节。糯米在此是材料前驱物，不是农业产量研究。黑磷/石墨相氮化碳虽为无金属催化剂，但研究的是光催化产氢，不满足双氧电催化条件。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1002/adma.201601406",
+            "role": "required",
+            "field": "abstract",
+            "quote": "A bifunctional graphene catalyst with abundant topological defects is achieved via the carbonization of natural gelatinized sticky rice to probe the underlying oxygen electrocatalytic mechanism.",
+            "supports": "支持材料、制备来源及氧电催化研究身份；不支持糯米作物生理结论。"
+          },
+          {
+            "work_id": "work:10.1002/adma.201601406",
+            "role": "required",
+            "field": "abstract",
+            "quote": "A nitrogen-free configuration with adjacent pentagon and heptagon carbon rings is revealed to exhibit the lowest overpotential for both oxygen reduction and evolution catalysis.",
+            "supports": "支持特定无氮五/七元环构型及双反应过电位的定性结论；不提供具体过电位或对所有缺陷的普遍规律。"
+          },
+          {
+            "work_id": "work:10.1021/jacs.7b08416",
+            "role": "forbidden",
+            "field": "abstract",
+            "quote": "To this end, a binary nanohybrid (BP/CN) of two-dimensional (2D) black phosphorus (BP) and graphitic carbon nitride (CN) was designed and used as a metal-free photocatalyst for the first time.",
+            "supports": "支持无金属光催化近邻的材料身份；不支持无氮碳环构型或氧还原/析氧电催化，不能只凭metal-free替代核心。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "v4-03",
+      "slice": "中文跨语言/健康肝脏/方法互补",
+      "baseline_query": "我们在规划健康人肝脏的细胞图谱，希望找到直接配对比较单细胞与单核RNA测序、并用独立空间数据和组织染色验证定位的研究。请说明两种测序分别补获哪些细胞、为何不能只保留单核方案，并区分细胞总数与供体人数。不要把以原发性硬化性胆管炎病变和免疫募集为中心的图谱当作这项健康肝脏方法比较，也不要用技术综述替代原始数据。仅回答摘要可支持的范围。",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "我们在规划健康人肝脏的细胞图谱，希望找到直接配对比较单细胞与单核RNA测序、并用独立空间数据和组织染色验证定位的研究。请说明两种测序分别补获哪些细胞、为何不能只保留单核方案，并区分细胞总数与供体人数。不要把以原发性硬化性胆管炎病变和免疫募集为中心的图谱当作这项健康肝脏方法比较，也不要用技术综述替代原始数据。仅回答摘要可支持的范围。"
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1002/hep4.1854"
+        ],
+        "background_ids": [
+          "work:10.1038/s41575-020-0304-x"
+        ],
+        "forbidden_ids": [
+          "work:10.1016/j.jhep.2023.12.023"
+        ],
+        "gold_note": "核心是健康人肝脏匹配scRNA-seq/snRNA-seq的73,295个细胞图谱，不是73,295位供体。当前摘要未报告供体人数，不能从细胞数推算。snRNA-seq补充肝小叶分区间（interzonal）肝细胞、罕见间充质亚型和胆管祖细胞；该研究中T/B淋巴细胞与NK细胞只有scRNA-seq能够区分，因此不能声称单核方案全面优于单细胞。独立空间转录组及免疫组织化学支持空间分布，不等于治疗干预验证。肝病技术综述仅作背景。PSC近邻虽包含健康对照和两种测序，但研究中心、样本及病变结论不同，不能替代指定健康肝脏方法比较。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1002/hep4.1854",
+            "role": "required",
+            "field": "abstract",
+            "quote": "Here, we report the transcriptional landscape of 73,295 cells from the human liver using matched single-cell RNA sequencing (scRNA-seq) and single-nucleus RNA sequencing (snRNA-seq).",
+            "supports": "支持匹配技术及细胞总量；不能把细胞数改作患者或供体人数。"
+          },
+          {
+            "work_id": "work:10.1002/hep4.1854",
+            "role": "required",
+            "field": "abstract",
+            "quote": "The addition of snRNA-seq enabled the characterization of interzonal hepatocytes at a single-cell resolution, revealed the presence of rare subtypes of liver mesenchymal cells, and facilitated the detection of cholangiocyte progenitors that had only been observed during in vitro differentiation experiments.",
+            "supports": "支持单核方案在该研究的补充发现；不能推断所有组织都同样受益或该研究本身完成体外分化验证。"
+          },
+          {
+            "work_id": "work:10.1002/hep4.1854",
+            "role": "required",
+            "field": "abstract",
+            "quote": "However, T and B lymphocytes and natural killer cells were only distinguishable using scRNA-seq, highlighting the importance of applying both technologies to obtain a complete map of tissue-resident cell types.",
+            "supports": "支持本研究两种技术互补而非单核全面替代；不能推广为所有单核技术永远无法识别这些细胞。"
+          },
+          {
+            "work_id": "work:10.1002/hep4.1854",
+            "role": "required",
+            "field": "abstract",
+            "quote": "We validated the distinct spatial distribution of the hepatocyte, cholangiocyte, and mesenchymal cell populations by an independent spatial transcriptomics data set and immunohistochemistry.",
+            "supports": "支持空间分布的独立验证；不支持疾病治疗或随机干预因果结论。"
+          },
+          {
+            "work_id": "work:10.1038/s41575-020-0304-x",
+            "role": "background",
+            "field": "abstract",
+            "quote": "In this Review, we discuss how these technologies have been applied in hepatology, advancing our understanding of cellular heterogeneity and providing novel insights into fundamental liver biology such as the metabolic zonation of hepatocytes, endothelial cells and hepatic stellate cells, and the cellular mechanisms underpinning liver regeneration.",
+            "supports": "支持肝脏单细胞技术背景与综述角色；不能替代指定原始配对比较。"
+          },
+          {
+            "work_id": "work:10.1016/j.jhep.2023.12.023",
+            "role": "forbidden",
+            "field": "abstract",
+            "quote": "We employed single-cell and single-nucleus RNA sequencing (47,156 cells and 23,000 nuclei) and spatial transcriptomics (one sample by 10x Visium and five samples with Nanostring GeoMx DSP) to profile the cellular ecosystem in 10 PSC livers.",
+            "supports": "支持PSC图谱的设计与样本单位；不能把PSC研究的数量和病变结论转移给健康肝脏核心，也不否认它包含健康对照。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "v4-04",
+      "slice": "定量方法/酶动力学/不确定性",
+      "baseline_query": "Michaelis-Menten parameter uncertainty in CRISPR-Cas enzyme measurements; Monte Carlo together with experimental-data analysis for kcat, KM and catalytic efficiency; assess inner-filter bias, pipetting, curve sampling and flat-field correction; seek the uncertainty method, not a new assay claiming a lower detection limit; report only what the abstract establishes and do not invent numerical uncertainty intervals",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "Michaelis-Menten parameter uncertainty in CRISPR-Cas enzyme measurements",
+          "Monte Carlo together with experimental-data analysis for kcat, KM and catalytic efficiency",
+          "assess inner-filter bias, pipetting, curve sampling and flat-field correction",
+          "seek the uncertainty method, not a new assay claiming a lower detection limit",
+          "report only what the abstract establishes and do not invent numerical uncertainty intervals"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1002/anie.202209527"
+        ],
+        "background_ids": [],
+        "forbidden_ids": [
+          "work:10.1002/anie.202300663"
+        ],
+        "gold_note": "核心用Monte Carlo和实验数据分析量化Michaelis-Menten参数kcat、KM和kcat/KM的不确定性，讨论内滤效应、移液误差、曲线点数及平场校正，以CRISPR-Cas为例。摘要没有数值不确定区间，不能补造。酶动力学参数不确定性不是临床诊断灵敏度或核酸检测限。光启动Cas12a论文比较检测敏感度与时间，不能充当该不确定性分析。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1002/anie.202209527",
+            "role": "required",
+            "field": "abstract",
+            "quote": "We study the influence of several sources of uncertainty and bias, including the inner filter effect, pipetting errors, number of points in the Michaelis-Menten curve, and flat-field correction.",
+            "supports": "支持所分析的误差来源；不提供各来源贡献比例或校正后的具体区间。"
+          },
+          {
+            "work_id": "work:10.1002/anie.202209527",
+            "role": "required",
+            "field": "abstract",
+            "quote": "Using Monte Carlo simulations and analyses of experimental data, we compute typical uncertainties",
+            "supports": "支持模拟结合实验数据的不确定性计算；不能将typical uncertainties解释为摘要已给定数字或临床灵敏度。"
+          },
+          {
+            "work_id": "work:10.1002/anie.202209527",
+            "role": "required",
+            "field": "abstract",
+            "quote": "As a salient example, we analyze the extraction of such parameters for CRISPR-Cas systems.",
+            "supports": "支持CRISPR-Cas作为参数提取实例；不支持新临床诊断试验的样本量或效能。"
+          },
+          {
+            "work_id": "work:10.1002/anie.202300663",
+            "role": "forbidden",
+            "field": "abstract",
+            "quote": "Here, we have developed a light-start CRISPR-Cas12a reaction by employing caged CRISPR RNA (crRNA). When combined with recombinase polymerase amplification, a robust photocontrolled one-pot assay is achieved.",
+            "supports": "支持光控Cas12a与RPA的检测方法；不是Monte Carlo动力学误差分析，不能将其检测性能替换成参数不确定性。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "v4-05",
+      "slice": "多对象比较/药物基因组/年份与分母",
+      "baseline_query": "compare the 2016 and 2017 human CYP2D6 long-read PacBio reports; retrieve both original studies separately, not either one alone; compare full-gene phasing, duplicated-allele resolution, sample-group denominators and the handling of deletions; distinguish sequencing concordance from demonstrated prescribing benefit; do not substitute a generic whole-exome capture comparison or assume the two reports share a cohort; use title and abstract evidence only",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "compare the 2016 and 2017 human CYP2D6 long-read PacBio reports",
+          "retrieve both original studies separately, not either one alone",
+          "compare full-gene phasing, duplicated-allele resolution, sample-group denominators and the handling of deletions",
+          "distinguish sequencing concordance from demonstrated prescribing benefit",
+          "do not substitute a generic whole-exome capture comparison or assume the two reports share a cohort",
+          "use title and abstract evidence only"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1002/humu.22936",
+          "work:10.1002/humu.23166"
+        ],
+        "background_ids": [],
+        "forbidden_ids": [
+          "work:10.1002/humu.22825"
+        ],
+        "gold_note": "必须分别覆盖两篇，缺一不算多对象覆盖。2016报告：10个既往分型对照、15个CNV对照的重复等位基因分析、14个既往不一致/不清楚构型样本；不能未经说明把三组加成39个互不重叠受试者。技术重复中非参考基因型一致，不是处方结局。2016摘要未交代基因缺失处理，也未单列相位准确率；应保留未报告，不能套用2017结果或据此断言该技术无此能力。2017报告：全长相位序列；25个样本中24个既往无相位diplotype得到确认，缺失需额外专门检测，检出61个独特变异。24/25为96%，不是61人的临床获益率，也不说明两报告属于同一队列或已证实改善用药。全外显子捕获比较不是这两项CYP2D6研究。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1002/humu.22936",
+            "role": "required",
+            "field": "abstract",
+            "quote": "Long-range PCR and CYP2D6 SMRT sequencing of 10 previously genotyped controls identified expected star (*) alleles, but also enabled suballele resolution, diplotype refinement, and discovery of novel alleles.",
+            "supports": "支持2016研究10个既往分型对照及解析能力；不能自动与其他组相加为独立总人数。"
+          },
+          {
+            "work_id": "work:10.1002/humu.22936",
+            "role": "required",
+            "field": "abstract",
+            "quote": "Importantly, targeted SMRT sequencing of upstream and downstream CYP2D6 gene copies characterized the duplicated allele in 15 control samples with CYP2D6 CNVs.",
+            "supports": "支持15个CNV对照中的重复等位基因解析；不证明所有CNV或缺失均无需其他检测。"
+          },
+          {
+            "work_id": "work:10.1002/humu.22936",
+            "role": "required",
+            "field": "abstract",
+            "quote": "The utility of CYP2D6 SMRT sequencing was further underscored by identifying the diplotypes of 14 samples with discordant or unclear CYP2D6 configurations from previous targeted genotyping, which again included suballele resolution, duplicated allele characterization, and discovery of a novel allele and tandem arrangement.",
+            "supports": "支持14个不一致/不明构型样本组；不能把技术解析等同处方获益或认定与2017队列重合。"
+          },
+          {
+            "work_id": "work:10.1002/humu.23166",
+            "role": "required",
+            "field": "abstract",
+            "quote": "To circumvent this, we sequenced CYP2D6 using the Pacific Biosciences RSII and obtained high-quality, full-length, phased CYP2D6 sequences, enabling accurate variant calling and haplotyping of the entire gene-locus including exonic, intronic, and upstream and downstream regions.",
+            "supports": "支持2017全长相位测序的覆盖范围；不支持每种结构变异都能单靠此法解决。"
+          },
+          {
+            "work_id": "work:10.1002/humu.23166",
+            "role": "required",
+            "field": "abstract",
+            "quote": "Unphased diplotypes (Roche AmpliChip CYP450 test) were confirmed for 24 of the 25 samples, including gene duplications. Cases with gene deletions required additional specific assays to resolve. In total, 61 unique variants were detected, including variants that had not previously been associated with specific haplotypes.",
+            "supports": "支持24/25样本确认、61个变异及缺失另测边界；96%是确认比例而非患者用药获益率。"
+          },
+          {
+            "work_id": "work:10.1002/humu.22825",
+            "role": "forbidden",
+            "field": "abstract",
+            "quote": "We evaluated two hybridization capture-based and two amplicon-based whole-exome sequencing approaches, utilizing both Illumina and Ion Torrent sequencers, comparing on-target alignment, uniformity, and variant calling.",
+            "supports": "支持全外显子富集/平台比较；不支持PacBio全长CYP2D6相位或指定两篇的分母。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "v4-06",
+      "slice": "多对象比较/中文跨语言/光催化产物与分母",
+      "baseline_query": "为选择二氧化碳光还原材料，我需要分别找到两类原始研究：海胆状赤铁矿与氮化碳构成的直接Z型体系，以及二氧化钛与硫化镉的可回收复合薄膜。两类必须都覆盖。请逐项比较产物身份、摘要报告的定量单位或倍数及各自参照材料，并说明原位辐照XPS与密度泛函计算各用于什么证据。不要把产氢S型体系替代二氧化碳还原，不要将一氧化碳的绝对速率与甲烷的相对倍数直接排名，也不要把一项材料的无助催化剂条件转移到另一项。仅据摘要回答。",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "为选择二氧化碳光还原材料，我需要分别找到两类原始研究：海胆状赤铁矿与氮化碳构成的直接Z型体系，以及二氧化钛与硫化镉的可回收复合薄膜。两类必须都覆盖。请逐项比较产物身份、摘要报告的定量单位或倍数及各自参照材料，并说明原位辐照XPS与密度泛函计算各用于什么证据。不要把产氢S型体系替代二氧化碳还原，不要将一氧化碳的绝对速率与甲烷的相对倍数直接排名，也不要把一项材料的无助催化剂条件转移到另一项。仅据摘要回答。"
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1002/adma.201706108",
+          "work:10.1002/adma.201802981"
+        ],
+        "background_ids": [
+          "work:10.1002/anie.201914925"
+        ],
+        "forbidden_ids": [
+          "work:10.1002/adma.202100317"
+        ],
+        "gold_note": "必须分别覆盖两材料，不能二选一。赤铁矿/g-C3N4：产CO，27.2 µmol g-1 h-1，无助催化剂与牺牲试剂，对照单独g-C3N4为10.3；摘要说>2.2倍，不能误读为恰为2.2倍。该研究DFT建模CO2与CO在三种表面的吸附。TiO2/CdS薄膜：产物比较为甲烷，相对CdS、TiO2、P25分别3.5、5.4、6.3倍；ISI-XPS支持载流子迁移路径，DFT支持异质结形成内因。摘要没有共同归一化条件，不做跨论文优劣排名，不移植绝对速率或无添加剂条件。Z型CO2还原综述作背景；CdS/PT是S型产H2体系，不是本案两材料之一。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1002/adma.201706108",
+            "role": "required",
+            "field": "abstract",
+            "quote": "A hierarchical direct Z-scheme system consisting of urchin-like hematite and carbon nitride provides an enhanced photocatalytic activity of reduction of CO2 to CO, yielding a CO evolution rate of 27.2 µmol g-1 h-1 without cocatalyst and sacrifice reagent, which is >2.2 times higher than that produced by g-C3 N4 alone (10.3 µmol g-1 h-1 ).",
+            "supports": "支持CO产物、质量时间归一速率及特定对照；不能作为甲烷速率，或跨体系比较的共同分母。"
+          },
+          {
+            "work_id": "work:10.1002/adma.201706108",
+            "role": "required",
+            "field": "abstract",
+            "quote": "The origin of such an obvious advantage of the hierarchical Z-scheme is not only explained based on the experimental data but also investigated by modeling CO2 adsorption and CO adsorption on the three different atomic-scale surfaces via density functional theory calculation.",
+            "supports": "支持该材料的吸附DFT分析；不支持把另一论文的ISI-XPS实验移植过来。"
+          },
+          {
+            "work_id": "work:10.1002/adma.201802981",
+            "role": "required",
+            "field": "abstract",
+            "quote": "In situ irradiated X-ray photoelectron spectroscopy (ISI-XPS) confirms the direct Z-scheme charge-carrier migration pathway in the photocatalytic system. Furthermore, density functional theory simulation identifies the intrinsic cause for the formation of the direct Z-scheme heterojunction between the TiO2 and the CdS.",
+            "supports": "支持薄膜的XPS路径证据和DFT形成机制；不能据此补造原子级实测轨迹或另一材料的实验。"
+          },
+          {
+            "work_id": "work:10.1002/adma.201802981",
+            "role": "required",
+            "field": "abstract",
+            "quote": "Thanks to the significantly enhanced redox abilities of the charge carriers in the direct Z-scheme system, the photocatalytic CO2 reduction performance of the optimized TiO2 /CdS is 3.5, 5.4, and 6.3 times higher than that of CdS, TiO2 , and commercial TiO2 (P25), respectively, in terms of methane production.",
+            "supports": "支持三个甲烷相对倍数与三个对照的一一对应；不能写成CO绝对速率或不同论文的共同对照。"
+          },
+          {
+            "work_id": "work:10.1002/anie.201914925",
+            "role": "background",
+            "field": "abstract",
+            "quote": "In this review, we firstly introduce the fundamentals of photocatalytic CO2 reduction and Z-scheme systems.",
+            "supports": "支持Z型CO2还原综述背景；不能替代两项原始材料结果。"
+          },
+          {
+            "work_id": "work:10.1002/adma.202100317",
+            "role": "forbidden",
+            "field": "abstract",
+            "quote": "The optimized CdS/PT composite, coupling 2 wt% PT with CdS, exhibits a robust H2 evolution rate of 9.28 mmol h-1 g-1 with continuous release of H2 bubbles, as well as a high apparent quantum efficiency of 24.3%, which is ≈8 times that of pure CdS.",
+            "supports": "支持另一个CdS/PT产氢体系；不能把H2速率或量子效率当成本案CO/甲烷数据。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "v4-07",
+      "slice": "文献角色/系统综述/定量证据强度",
+      "baseline_query": "低剂量CT肺癌筛查的随机试验证据综合；需要同时评估肺癌死亡、全因死亡与筛查伤害的系统综述及荟萃分析，不是单篇试验；解释纳入全部研究与死亡结局分析的分母、随访条件、风险比及证据确定性；不能用AI结节识别表现或肺结节管理综述替代死亡证据，也不能把相对风险下降写成绝对百分点下降或直接推广给不吸烟人群；只限摘要",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "低剂量CT肺癌筛查的随机试验证据综合",
+          "需要同时评估肺癌死亡、全因死亡与筛查伤害的系统综述及荟萃分析，不是单篇试验",
+          "解释纳入全部研究与死亡结局分析的分母、随访条件、风险比及证据确定性",
+          "不能用AI结节识别表现或肺结节管理综述替代死亡证据，也不能把相对风险下降写成绝对百分点下降或直接推广给不吸烟人群",
+          "只限摘要"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1002/14651858.cd013829.pub2"
+        ],
+        "background_ids": [
+          "work:10.1001/jama.2021.24287"
+        ],
+        "forbidden_ids": [
+          "work:10.1002/cam4.7140"
+        ],
+        "gold_note": "核心为2022年系统综述，检索截至2021-07-31，总纳入11试验94,445人；死亡分析仅纳入随访至少5年的试验。肺癌死亡8试验91,122人，RR0.79、95%CI0.72–0.87、中等确定性，即相对下降21%而非21个百分点；全因死亡8试验91,107人，RR0.95、95%CI0.91–0.99。侵入检查增加RR2.60，过度诊断估计18%但区间0–36%、低确定性，不能只报获益不报伤害。结论针对高危/显著吸烟暴露人群，摘要仅说非吸烟者试验进行中。结节管理综述作临床背景，AI检测综述不能替代死亡试验综合。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1002/14651858.cd013829.pub2",
+            "role": "required",
+            "field": "abstract",
+            "quote": "We only included trials in the analysis of mortality outcomes if they had at least 5 years of follow-up.",
+            "supports": "支持死亡结局纳入条件；不意味着所有11项试验都参与每个死亡分析。"
+          },
+          {
+            "work_id": "work:10.1002/14651858.cd013829.pub2",
+            "role": "required",
+            "field": "abstract",
+            "quote": "We included 11 trials in this review with a total of 94,445 participants.",
+            "supports": "支持综述总体研究和参与者数；不能用来替换具体结局分母。"
+          },
+          {
+            "work_id": "work:10.1002/14651858.cd013829.pub2",
+            "role": "required",
+            "field": "abstract",
+            "quote": "(RR 0.79, 95% CI 0.72 to 0.87; 8 trials, 91,122 participants; moderate-certainty evidence)",
+            "supports": "支持肺癌死亡相对风险、分母与确定性；不提供基线绝对风险或绝对风险差。"
+          },
+          {
+            "work_id": "work:10.1002/14651858.cd013829.pub2",
+            "role": "required",
+            "field": "abstract",
+            "quote": "There was also a reduction in all-cause mortality (including lung cancer-related) of 5% (RR 0.95, 95% CI 0.91 to 0.99; 8 trials, 91,107 participants; moderate-certainty evidence).",
+            "supports": "支持全因死亡的独立分母及相对下降；不能混用肺癌死亡的91,122人。"
+          },
+          {
+            "work_id": "work:10.1002/14651858.cd013829.pub2",
+            "role": "required",
+            "field": "abstract",
+            "quote": "Invasive tests occurred more frequently in the LDCT group (RR 2.60, 95% CI 2.41 to 2.80; 3 trials, 60,003 participants; moderate-certainty evidence).",
+            "supports": "支持侵入性检查这一筛查伤害；不是术后死亡风险升高的直接证据。"
+          },
+          {
+            "work_id": "work:10.1002/14651858.cd013829.pub2",
+            "role": "required",
+            "field": "abstract",
+            "quote": "Estimated overdiagnosis with LDCT screening was 18%, however the 95% CI was 0 to 36%",
+            "supports": "支持过度诊断估计的不确定区间；不能只报18%而隐藏区间或当作肺癌死亡绝对差。"
+          },
+          {
+            "work_id": "work:10.1001/jama.2021.24287",
+            "role": "background",
+            "field": "abstract",
+            "quote": "The treatment of an individual with a pulmonary nodule should be guided by the probability that the nodule is malignant, safety of testing, the likelihood that additional testing will be informative, and patient preferences.",
+            "supports": "支持结节个体管理背景；不能充当LDCT死亡随机试验的荟萃估计，也不补齐该摘要的截断片段。"
+          },
+          {
+            "work_id": "work:10.1002/cam4.7140",
+            "role": "forbidden",
+            "field": "abstract",
+            "quote": "It then explores the applications of AI in lung cancer screening, including lung segmentation, nodule detection, and classification, and assesses the potential of AI in enhancing the sensitivity of nodule detection and reducing false-positive rates.",
+            "supports": "支持AI影像检测综述；不能把检测准确性当作LDCT降低死亡的干预证据。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "v4-08",
+      "slice": "范围与因果/肿瘤代谢/观察与干预",
+      "baseline_query": "我们想评估SLC1A5是否值得作为非小细胞肺癌的谷氨酰胺代谢靶点。请找同时有RNA干扰或GPNA处理、异种移植结果以及患者生存关联的原始研究，分别说明干预作用发生在哪些模型、是否只涉及特定细胞亚群，以及患者结果属于什么证据。不要把观察性预后关联写成患者接受抑制剂后获益的随机试验，也不要把PHB1靶向纳米颗粒研究替代SLC1A5。摘要未报告的人体疗效不得补写。",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "我们想评估SLC1A5是否值得作为非小细胞肺癌的谷氨酰胺代谢靶点。请找同时有RNA干扰或GPNA处理、异种移植结果以及患者生存关联的原始研究，分别说明干预作用发生在哪些模型、是否只涉及特定细胞亚群，以及患者结果属于什么证据。不要把观察性预后关联写成患者接受抑制剂后获益的随机试验，也不要把PHB1靶向纳米颗粒研究替代SLC1A5。摘要未报告的人体疗效不得补写。"
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1002/ijc.29535"
+        ],
+        "background_ids": [],
+        "forbidden_ids": [
+          "work:10.1073/pnas.1505629112"
+        ],
+        "gold_note": "核心以RNAi与GPNA靶向SLC1A5。在过表达SLC1A5的NSCLC细胞系亚群中，遗传或药理失活降低谷氨酰胺摄取和生长、诱导自噬凋亡；异种移植肿瘤生长下降。患者结果为表达与生存的Cox关联：mRNA调整HR1.24、95%CI1.05–1.46；207例IHC蛋白队列多变量HR1.22、95%CI1.01–1.31。不能说给207名患者使用GPNA有效，也不能把207自动当作mRNA分析的样本量。PHB1近邻研究另一个靶点，患者预后关联同样不能移成治疗效果。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1002/ijc.29535",
+            "role": "required",
+            "field": "abstract",
+            "quote": "SLC1A5 targeting was examined in a panel of NSCLC and human bronchial cell lines by RNA interference and by a small molecular inhibitor, gamma-l-glutamyl-p-nitroanilide (GPNA).",
+            "supports": "支持实验干预对象是细胞系；不支持人体患者被随机分配接受GPNA。"
+          },
+          {
+            "work_id": "work:10.1002/ijc.29535",
+            "role": "required",
+            "field": "abstract",
+            "quote": "Inactivation of SLC1A5 genetically or pharmacologically decreased Gln consumption, inhibited cell growth, induced autophagy and apoptosis in a subgroup of NSCLC cell lines that overexpress SLC1A5. Targeting SLC1A5 function decreased tumor growth in NSCLC xenografts.",
+            "supports": "支持特定细胞系亚群与异种移植干预结果；不能推广到所有NSCLC或患者生存获益。"
+          },
+          {
+            "work_id": "work:10.1002/ijc.29535",
+            "role": "required",
+            "field": "abstract",
+            "quote": "In an immunohistochemistry study on 207 NSCLC patients, SLC1A5 protein expression remained highly significant prognostic value",
+            "supports": "支持207例属于蛋白IHC预后研究；不是抑制剂治疗试验，也不能自动赋给另一个mRNA分析。"
+          },
+          {
+            "work_id": "work:10.1073/pnas.1505629112",
+            "role": "forbidden",
+            "field": "abstract",
+            "quote": "With this RNAi NP, we delineate and validate the therapeutic role of Prohibitin1 (PHB1), a target protein that has not been systemically evaluated in vivo due to the lack of specific and effective inhibitors, in treating non-small cell lung cancer (NSCLC) as evidenced by the drastic inhibition of tumor growth upon PHB1 silencing.",
+            "supports": "支持PHB1而非SLC1A5的NSCLC靶向结果；同病种和RNAi不能替换具体靶点与GPNA证据。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "v4-09",
+      "slice": "临床原始研究/中期报告/分母与安全",
+      "baseline_query": "severe Wiskott-Aldrich syndrome autologous lentiviral CD34+ cell therapy; intermediate analysis of the France and England treatment program enrolling during 2010-2014; distinguish all treated patients, survivors and the autoimmune subgroup when describing benefits and deaths; report the follow-up window and limits of the safety claim; not SCID-X1 with persistent immune dysfunction despite haploidentical transplantation in infancy and not proof from a randomized controlled trial; abstract evidence only",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "severe Wiskott-Aldrich syndrome autologous lentiviral CD34+ cell therapy",
+          "intermediate analysis of the France and England treatment program enrolling during 2010-2014",
+          "distinguish all treated patients, survivors and the autoimmune subgroup when describing benefits and deaths",
+          "report the follow-up window and limits of the safety claim",
+          "not SCID-X1 with persistent immune dysfunction despite haploidentical transplantation in infancy and not proof from a randomized controlled trial",
+          "abstract evidence only"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1001/jama.2015.3253"
+        ],
+        "background_ids": [
+          "work:10.1002/jgm.3015"
+        ],
+        "forbidden_ids": [
+          "work:10.1126/scitranslmed.aad8856"
+        ],
+        "gold_note": "2015中期报告为缺乏HLA匹配供体的7名重度WAS患者，自体基因修正HSC/CD34+慢病毒载体治疗，预处理为myeloablative。2010年12月至2014年1月治疗，摘要随访9–42个月。末次随访6/7存活并获益，一人在治疗后7个月死于既存耐药疱疹病毒感染；湿疹和感染易感缓解的分母为6名，免疫自身病改善为5/5，不能都写成7/7。摘要同时给出9–42个月随访范围与7个月死亡，应分别保留，不能推断所有7人均至少随访9个月，也不能自行补出范围仅指存活者或其计算规则。未观察到载体相关毒性不是零死亡、长期安全定论或随机试验有效性。摘要明确还需更大受控试验。SCID-X1近邻是另一疾病、婴儿期半相合移植后仍有持续免疫功能障碍及不同预处理，不等于摘要已证明植入失败，不得转移。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1001/jama.2015.3253",
+            "role": "required",
+            "field": "abstract",
+            "quote": "Gene-corrected autologous HSCs were infused in 7 consecutive patients with severe Wiskott-Aldrich syndrome lacking HLA antigen-matched related or unrelated HSC donors (age range, 0.8-15.5 years; mean, 7 years) following myeloablative conditioning.",
+            "supports": "支持7名连续病例、疾病和预处理；不支持随机分组、对照组或把年龄均值当样本量。"
+          },
+          {
+            "work_id": "work:10.1001/jama.2015.3253",
+            "role": "required",
+            "field": "abstract",
+            "quote": "Patients were enrolled in France and England and treated between December 2010 and January 2014. Follow-up of patients in this intermediate analysis ranged from 9 to 42 months.",
+            "supports": "支持中期报告的地区、治疗时间与随访；不表示每人均随访42个月或终身安全。"
+          },
+          {
+            "work_id": "work:10.1001/jama.2015.3253",
+            "role": "required",
+            "field": "abstract",
+            "quote": "One patient died 7 months after treatment of preexisting drug-resistant herpes virus infection. Eczema and susceptibility to infections resolved in all 6 patients. Autoimmunity improved in 5 of 5 patients.",
+            "supports": "支持死亡原因的摘要归述及6人与5人的不同结局分母；不能据此推断所有治疗者零死亡或所有7人全部改善。"
+          },
+          {
+            "work_id": "work:10.1001/jama.2015.3253",
+            "role": "required",
+            "field": "abstract",
+            "quote": "Controlled trials with larger numbers of patients are necessary to assess long-term outcomes and safety.",
+            "supports": "支持作者明确限制长期疗效与安全性；不能把当前中期病例系列当作完成的受控安全证明。"
+          },
+          {
+            "work_id": "work:10.1002/jgm.3015",
+            "role": "background",
+            "field": "abstract",
+            "quote": "This review presents our analysis of clinical trials that, to the best of our knowledge, have been or are being performed worldwide.",
+            "supports": "支持全球基因治疗试验综述背景；不能替代WAS个体患者结果或借综述总数给本案加样本。"
+          },
+          {
+            "work_id": "work:10.1126/scitranslmed.aad8856",
+            "role": "forbidden",
+            "field": "abstract",
+            "quote": "We used a lentiviral gene therapy approach to treat five SCID-X1 patients with persistent immune dysfunction despite haploidentical hematopoietic stem cell (HSC) transplant in infancy.",
+            "supports": "支持SCID-X1既往移植后五名患者的研究身份；不是重度WAS七名连续病例，不得互移疾病、设计或分母。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "v4-10",
+      "slice": "研究阶段/神经病理/人体证据强度",
+      "baseline_query": "For an Alzheimer disease gene-delivery review, I need the human anatomical follow-up asking whether degenerating neurons still respond to nerve growth factor after disease onset. Locate the postmortem study spanning ex vivo and in vivo phase-1 programs, separate the two groups, and describe the observed neuronal response and its duration. Do not treat postmortem sprouting as evidence of randomized cognitive benefit, infer a clinical survival advantage from time to autopsy, or repair missing statistical text with outside information. Answer from the current abstract only.",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "For an Alzheimer disease gene-delivery review, I need the human anatomical follow-up asking whether degenerating neurons still respond to nerve growth factor after disease onset. Locate the postmortem study spanning ex vivo and in vivo phase-1 programs, separate the two groups, and describe the observed neuronal response and its duration. Do not treat postmortem sprouting as evidence of randomized cognitive benefit, infer a clinical survival advantage from time to autopsy, or repair missing statistical text with outside information. Answer from the current abstract only."
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1001/jamaneurol.2015.1807"
+        ],
+        "background_ids": [
+          "work:10.1002/jgm.3015"
+        ],
+        "forbidden_ids": [],
+        "gold_note": "核心是2015年人体尸检病理随访，而非2001年试验启动报告或随机认知疗效试验。10名早期AD患者包括首次ex vivo phase 1的8名和后续in vivo phase 1的2名；治疗后存活至尸检1–10年。摘要报告所有患者轴突向NGF源萌芽，NGF诱导萌芽可持续10年，并描述细胞肥大和功能标志物活化。不能据此证明认知改善、延长生存或外推长期绝对安全。原摘要在P值处拼接到结论，不补写P值。全球试验综述仅为背景。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1001/jamaneurol.2015.1807",
+            "role": "required",
+            "field": "abstract",
+            "quote": "We present postmortem findings in 10 patients with survival times ranging from 1 to 10 years after treatment.",
+            "supports": "支持尸检样本和治疗后时间范围；不支持治疗相对对照延长生存。"
+          },
+          {
+            "work_id": "work:10.1001/jamaneurol.2015.1807",
+            "role": "required",
+            "field": "abstract",
+            "quote": "The brains of all 8 patients in the first phase 1 ex vivo trial and of 2 patients in a subsequent phase 1 in vivo trial were examined.",
+            "supports": "支持8+2来自不同phase 1报告阶段；不能说10人均为同一in vivo试验或新随机队列。"
+          },
+          {
+            "work_id": "work:10.1001/jamaneurol.2015.1807",
+            "role": "required",
+            "field": "abstract",
+            "quote": "All patients exhibited a trophic response to NGF in the form of axonal sprouting toward the NGF source.",
+            "supports": "支持组织学神经营养反应；不能当作患者认知量表或日常功能改善。"
+          },
+          {
+            "work_id": "work:10.1001/jamaneurol.2015.1807",
+            "role": "required",
+            "field": "abstract",
+            "quote": "Sprouting induced by NGF persists for 10 years after gene transfer.",
+            "supports": "支持摘要的萌芽持续时间结论；不表示所有患者都随访10年或证明随机临床获益。"
+          },
+          {
+            "work_id": "work:10.1002/jgm.3015",
+            "role": "background",
+            "field": "abstract",
+            "quote": "We have analysed the geographical distribution of trials, the disease indications (or other reasons) for trials, the proportions to which different vector types are used, and the genes that have been transferred.",
+            "supports": "支持基因治疗发展背景的综述统计范围；不能替代AD尸检个体数据或证实NGF认知疗效。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "v4-11",
+      "slice": "中文跨语言/空间肿瘤学/观察与时间推断",
+      "baseline_query": "我们关注乳腺癌初次向腋窝淋巴结播散时的代谢变化，需要使用患者原发灶和配对转移淋巴结、结合单细胞与空间转录组的原始研究。请说明候选代谢状态、肿瘤内定位，以及发现组和外部验证组的细胞数或患者数分别是什么。不要把ER阳性患者来源异种移植的雌激素反应研究当作配对患者播散研究，也不要将表达状态重建解释为同一患者连续追踪、干预证明或治疗获益。只根据摘要说明。",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "我们关注乳腺癌初次向腋窝淋巴结播散时的代谢变化，需要使用患者原发灶和配对转移淋巴结、结合单细胞与空间转录组的原始研究。请说明候选代谢状态、肿瘤内定位，以及发现组和外部验证组的细胞数或患者数分别是什么。不要把ER阳性患者来源异种移植的雌激素反应研究当作配对患者播散研究，也不要将表达状态重建解释为同一患者连续追踪、干预证明或治疗获益。只根据摘要说明。"
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1002/advs.202205395"
+        ],
+        "background_ids": [
+          "work:10.1002/bies.201900221"
+        ],
+        "forbidden_ids": [
+          "work:10.1002/ctm2.1548"
+        ],
+        "gold_note": "发现组为4位患者配对乳腺癌/腋窝转移淋巴结的65,968个细胞，不是65,968位患者。高OXPHOS播散细胞簇包括COX6C和dehydrogenase/reductase 2上调，位于肿瘤前缘；摘要描述糖酵解/OXPHOS状态转换。验证涉及三个患者队列及含8位配对患者的外部scRNA-seq数据集；不把这些数机械相加，也不把细胞数赋给验证组。数据支持空间与表达状态、早期播散解释，不足以声称同一患者连续随访或通过抑制OXPHOS在人群中防止转移。空间技术综述作背景；雌激素PDX研究不满足本案配对患者对象。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1002/advs.202205395",
+            "role": "required",
+            "field": "abstract",
+            "quote": "In this study, 65 968 cells from four patients with breast cancer and paired metastatic axillary lymph nodes are profiled using single-cell RNA sequencing (scRNA-seq) and spatial transcriptomics.",
+            "supports": "支持发现组的细胞数、四位患者及配对材料；不能将细胞数当人数或视为纵向反复采样。"
+          },
+          {
+            "work_id": "work:10.1002/advs.202205395",
+            "role": "required",
+            "field": "abstract",
+            "quote": "A disseminated cancer cell cluster with high levels of oxidative phosphorylation (OXPHOS), including the upregulation of cytochrome C oxidase subunit 6C and dehydrogenase/reductase 2, is identified. The transition between glycolysis and OXPHOS when dissemination initiates is noticed. Furthermore, this distinct cell cluster is distributed along the tumor's leading edge.",
+            "supports": "支持代谢状态与空间位置；不直接证明干预代谢便能降低患者转移。"
+          },
+          {
+            "work_id": "work:10.1002/advs.202205395",
+            "role": "required",
+            "field": "abstract",
+            "quote": "The findings here are verified in three different cohorts of breast cancer patients and an external scRNA-seq dataset, which includes eight patients with breast cancer and paired metastatic axillary lymph nodes.",
+            "supports": "支持三队列及八位患者外部数据验证；未给出三个队列人数与重叠关系，不能求总体患者数。"
+          },
+          {
+            "work_id": "work:10.1002/bies.201900221",
+            "role": "background",
+            "field": "abstract",
+            "quote": "In this review, available spatial transcriptomics methods are described and their applications as well as their strengths and weaknesses are discussed.",
+            "supports": "支持空间技术优缺点综述背景；不能替代乳腺癌配对样本的原始研究。"
+          },
+          {
+            "work_id": "work:10.1002/ctm2.1548",
+            "role": "forbidden",
+            "field": "abstract",
+            "quote": "Two PDXs of 'ER-high' breast cancers with opposite oestrogen-mediated growth responses were investigated: oestrogen-suppressed GS3 (80-100% ER) and oestrogen-dependent SC31 (40-90% ER) models.",
+            "supports": "支持雌激素反应相反的PDX模型；不支持配对腋窝转移患者队列，不能互移模型、患者数和结果。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "v4-12",
+      "slice": "心脏表观转录组/机制/动物人体边界",
+      "baseline_query": "heart failure m6A and protein output without matching changes in RNA abundance; seek original evidence combining human and mouse heart profiles with polysome occupancy and cardiomyocyte-restricted Fto deletion; distinguish translational regulation from differential-expression lists; do not substitute an HFpEF blood-cell case-control survey with diet/L-NAME mice for the specified knockout and polysome evidence; no claim of effective FTO treatment in patients beyond the abstract",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "heart failure m6A and protein output without matching changes in RNA abundance",
+          "seek original evidence combining human and mouse heart profiles with polysome occupancy and cardiomyocyte-restricted Fto deletion",
+          "distinguish translational regulation from differential-expression lists",
+          "do not substitute an HFpEF blood-cell case-control survey with diet/L-NAME mice for the specified knockout and polysome evidence",
+          "no claim of effective FTO treatment in patients beyond the abstract"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1002/ejhf.1672"
+        ],
+        "background_ids": [],
+        "forbidden_ids": [
+          "work:10.3389/fcvm.2021.647806"
+        ],
+        "gold_note": "核心报告健康小鼠/人心脏约四分之一转录本带m6A，心衰过程中m6A变化多于基因表达变化；差异甲基化但非差异表达RNA的多核糖体占据改变，支持转录丰度之外的翻译调节。心肌细胞限制性Fto敲除造成心功能受损的干预证据来自小鼠，不是在人类心衰中给FTO药物获益。HFpEF近邻为16病例/24对照PBMC和饮食+L-NAME模型，虽也论述m6A变化及翻译机制，但摘要不提供本案要求的多核糖体与心肌Fto敲除证据；不能仅因结论措辞相似替代核心。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1002/ejhf.1672",
+            "role": "required",
+            "field": "abstract",
+            "quote": "We found that approximately one quarter of the transcripts in the healthy mouse and human heart exhibit m6A RNA methylation.",
+            "supports": "支持转录本比例及小鼠/人心脏范围；不是四分之一患者或细胞患病。"
+          },
+          {
+            "work_id": "work:10.1002/ejhf.1672",
+            "role": "required",
+            "field": "abstract",
+            "quote": "Interestingly, differentially methylated but not differentially expressed RNAs showed differential polysomal occupancy, indicating transcription-independent modulation of translation.",
+            "supports": "支持区分甲基化、RNA丰度和多核糖体占据；不能把所有差异表达都等同翻译效率改变。"
+          },
+          {
+            "work_id": "work:10.1002/ejhf.1672",
+            "role": "required",
+            "field": "abstract",
+            "quote": "Furthermore, mice with a cardiomyocyte restricted knockout of the RNA demethylase Fto exhibited an impaired cardiac function compared to control mice.",
+            "supports": "支持小鼠特定细胞敲除与心功能对照；不支持人类FTO治疗效果或跨物种因果移植。"
+          },
+          {
+            "work_id": "work:10.3389/fcvm.2021.647806",
+            "role": "forbidden",
+            "field": "abstract",
+            "quote": "In this case-control study, peripheral blood mononuclear cells (PBMCs) were separated from peripheral blood samples obtained from 16 HFpEF patients and 24 healthy controls.",
+            "supports": "支持HFpEF血细胞病例对照设计；不能替代人心脏组织与小鼠心肌敲除/多核糖体证据，也不否认该文另有动物模型。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "v4-13",
+      "slice": "多目标/蛋白计算方法/输出类型",
+      "baseline_query": "For a protein-analysis workflow I need two separate references, and both are necessary: the SPIDER3-Single study for sequence-only structural-property estimates when homologs are scarce, and the I-TASSER usage-and-interpretation protocol for full atomic models followed by function annotation. Explain how the required information, output types and abstract-level performance claims differ. Do not turn secondary-structure accuracy into full-fold accuracy or treat a model using homologous templates as a sequence-only substitute. Do not replace the practical I-TASSER protocol with a generic server-update article or claim experimental functional validation from a predicted annotation.",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "For a protein-analysis workflow I need two separate references, and both are necessary: the SPIDER3-Single study for sequence-only structural-property estimates when homologs are scarce, and the I-TASSER usage-and-interpretation protocol for full atomic models followed by function annotation. Explain how the required information, output types and abstract-level performance claims differ. Do not turn secondary-structure accuracy into full-fold accuracy or treat a model using homologous templates as a sequence-only substitute. Do not replace the practical I-TASSER protocol with a generic server-update article or claim experimental functional validation from a predicted annotation."
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1002/jcc.25534",
+          "work:10.1002/0471250953.bi0508s52"
+        ],
+        "background_ids": [
+          "work:10.1093/nar/gkv342"
+        ],
+        "forbidden_ids": [
+          "work:10.1002/advs.202102592"
+        ],
+        "gold_note": "两个对象都必须覆盖。SPIDER3-Single采用单序列LSTM-BRNN，Q3准确率72.5%，溶剂可及面积预测与实测相关0.67；另输出八态二级结构、主链角度、半球暴露和接触数等，不是完整三维结构正确率72.5%。I-TASSER的本案核心是如何使用和解释结果的protocol：多重threading+迭代组装和原子精修产生全长原子模型，再基于已知功能数据库推断配体位点、EC与GO；预测不等于实验功能验证。2015服务器更新可作背景但不能替代使用协议。trRosettaX使用同源模板和多尺度网络，不满足指定单序列方法或使用协议；其TM-score不能移植给SPIDER3。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1002/jcc.25534",
+            "role": "required",
+            "field": "abstract",
+            "quote": "Here we show a single-sequence-based prediction method employing LSTM-BRNNs (SPIDER3-Single), that consistently achieves Q3 accuracy of 72.5%, and correlation coefficient of 0.67 between predicted and actual solvent accessible surface area.",
+            "supports": "支持单序列方法及两种不同评价指标；Q3不是完整三维折叠正确率，相关系数也不是准确率百分比。"
+          },
+          {
+            "work_id": "work:10.1002/jcc.25534",
+            "role": "required",
+            "field": "abstract",
+            "quote": "Moreover, it yields reasonably accurate prediction of eight-state secondary structure, main-chain angles (backbone ϕ and ψ torsion angles and C α-atom-based θ and τ angles), half-sphere exposure, and contact number.",
+            "supports": "支持结构性质输出清单；不能补写完整原子模型或配体功能实验。"
+          },
+          {
+            "work_id": "work:10.1002/0471250953.bi0508s52",
+            "role": "required",
+            "field": "abstract",
+            "quote": "Starting from the amino acid sequence of target proteins, I-TASSER first generates full-length atomic structural models from multiple threading alignments and iterative structural assembly simulations followed by atomic-level structure refinement.",
+            "supports": "支持I-TASSER全长原子建模流程；从序列输入不等于完全不使用模板/比对信息。"
+          },
+          {
+            "work_id": "work:10.1002/0471250953.bi0508s52",
+            "role": "required",
+            "field": "abstract",
+            "quote": "The biological functions of the protein, including ligand-binding sites, enzyme commission number, and gene ontology terms, are then inferred from known protein function databases based on sequence and structure profile comparisons.",
+            "supports": "支持功能数据库推断的输出类型；不能改写为实验证明蛋白功能。"
+          },
+          {
+            "work_id": "work:10.1002/0471250953.bi0508s52",
+            "role": "required",
+            "field": "abstract",
+            "quote": "This unit describes how to use the I-TASSER protocol to generate structure and function prediction and how to interpret the prediction results",
+            "supports": "支持本案所需使用与解释protocol的文献角色；不是泛称服务器更新。"
+          },
+          {
+            "work_id": "work:10.1093/nar/gkv342",
+            "role": "background",
+            "field": "abstract",
+            "quote": "In this article, we summarize recent developments on the I-TASSER server, which were designed to address the requirements from the user community and to increase the accuracy of modeling predictions.",
+            "supports": "支持同一工具服务器更新的背景角色；不能在本案替代明确要求的使用及解释protocol。"
+          },
+          {
+            "work_id": "work:10.1002/advs.202102592",
+            "role": "forbidden",
+            "field": "abstract",
+            "quote": "The second is an attention-based module to exploit multiple homologous templates to increase the accuracy further.",
+            "supports": "支持trRosettaX利用同源模板；不是SPIDER3-Single单序列替代，也不是I-TASSER使用协议。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "v4-14",
+      "slice": "植物生理/尺度边界/中文跨语言",
+      "baseline_query": "春小麦Sonett；营养液中的钾供应与PEG水分胁迫；原始实验比较叶片和整株水分利用效率并涉及碳同位素比；判断叶片指标能否代表缺钾植株的整株效率，分别说明生物量、蒸腾与气孔相关尺度，保留摘要的百分比及条件，不机械相加或推广到田间谷物产量；不把磷肥田间试验或其他作物替代；仅限摘要",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "春小麦Sonett",
+          "营养液中的钾供应与PEG水分胁迫",
+          "原始实验比较叶片和整株水分利用效率并涉及碳同位素比",
+          "判断叶片指标能否代表缺钾植株的整株效率，分别说明生物量、蒸腾与气孔相关尺度，保留摘要的百分比及条件，不机械相加或推广到田间谷物产量",
+          "不把磷肥田间试验或其他作物替代",
+          "仅限摘要"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1002/jpln.201600340"
+        ],
+        "background_ids": [],
+        "forbidden_ids": [
+          "work:10.1002/jsfa.13793"
+        ],
+        "gold_note": "核心为Sonett营养液实验，钾0.1/1/4 mM、PEG0/25%。叶片WUEL结合光合同化与气孔导度，整株WUEP结合生物量和整株蒸腾。充足K提高WUEP至多30%，PEG条件另报告20%，但对WUEL无作用；不能未经基准说明合成50%或56%。整株蒸腾下降可能与冠层微气候有关，不应改写成已证实单一机制。δ13C仅在供K充足条件线性对应时间积分WUEL，缺K不成立；不能只凭叶片值预测缺K整株WUE。磷肥冬小麦田间研究对象、营养元素、环境不同，不替代本案。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1002/jpln.201600340",
+            "role": "required",
+            "field": "abstract",
+            "quote": "Here, effects of K supply and PEG‐induced water deficit on WUE of spring wheat (Triticum aestivum L. var. Sonett), grown in nutrient solution, were studied. Plants were treated with three levels of K supply (0.1, 1, 4 mM K⁺) and two levels of PEG (0, 25%).",
+            "supports": "支持品种、营养液及K/PEG实验条件；不能改写为田间磷肥或其他物种实验。"
+          },
+          {
+            "work_id": "work:10.1002/jpln.201600340",
+            "role": "required",
+            "field": "abstract",
+            "quote": "Adequate K supply enhanced WUEP up to 30% and by additional 20% under PEG stress, but had no effect on WUEL.",
+            "supports": "支持整株与叶片指标不同响应及原文条件化百分比；没有充分基准可把百分比机械相加或相乘。"
+          },
+          {
+            "work_id": "work:10.1002/jpln.201600340",
+            "role": "required",
+            "field": "abstract",
+            "quote": "Shoot δ¹³C responded linearly to time‐integrated WUEL in adequately supplied plants, but not in K‐deficient plants, indicating negative effects of K deficiency on mesophyll CO₂ diffusion.",
+            "supports": "支持碳同位素关联的供K边界；不能主张缺K时叶片同位素指标仍可无条件代表整株效率。"
+          },
+          {
+            "work_id": "work:10.1002/jsfa.13793",
+            "role": "forbidden",
+            "field": "abstract",
+            "quote": "Experiments were conducted from 2019 to 2022 using two irrigation levels (normal rainfall and no precipitation after the reviving stage) and two phosphorus application levels (0 and 100 kg ha-1).",
+            "supports": "支持另一小麦研究的田间水分/磷条件；不能移植为Sonett营养液K/PEG的尺度比较。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "v4-15",
+      "slice": "库内证据缺口/人类随机试验/递送载体",
+      "baseline_query": "我们在评估一种癌症治疗递送策略的临床依据：将细胞外囊泡与脂质体融合为混合颗粒，载入siRNA并实际给肿瘤患者用药。需要人类随机对照试验，且摘要报告相对于对照治疗的患者总体生存结果。细胞摄取或基因沉默、动物存活、普通LNP、脂质-聚合物颗粒或仅改造外泌体均不能替代；单臂早期试验与患者基因表达的预后关联也不满足。请在固定摘要库内查证，若不足，指出最接近研究缺失的必要条件；不要由未找到记录推断现实中不存在。",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "我们在评估一种癌症治疗递送策略的临床依据：将细胞外囊泡与脂质体融合为混合颗粒，载入siRNA并实际给肿瘤患者用药。需要人类随机对照试验，且摘要报告相对于对照治疗的患者总体生存结果。细胞摄取或基因沉默、动物存活、普通LNP、脂质-聚合物颗粒或仅改造外泌体均不能替代；单臂早期试验与患者基因表达的预后关联也不满足。请在固定摘要库内查证，若不足，指出最接近研究缺失的必要条件；不要由未找到记录推断现实中不存在。"
+      },
+      "expect": {
+        "required_ids": [],
+        "background_ids": [
+          "work:10.1002/adhm.202101202"
+        ],
+        "forbidden_ids": [
+          "work:10.1002/adma.201903277",
+          "work:10.1126/scitranslmed.abb3945",
+          "work:10.1073/pnas.1505629112"
+        ],
+        "gold_note": "当前11,002条快照经全库分层词群和近邻核读，未找到摘要同时确证全部必要条件的记录；空required不等于命中。最近EV-liposome hybrid研究报告细胞摄取、毒性、沉默及CPC-EV功能，不报告肿瘤患者随机给药或总体生存，具体膜融合工艺也未交代。聚合物GBM结果的存活属于裸鼠；NU-0129是金核SNA的人体单臂开放phase 0；PHB1文的hybrid是脂质-聚合物，患者OS是表达预后关联。不能跨文献或跨实验拼接为所需RCT。筛查包含排除表记录，未人为删除合格目标；详见gap-15-screening.json及报告。结论仅为当前摘要证据不足，不是现实不存在。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1002/adhm.202101202",
+            "role": "background",
+            "field": "abstract",
+            "quote": "Here, EV-liposome hybrid nanoparticles (hybrids) are prepared and evaluated as an alternative delivery system combining properties of both liposomes and EVs.",
+            "supports": "支持混合载体技术背景；不直接交代融合工艺，也不证明癌症患者RCT。"
+          },
+          {
+            "work_id": "work:10.1002/adhm.202101202",
+            "role": "background",
+            "field": "abstract",
+            "quote": "The functional behavior of hybrids, in terms of cellular uptake, toxicity, and gene-silencing efficacy, is altered as compared to liposomes and varies among recipient cell types.",
+            "supports": "支持与脂质体比较的细胞功能指标；不能充当患者总体生存。"
+          },
+          {
+            "work_id": "work:10.1002/adma.201903277",
+            "role": "forbidden",
+            "field": "abstract",
+            "quote": "Moreover, by cotargeting polo-like kinase 1 and vascular endothelial growth factor receptor-2, Ang-3I-NM@siRNA shows effective suppression of tumor growth and significantly improved survival time of nude mice bearing orthotopic GBM brain tumors.",
+            "supports": "支持siRNA聚合物纳米药的GBM裸鼠结果；不能变为EV-脂质体混合载体或人体随机生存证据。"
+          },
+          {
+            "work_id": "work:10.1126/scitranslmed.abb3945",
+            "role": "forbidden",
+            "field": "abstract",
+            "quote": "a single-arm, open-label phase 0 first-in-human trial (NCT03020017)",
+            "supports": "支持进入人体但为单臂开放phase 0；不能充当随机对照OS试验。"
+          },
+          {
+            "work_id": "work:10.1126/scitranslmed.abb3945",
+            "role": "forbidden",
+            "field": "abstract",
+            "quote": "gold nanoparticle cores covalently conjugated with radially oriented and densely packed small interfering RNA (siRNA) oligonucleotides",
+            "supports": "支持金核球形核酸载体；不能当作EV-脂质体融合混合颗粒。"
+          },
+          {
+            "work_id": "work:10.1073/pnas.1505629112",
+            "role": "forbidden",
+            "field": "abstract",
+            "quote": "a solid polymer/cationic lipid hybrid core and a lipid-poly(ethylene glycol) (lipid-PEG) shell for systemic siRNA delivery",
+            "supports": "支持脂质-聚合物混合而非EV-脂质体身份；hybrid词面本身不能满足载体条件。"
+          },
+          {
+            "work_id": "work:10.1073/pnas.1505629112",
+            "role": "forbidden",
+            "field": "abstract",
+            "quote": "Human tissue microarray analysis also reveals that high PHB1 tumor expression is associated with poorer overall survival in patients with NSCLC, further suggesting PHB1 as a therapeutic target.",
+            "supports": "支持表达与OS的观察关联；不能改写为患者接受纳米药相对随机对照后的生存效应。"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "v4-16",
+      "slice": "库内证据缺口/植物病理/生命周期确证",
+      "baseline_query": "Hemileia vastatrix 咖啡叶锈病菌的已确证转主植物寄主；必须在该植物上受控接种并报告感染，还须实际观察目标病原的锈孢子器阶段；潜在宿主排名、文本挖掘、地理共现不能替代实验，咖啡叶盘夏孢子接种和重寄生生防菌也不能替代；区分其他锈菌及其他咖啡病原，不以同属植物名认定宿主；若本摘要快照证据不足，说明最近候选缺什么，不宣称现实不存在，不把空核心列表视为命中",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "Hemileia vastatrix 咖啡叶锈病菌的已确证转主植物寄主",
+          "必须在该植物上受控接种并报告感染，还须实际观察目标病原的锈孢子器阶段",
+          "潜在宿主排名、文本挖掘、地理共现不能替代实验，咖啡叶盘夏孢子接种和重寄生生防菌也不能替代",
+          "区分其他锈菌及其他咖啡病原，不以同属植物名认定宿主",
+          "若本摘要快照证据不足，说明最近候选缺什么，不宣称现实不存在，不把空核心列表视为命中"
+        ]
+      },
+      "expect": {
+        "required_ids": [],
+        "background_ids": [
+          "work:10.1002/ece3.5755"
+        ],
+        "forbidden_ids": [
+          "work:10.1093/femsec/fiaf064",
+          "work:10.3389/fpls.2019.00639"
+        ],
+        "gold_note": "当前全库分层关键词和近邻核读没有识别到摘要同时满足目标菌、转主植物、受控感染及锈孢子器观察的记录。HAHR/ATM论文只给潜在转主宿主优先名单，不能把Psychotria mahonii、Rubus apetalus、Rhamnus prinoides认成已确证。另一同病原记录是咖啡叶盘夏孢子接种和Acremonium persicinum重寄生生防，不是转主植物锈孢子器。小麦Puccinia接种方法也不能迁移病原与阶段。筛查包含全部11,002条及88个排除ID，详见gap-16-screening.json；空required不计命中。2019摘要的当时空白不等于当前现实中不存在，也不能说未报告的实验在全文必定未做。",
+        "evidence_anchors": [
+          {
+            "work_id": "work:10.1002/ece3.5755",
+            "role": "background",
+            "field": "abstract",
+            "quote": "With the HAHR/ATM methods, we produced prioritized lists of potential alternate hosts plant of coffee leaf rust.",
+            "supports": "支持假说生成的优先名单；potential不能升级成受控感染和锈孢子器确证。"
+          },
+          {
+            "work_id": "work:10.1002/ece3.5755",
+            "role": "background",
+            "field": "abstract",
+            "quote": "The HAHR method showed the highest-ranking probable alternate host as Psychotria mahonii, Rubus apetalus, and Rhamnus prinoides.",
+            "supports": "支持摘要提出的具体候选名称；不是这些物种已成为确证寄主，也不证明它们不能被感染。"
+          },
+          {
+            "work_id": "work:10.1093/femsec/fiaf064",
+            "role": "forbidden",
+            "field": "abstract",
+            "quote": "This study focused on the identification and characterization of the hyperparasitic fungus Acremonium persicinum using integrated plant pathology and molecular biology approaches.",
+            "supports": "支持A. persicinum是重寄生真菌；不能把生防真菌的身份改成转主植物。"
+          },
+          {
+            "work_id": "work:10.1093/femsec/fiaf064",
+            "role": "forbidden",
+            "field": "abstract",
+            "quote": "Inoculation of coffee leaf discs with H. vastatrix urediniospores resulted in the development of visible chlorotic lesions after 16 days.",
+            "supports": "支持咖啡叶盘夏孢子接种病斑；不支持转主植物上的感染或锈孢子器实测。"
+          },
+          {
+            "work_id": "work:10.3389/fpls.2019.00639",
+            "role": "forbidden",
+            "field": "abstract",
+            "quote": "In replicated collection and inoculation tests of wheat seedlings with urediniospore bulks or single pustule collections of Puccinia triticina and P. graminis f. sp. tritici, the causal organisms of leaf rust and stem rust, consistent and satisfactory infection levels were achieved.",
+            "supports": "支持Puccinia夏孢子在小麦的重复接种；病原、宿主、阶段都不能转移为H. vastatrix转主确证。"
+          }
+        ]
+      }
+    }
+  ]
+}

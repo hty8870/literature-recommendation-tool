@@ -1,0 +1,58 @@
+[
+  {
+    "case_id": "expanded_wheat_reference",
+    "slice": "large_corpus_exact_resource",
+    "baseline_query": "Find the fully annotated hexaploid bread wheat reference genome with 21 pseudomolecules and a transcriptome atlas for genomics-assisted breeding.",
+    "request": {"input_type": "keywords", "keywords": ["hexaploid wheat", "fully annotated reference genome", "21 pseudomolecules", "transcriptome atlas"]},
+    "expect": {"required_ids": ["work:10.1126/science.aar7191"], "gold_note": "摘要明确给出六倍体普通小麦参考序列、21 条 pseudomolecules、94% 覆盖和转录组图谱，是目标资源论文。"}
+  },
+  {
+    "case_id": "expanded_spatial_cell2location",
+    "slice": "large_corpus_cross_lingual_method",
+    "baseline_query": "寻找用贝叶斯模型整合单细胞和空间转录组、在组织中绘制精细细胞类型图谱的方法研究，尤其是细胞2位置工具。",
+    "request": {"input_type": "keywords", "keywords": ["贝叶斯模型", "单细胞 空间转录组 整合", "精细细胞类型 定位 细胞2位置"]},
+    "expect": {"required_ids": ["work:10.1038/s41587-021-01139-4"], "gold_note": "Cell2location 摘要明确描述贝叶斯模型、单细胞与空间转录组整合及精细细胞类型空间定位。"}
+  },
+  {
+    "case_id": "expanded_kraken2_memory",
+    "slice": "large_corpus_quantitative_method",
+    "baseline_query": "Find Kraken 2 and explain from its abstract how memory use and speed changed relative to Kraken 1.",
+    "request": {"input_type": "keywords", "keywords": ["Kraken 2", "Kraken 1", "memory reduction", "metagenomic classification"]},
+    "expect": {"required_ids": ["work:10.1186/s13059-019-1891-0"], "gold_note": "摘要明确给出内存降低 85%、速度提高五倍，并保持高准确率。"}
+  },
+  {
+    "case_id": "expanded_alphafold_atomic",
+    "slice": "large_corpus_semantic_method",
+    "baseline_query": "Find the redesigned AlphaFold neural network validated at CASP14 that regularly predicts protein structures with atomic accuracy without a similar known structure.",
+    "request": {"input_type": "keywords", "keywords": ["AlphaFold", "CASP14", "atomic accuracy", "protein structure prediction"]},
+    "expect": {"required_ids": ["work:10.1038/s41586-021-03819-2"], "gold_note": "目标摘要同时包含 AlphaFold 重设计、CASP14、无相似结构时的原子精度预测，而非泛指蛋白质结构综述。"}
+  },
+  {
+    "case_id": "expanded_sma_gene_replacement",
+    "slice": "large_corpus_clinical_scope",
+    "baseline_query": "Find the 15-patient study of single-dose intravenous AAV9 SMN1 gene replacement for infantile spinal muscular atrophy type 1 with historical controls.",
+    "request": {"input_type": "keywords", "keywords": ["spinal muscular atrophy type 1", "AAV9", "SMN1", "single-dose gene replacement"]},
+    "expect": {"required_ids": ["work:10.1056/nejmoa1706198"], "gold_note": "目标摘要为 15 名 SMA1 患者、静脉 AAV9 携带 SMN cDNA 的单次基因替代研究，并使用历史队列作探索比较。"}
+  },
+  {
+    "case_id": "expanded_deepvariant",
+    "slice": "large_corpus_deep_learning_method",
+    "baseline_query": "Find DeepVariant, the convolutional neural network that calls SNPs and small indels from images of aligned read pileups across sequencing technologies.",
+    "request": {"input_type": "keywords", "keywords": ["DeepVariant", "convolutional neural network", "read pileup images", "SNP small-indel calling"]},
+    "expect": {"required_ids": ["work:10.1038/nbt.4235"], "gold_note": "目标摘要明确描述深度卷积网络 DeepVariant 从 read pileup 图像学习变异与真实基因型关系。"}
+  },
+  {
+    "case_id": "expanded_proteinmpnn_recovery",
+    "slice": "large_corpus_quantitative_comparison",
+    "baseline_query": "Find ProteinMPNN and its experimentally validated protein sequence design results, including native-backbone sequence recovery compared with Rosetta.",
+    "request": {"input_type": "keywords", "keywords": ["ProteinMPNN", "protein sequence design", "sequence recovery", "Rosetta"]},
+    "expect": {"required_ids": ["work:10.1126/science.add2187"], "gold_note": "摘要明确给出 ProteinMPNN 52.4% 与 Rosetta 32.9% 的天然骨架序列恢复率及实验验证范围。"}
+  },
+  {
+    "case_id": "expanded_rice_3010_pangenome",
+    "slice": "large_corpus_population_genomics",
+    "baseline_query": "Find the 3,000 Rice Genomes Project analysis of 3,010 Asian cultivated rice genomes reporting SNPs, indels, structural variants and novel protein-coding genes.",
+    "request": {"input_type": "keywords", "keywords": ["3010 Asian cultivated rice genomes", "3000 Rice Genomes Project", "pan-genome", "structural variations"]},
+    "expect": {"required_ids": ["work:10.1038/s41586-018-0063-9"], "gold_note": "目标摘要明确分析 3,010 份亚洲栽培稻基因组并报告 2900 万 SNP、240 万小 indel、9 万以上结构变异及新蛋白编码基因。"}
+  }
+]

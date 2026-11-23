@@ -1,0 +1,926 @@
+{
+  "suite_id": "abiotech-multidomain-abstract-v3",
+  "corpus_path": "data/runtime/quality-corpus/large-corpus.json",
+  "max_retrieval_rounds": 3,
+  "repetitions": 3,
+  "stability_case_ids": [
+    "semantic_homeotic",
+    "chinese_flower",
+    "genotype_contrast"
+  ],
+  "tuning_case_ids": [
+    "rare_lfy",
+    "semantic_homeotic",
+    "chinese_flower",
+    "nutrient_nodules",
+    "genotype_contrast",
+    "association_not_causal",
+    "correction_exclusion",
+    "review_identity",
+    "semantic_chromatin",
+    "peanut_nodulation_signal",
+    "lipid_quality_editing",
+    "chinese_epigenome",
+    "out_of_domain_zero",
+    "expanded_wheat_reference",
+    "expanded_spatial_cell2location",
+    "expanded_kraken2_memory",
+    "expanded_alphafold_atomic",
+    "expanded_sma_gene_replacement",
+    "expanded_deepvariant",
+    "expanded_proteinmpnn_recovery",
+    "expanded_rice_3010_pangenome"
+  ],
+  "tasks": [
+    {
+      "case_id": "rare_lfy",
+      "slice": "exact_identifier",
+      "baseline_query": "在这批真实论文中找 LEAFY/LFY1/LFY2 控制大豆花器官形成的原始功能研究。请给出最相关候选、DOI 和依据摘要的推荐理由；不要把只分析开花期关联的论文混作功能验证。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "LEAFY",
+          "LFY1",
+          "LFY2",
+          "Glycine max",
+          "floral organ formation"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-024-00192-2"
+        ],
+        "forbidden_ids": [
+          "work:10.1007/s42994-025-00241-4",
+          "work:10.1007/s42994-025-00249-w"
+        ],
+        "gold_note": "目标摘要包含 lfy1/lfy2 单突变、双突变、花器官表型与 AP 基因表达；GWAS 开花期关联和番茄花期副作用不是同类功能证据。"
+      }
+    },
+    {
+      "case_id": "semantic_homeotic",
+      "slice": "semantic_ood",
+      "baseline_query": "我在研究大豆花器官身份的决定机制。哪项原始研究通过单基因和双基因功能缺失材料，解析了 homeotic 转录因子级联，而不只是统计开花期关联？请推荐并解释。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "soybean",
+          "floral organ identity",
+          "homeotic transcription factors",
+          "single and double loss-of-function mutants"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-024-00192-2"
+        ],
+        "forbidden_ids": [
+          "work:10.1007/s42994-025-00241-4",
+          "work:10.1007/s42994-025-00249-w"
+        ],
+        "gold_note": "此问故意不使用 LEAFY 基因名；应由功能实验与花器官语义找到 192，不靠表面 LFY 词匹配。"
+      }
+    },
+    {
+      "case_id": "chinese_flower",
+      "slice": "cross_lingual",
+      "baseline_query": "请找大豆花器官建成中 LEAFY 同源基因的功能研究，最好同时有单突变、双突变以及下游花同源异型基因表达证据。用中文说明推荐理由，不要把其他作物的花期 GWAS 当作答案。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "大豆",
+          "LEAFY 同源基因",
+          "花器官建成",
+          "单突变",
+          "双突变"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-024-00192-2"
+        ],
+        "forbidden_ids": [
+          "work:10.1007/s42994-025-00241-4"
+        ],
+        "gold_note": "跨语言、基因家族与功能实验组合约束；同一真实论文 192，不能用中文没有词形命中作为库中不存在的理由。"
+      }
+    },
+    {
+      "case_id": "nutrient_nodules",
+      "slice": "reasoning_ood",
+      "baseline_query": "以下是我们的研究方向，请找真正对应的原始研究并说明理由：我们关注大豆根瘤里未感染细胞怎样通过胞间连丝与胼胝质沉积调节养分向感染细胞运输，进而影响共生固氮。综述可以另外列为背景，但不能替代这项实验研究。",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "We investigate how uninfected soybean nodule cells regulate nutrient transfer to infected cells through plasmodesmata and callose deposition, thereby altering symbiotic nitrogen fixation."
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-025-00247-y"
+        ],
+        "background_ids": [
+          "work:10.1007/s42994-024-00193-1",
+          "work:10.1007/s42994-025-00208-5"
+        ],
+        "gold_note": "目标 247 有未感染细胞、胞间连丝、胼胝质与养分运输的直接实验；193/208 只能作共生固氮背景综述。"
+      }
+    },
+    {
+      "case_id": "genotype_contrast",
+      "slice": "conflicting_phenotypes",
+      "baseline_query": "找 SlGAD3 基因编辑提高商业番茄 GABA 的研究，并比较 SFT1、SFT2、SFT3 的 GABA 与开花表型。不能笼统说所有突变体都延迟开花，也不能把 GABA 增加写成所有品种都牺牲产量。",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "We edited SlGAD3 in commercial tomato cultivars SFT1, SFT2 and SFT3 to increase GABA. We need to compare cultivar-specific flowering and agronomic trade-offs without overgeneralization."
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-025-00249-w"
+        ],
+        "required_response_terms": [
+          "SFT1",
+          "SFT2",
+          "SFT3"
+        ],
+        "gold_note": "三个品种 GABA 均提高；SFT2/SFT3 延迟开花，SFT1 保持野生型花期，不能全称化。"
+      }
+    },
+    {
+      "case_id": "association_not_causal",
+      "slice": "causal_fidelity",
+      "baseline_query": "找直接检验 GmMYB93 在大豆香味形成中功能的研究。请准确区分基因沉默与过表达、BADH 调控与 2-AP 含量变化，不要只看标题就声称任何方向的过表达都必然增香。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "GmMYB93",
+          "soybean aroma",
+          "BADH",
+          "2-AP",
+          "gene silencing"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-025-00236-1"
+        ],
+        "gold_note": "236 的摘要支持 GmMYB93 直接抑制 GmBADH2，沉默 GmMYB93 降低 2-AP；没有提供所有方向过表达都增香的证明。"
+      }
+    },
+    {
+      "case_id": "correction_exclusion",
+      "slice": "publication_identity",
+      "baseline_query": "找自动测量小麦赤霉病病穗小穗比例的原始方法研究，排除更正声明。请返回原始研究的 DOI、方法和数据集规模；不要把 correction 当成第二项独立实验。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "Fusarium head blight",
+          "wheat",
+          "diseased spikelet rate",
+          "automated measurement",
+          "original research"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-025-00245-0"
+        ],
+        "excluded_dois_in_answer": [
+          "10.1007/s42994-025-00250-3"
+        ],
+        "gold_note": "245 是原始 FHBDSR-Net 研究；250 是其更正声明。原始摘要报告 620 张图像和 5222 个小穗标注。"
+      }
+    },
+    {
+      "case_id": "review_identity",
+      "slice": "review_vs_primary",
+      "baseline_query": "需要一篇专门讨论植物 RNA N6-methyladenosine 分子机制和作物改良潜力的综述，同时区分研究多种 RNA 修饰协同作用的原始论文。请说明各自文献类型，不要混为原始实验。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "RNA N6-methyladenosine",
+          "plants",
+          "crop improvement",
+          "review",
+          "combinatorial RNA modifications"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-025-00228-1"
+        ],
+        "background_ids": [
+          "work:10.1007/s42994-025-00248-x"
+        ],
+        "gold_note": "228 是 m6A 综述；248 是拟南芥和水稻多种 RNA 修饰协同作用的原始研究，只能作为区分的背景。"
+      }
+    },
+    {
+      "case_id": "unseen_segmentation",
+      "slice": "holdout_computational",
+      "baseline_query": "我需要一种轻量级图像分割方法，能分析苜蓿茎叶和枝条表型，并兼顾 DeepLabV3+ 与 U-Net 的优点。不要推荐只针对拟南芥叶片/角果或纯代谢组学的工作。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "alfalfa",
+          "lightweight image segmentation",
+          "stem leaf branch phenotyping",
+          "DeepLabV3+",
+          "U-Net"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-025-00235-2"
+        ],
+        "forbidden_ids": [
+          "work:10.1007/s42994-025-00239-y",
+          "work:10.1007/s42994-024-00194-0"
+        ],
+        "gold_note": "235 是苜蓿 DU-Net-L；239 虽同为图像表型工具但对象不同，194 是代谢组学综述。"
+      }
+    },
+    {
+      "case_id": "proteomics_ood",
+      "slice": "holdout_method",
+      "baseline_query": "哪项原始研究提出同一蛋白质组学流程同时分析蛋白磷酸化和 S-nitrosylation？请给候选及理由；一般代谢组学综述不能回答这个方法学问题。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "proteomics workflow",
+          "simultaneous protein phosphorylation",
+          "S-nitrosylation"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-025-00227-2"
+        ],
+        "forbidden_ids": [
+          "work:10.1007/s42994-024-00194-0"
+        ],
+        "gold_note": "227 直接对应两种蛋白修饰的同步蛋白质组学流程，不能用植物代谢组学大综述替代。"
+      }
+    },
+    {
+      "case_id": "graph_pangenome",
+      "slice": "holdout_concept",
+      "baseline_query": "我们研究高度分化材料中的结构变异，希望超越单一线性参考基因组，了解图泛基因组的构建、比对与基因分型方法。请推荐最相关的综述，不要把玉米多性状 GWAS 当作图泛基因组方法。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "graph pangenome",
+          "structural variation",
+          "highly divergent genomes",
+          "read alignment",
+          "genotyping"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-025-00206-7"
+        ],
+        "forbidden_ids": [
+          "work:10.1007/s42994-025-00241-4"
+        ],
+        "gold_note": "206 专述植物图泛基因组技术；241 是多性状 GWAS 和遗传网络，不是图泛基因组方法。"
+      }
+    },
+    {
+      "case_id": "rare_proteasome",
+      "slice": "holdout_identifier",
+      "baseline_query": "找 OsRGLG6 通过 OsOTUB1 泛素化及 26S 蛋白酶体降解影响水稻每穗粒数的研究。请解释分子链条与一般产量 GWAS 有何不同。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "OsRGLG6",
+          "OsOTUB1",
+          "26S proteasome",
+          "rice grain number"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-025-00232-5"
+        ],
+        "forbidden_ids": [
+          "work:10.1007/s42994-025-00241-4"
+        ],
+        "gold_note": "232 有互作、泛素化、26S 降解和突变体每穗粒数证据；241 是统计遗传网络。"
+      }
+    },
+    {
+      "case_id": "rice_negation",
+      "slice": "holdout_negation",
+      "baseline_query": "只找水稻 OsbHLH062 调控铁稳态和缺铁响应的研究，排除开花期、粒数或一般产量 GWAS 主题。保留其正负调控方向与组织差异，不要混入其他基因。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "OsbHLH062",
+          "rice",
+          "iron homeostasis",
+          "iron deficiency",
+          "exclude flowering and grain-yield GWAS"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-025-00203-w"
+        ],
+        "forbidden_ids": [
+          "work:10.1007/s42994-025-00232-5",
+          "work:10.1007/s42994-025-00241-4"
+        ],
+        "gold_note": "203 是 OsbHLH062 负调控缺铁响应且根/茎表达不同；232/241 是粒数产量主题。"
+      }
+    },
+    {
+      "case_id": "out_of_domain_zero",
+      "slice": "holdout_zero_answer",
+      "baseline_query": "在这 50 篇植物生物技术论文中找人体 PD-1 免疫检查点抑制剂的随机临床试验，用来支持肿瘤免疫治疗结论。若没有真正相关研究，请明确零结果，不要拿植物免疫、抗病或人体健康泛泛应用来凑数。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "human PD-1 checkpoint inhibitor",
+          "randomized clinical trial",
+          "cancer immunotherapy"
+        ]
+      },
+      "expect": {
+        "required_ids": [],
+        "gold_note": "本库没有人体 PD-1 随机临床试验；植物 PRR/抗病和人体健康远景均不支持此临床命题。"
+      }
+    },
+    {
+      "case_id": "inversion_causality_limit",
+      "slice": "holdout_answerability",
+      "baseline_query": "我要找直接证明 6.49-Mb 倒位导致马铃薯紫色胚斑，并且已经通过编辑倒位断点恢复表型的实验。请区分定位/关联证据与功能救援；如果没有后者，不要宣称倒位已被功能验证为因果。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "potato",
+          "purple embryo spot",
+          "6.49-Mb inversion",
+          "breakpoint editing",
+          "phenotype rescue"
+        ]
+      },
+      "expect": {
+        "required_ids": [],
+        "background_ids": [
+          "work:10.1007/s42994-025-00197-5"
+        ],
+        "gold_note": "197 支持定位、结构变异关联和断点位于高表达 MYB 启动子；摘要没有断点编辑或表型救援，不能升级为直接因果证明。"
+      }
+    },
+    {
+      "case_id": "single_cell_ood",
+      "slice": "holdout_computational_semantics",
+      "baseline_query": "哪项工作用生成式深度学习处理高维、稀疏且有生物噪声的植物单细胞转录组，并进行细胞聚类与去噪？不要把图像分割或普通 bulk RNA-seq 方法当成答案。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "generative deep learning",
+          "plant single-cell transcriptomics",
+          "sparse noisy data",
+          "cell clustering",
+          "denoising"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-025-00196-6"
+        ],
+        "forbidden_ids": [
+          "work:10.1007/s42994-025-00235-2",
+          "work:10.1007/s42994-025-00239-y"
+        ],
+        "gold_note": "196 的 PhytoCluster 直接对应植物 scRNA-seq 聚类、去噪和潜特征；235/239 是图像分割。"
+      }
+    },
+    {
+      "case_id": "semantic_chromatin",
+      "slice": "tuning_mechanism_without_identifier",
+      "baseline_query": "哪项原始研究表明 PRC1 组分与 condensin 协作维持染色质区室，而且去除 condensin I/II 并不显著改变全基因组 H3K27me3 与 H2AK121ub？不要把仅描述甲基化图谱的论文当成同一机制证据。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "Polycomb proteins",
+          "chromatin compartment domains",
+          "condensin complexes",
+          "transcription regulation"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-025-00202-x"
+        ],
+        "forbidden_ids": [
+          "work:10.1007/s42994-025-00243-2"
+        ],
+        "gold_note": "202 的摘要同时支持 BMI1s/condensin 协作维持 CDs 和两类组蛋白标记未明显受扰；243 是组织甲基化图谱，不是同一机制。"
+      }
+    },
+    {
+      "case_id": "peanut_nodulation_signal",
+      "slice": "tuning_semantic_function",
+      "baseline_query": "找花生根瘤特异表达基因促进结瘤的原始研究，既要有沉默/敲除和过表达表型，也要涉及 Nod factor 信号、细胞分裂素和钙信号。不要把其他豆科 G 蛋白的一般结瘤表型混为该研究。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "peanut nodule-specific gene",
+          "nitrogenase activity",
+          "cytokinin calcium signaling",
+          "Nod factor"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-025-00222-7"
+        ],
+        "forbidden_ids": [
+          "work:10.1007/s42994-025-00210-x"
+        ],
+        "gold_note": "222 摘要包含 AhPUGN1.1 的根瘤表达、失活和过表达表型及 Nod factor/细胞分裂素/钙信号；210 是另一物种的另一机制。"
+      }
+    },
+    {
+      "case_id": "lipid_quality_editing",
+      "slice": "tuning_semantic_application",
+      "baseline_query": "我需要通过编辑三个同源拷贝改善油籽脂肪酸品质的研究：增加不饱和 C18 脂肪酸，尤其 α-亚麻酸，并几乎消除 C20/C22 超长链脂肪酸和芥酸。请给候选，不要换成只讲无外源 DNA 编辑流程的工作。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "oilseed fatty acid quality",
+          "triple homeolog editing",
+          "alpha-linolenic acid",
+          "erucic acid reduction"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-025-00238-z"
+        ],
+        "forbidden_ids": [
+          "work:10.1007/s42994-025-00204-9"
+        ],
+        "gold_note": "238 同时满足三个 FAE1 同源拷贝、C18/α-亚麻酸提高和 C20/C22/芥酸几乎消除；204 是高粱编辑流程而非脂肪酸品质结果。"
+      }
+    },
+    {
+      "case_id": "chinese_epigenome",
+      "slice": "tuning_crosslingual_depth",
+      "baseline_query": "请找珍珠粟根与幼穗的多组学表观基因组研究，重点说明 CHH 而不是 CG/CHG 甲基化的组织特异性，以及根和幼穗在染色质可及性、H3K4me3 上的不同调控线索。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "珍珠粟",
+          "组织特异性",
+          "DNA甲基化",
+          "染色质可及性"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-025-00243-2"
+        ],
+        "forbidden_ids": [
+          "work:10.1007/s42994-025-00202-x"
+        ],
+        "gold_note": "243 摘要包含根/幼穗多组学、25141 个差异甲基化区、CHH 最强组织特异性及 H3K4me3/ACR 差异；202 是拟南芥 BMI1/condensin。"
+      }
+    },
+    {
+      "case_id": "sorghum_t0_editing",
+      "slice": "holdout_method_quantitative",
+      "baseline_query": "找高粱未成熟胚经微弹轰击获得 T0 无外源 DNA 编辑植株的研究。请比较有无 G418 筛选的白化编辑率与无外源 DNA 比例，并说明是否无需自交或杂交；不要换成苜蓿多基因编辑工具。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "sorghum immature embryos",
+          "transgene-free editing",
+          "microparticle bombardment",
+          "G418 selection"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-025-00204-9"
+        ],
+        "forbidden_ids": [
+          "work:10.1007/s42994-025-00200-z"
+        ],
+        "required_response_terms": [
+          "T0",
+          "11.1",
+          "14.3",
+          "22.2",
+          "38.1"
+        ],
+        "gold_note": "204 摘要：无筛选白化编辑率 11.1-14.3%，筛选为 4.2-8.3%；无筛选白化苗无外源 DNA 比例 22.2-38.1%，筛选为 0-5.9%；T0 无需自交/杂交。"
+      }
+    },
+    {
+      "case_id": "gprotein_specificity",
+      "slice": "holdout_comparative_phenotypes",
+      "baseline_query": "比较 MtGα1、MtGβ1、MtRGS1 敲除在蒺藜苜蓿生长、种子和共生结瘤上的差异。哪一项缺失会导致矮化、弱根、生物量下降、较小种子和较轻根瘤？不要笼统说所有 G 蛋白突变体表型相同。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "MtGα1",
+          "MtGβ1",
+          "MtRGS1",
+          "Medicago truncatula",
+          "nodulation"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-025-00210-x"
+        ],
+        "forbidden_ids": [
+          "work:10.1007/s42994-025-00222-7"
+        ],
+        "required_response_terms": [
+          "MtGα1",
+          "MtGβ1",
+          "MtRGS1"
+        ],
+        "gold_note": "210 支持 MtGβ1 的严重生长与结瘤表型；MtGα1 有部分株型/荚果/种子差异但结瘤近似野生型，MtRGS1 多数表型近似野生型。"
+      }
+    },
+    {
+      "case_id": "migs_nontransgenic",
+      "slice": "holdout_crosskingdom_mechanism",
+      "baseline_query": "找不改变玉米自身基因组、利用工程木霉产生 RNA 来沉默禾谷镰刀菌基因并提高抗病性的研究。请说明木霉、dsRNA、FgPMT2 和翻译抑制之间的关系，不要写成直接编辑玉米抗病基因。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "microbe-induced gene silencing",
+          "engineered Trichoderma",
+          "maize Fusarium",
+          "FgPMT2"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-025-00212-9"
+        ],
+        "forbidden_ids": [
+          "work:10.1007/s42994-025-00214-7"
+        ],
+        "required_response_terms": [
+          "Trichoderma",
+          "FgPMT2"
+        ],
+        "gold_note": "212 支持 RNAi 工程 Th-FgPmt2i 木霉产生 dsRNA、抑制 FgPMT2 翻译并提高玉米抗病性，不是玉米基因编辑；214 是大豆抗虫机制。"
+      }
+    },
+    {
+      "case_id": "polya_pod_development",
+      "slice": "holdout_multidimensional_answer",
+      "baseline_query": "哪项工作用 Direct RNA 测序研究花生荚果四个发育时期的转录后调控？请比较 poly(A) 尾长、可变多聚腺苷酸化、可变剪接与 m6A，特别不要把 m6A 写成与基因表达普遍相关。",
+      "request": {
+        "input_type": "abstract",
+        "abstract": "We need a study of post-transcriptional regulation across four peanut pod developmental stages using direct RNA sequencing, including polyadenylation, alternative splicing and RNA methylation without assuming that every RNA modification determines expression."
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-025-00224-5"
+        ],
+        "forbidden_ids": [
+          "work:10.1007/s42994-025-00228-1"
+        ],
+        "required_response_terms": [
+          "poly(A)",
+          "m6A"
+        ],
+        "gold_note": "224 支持四时期 Direct RNA、poly(A) 尾长与转录本丰度负相关、使用更多近端 APA 位点；未发现 m6A 与表达相关，不能全称化。228 是 m6A 综述。"
+      }
+    },
+    {
+      "case_id": "jaz_heat_direction",
+      "slice": "holdout_causal_direction",
+      "baseline_query": "找比较耐热稻 Nagina 22 与 93-11 的研究。请解释热激早期 JAZ 表达、JA 信号和表观调控的关系；特别不要把促进 JA 信号写成一定提高耐热性，也不要把静态低甲基化当成唯一机制。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "Nagina 22",
+          "93-11",
+          "JAZ",
+          "heat shock",
+          "histone acetylation",
+          "DNA demethylation"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-025-00229-0"
+        ],
+        "forbidden_ids": [
+          "work:10.1007/s42994-024-00195-z"
+        ],
+        "required_response_terms": [
+          "Nagina 22",
+          "93-11",
+          "JAZ"
+        ],
+        "gold_note": "229 摘要：N22 热激早期 JAZ 上升而 JA 信号受抑，MeJA 预处理削弱耐热；作者提出 DNA 去甲基化过程而非低甲基化状态本身与 JAZ 激活相关。195 是一般耐热综述。"
+      }
+    },
+    {
+      "case_id": "single_cell_deep",
+      "slice": "holdout_computational_answer",
+      "baseline_query": "需要植物单细胞转录组的生成式深度学习方法，能处理高维、稀疏和生物噪声，并用于细胞聚类与去噪。请说明潜特征和真实/模拟数据评测，不要推荐图像分割或 bulk RNA-seq。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "plant single-cell transcriptomics",
+          "generative deep learning",
+          "sparse noisy data",
+          "latent features",
+          "clustering denoising"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-025-00196-6"
+        ],
+        "forbidden_ids": [
+          "work:10.1007/s42994-025-00235-2",
+          "work:10.1007/s42994-025-00239-y"
+        ],
+        "gold_note": "196 摘要支持植物 scRNA-seq 潜特征、四个模拟和五个真实数据集，以及聚类、去噪、信号保留；235/239 是图像方法。该问与原开发集不同，测试事实回答深度而非新主题独立性。"
+      }
+    },
+    {
+      "case_id": "inversion_not_rescue",
+      "slice": "holdout_answerability_evidence_gap",
+      "baseline_query": "有没有已经通过编辑马铃薯 6.49-Mb 倒位左右断点并恢复紫色胚斑表型的实验？只把实际完成断点编辑和表型救援的研究列为答案；定位、关联和启动子表达证据可单独列为背景，并指出缺少什么。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "potato purple embryo spot",
+          "6.49-Mb inversion",
+          "breakpoint editing",
+          "phenotype rescue"
+        ]
+      },
+      "expect": {
+        "required_ids": [],
+        "background_ids": [
+          "work:10.1007/s42994-025-00197-5"
+        ],
+        "gold_note": "197 可作定位/关联背景，但摘要没有断点编辑或表型救援，不能声称功能因果验证已完成。此任务检验证据缺口，不要求把所有背景都拒绝。"
+      }
+    },
+    {
+      "case_id": "alfalfa_visual_editing",
+      "slice": "holdout_method_detail",
+      "baseline_query": "找四倍体苜蓿多基因编辑工具，要求利用内源 U6 启动子、多顺反子 tRNA-sgRNA 和可视化报告基因。请区分 RH1/RUBY 的作用，不要换成同作物的图像分割研究。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "autotetraploid alfalfa",
+          "endogenous U6 promoters",
+          "polycistronic tRNA-sgRNA",
+          "visual reporters"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1007/s42994-025-00200-z"
+        ],
+        "forbidden_ids": [
+          "work:10.1007/s42994-025-00235-2"
+        ],
+        "required_response_terms": [
+          "U6",
+          "RH1",
+          "RUBY"
+        ],
+        "gold_note": "200 摘要支持内源 U6、PTG 多基因表达盒与 RH1/RUBY 可视化筛选及稳定转化再生；235 是图像分割方法。"
+      }
+    },
+    {
+      "case_id": "expanded_wheat_reference",
+      "slice": "large_corpus_exact_resource",
+      "baseline_query": "Find the fully annotated hexaploid bread wheat reference genome with 21 pseudomolecules and a transcriptome atlas for genomics-assisted breeding.",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "hexaploid wheat",
+          "fully annotated reference genome",
+          "21 pseudomolecules",
+          "transcriptome atlas"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1126/science.aar7191"
+        ],
+        "gold_note": "摘要明确给出六倍体普通小麦参考序列、21 条 pseudomolecules、94% 覆盖和转录组图谱，是目标资源论文。"
+      }
+    },
+    {
+      "case_id": "expanded_spatial_cell2location",
+      "slice": "large_corpus_cross_lingual_method",
+      "baseline_query": "寻找用贝叶斯模型整合单细胞和空间转录组、在组织中绘制精细细胞类型图谱的方法研究，尤其是细胞2位置工具。",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "贝叶斯模型",
+          "单细胞 空间转录组 整合",
+          "精细细胞类型 定位 细胞2位置"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1038/s41587-021-01139-4"
+        ],
+        "gold_note": "Cell2location 摘要明确描述贝叶斯模型、单细胞与空间转录组整合及精细细胞类型空间定位。"
+      }
+    },
+    {
+      "case_id": "expanded_kraken2_memory",
+      "slice": "large_corpus_quantitative_method",
+      "baseline_query": "Find Kraken 2 and explain from its abstract how memory use and speed changed relative to Kraken 1.",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "Kraken 2",
+          "Kraken 1",
+          "memory reduction",
+          "metagenomic classification"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1186/s13059-019-1891-0"
+        ],
+        "gold_note": "摘要明确给出内存降低 85%、速度提高五倍，并保持高准确率。"
+      }
+    },
+    {
+      "case_id": "expanded_alphafold_atomic",
+      "slice": "large_corpus_semantic_method",
+      "baseline_query": "Find the redesigned AlphaFold neural network validated at CASP14 that regularly predicts protein structures with atomic accuracy without a similar known structure.",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "AlphaFold",
+          "CASP14",
+          "atomic accuracy",
+          "protein structure prediction"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1038/s41586-021-03819-2"
+        ],
+        "gold_note": "目标摘要同时包含 AlphaFold 重设计、CASP14、无相似结构时的原子精度预测，而非泛指蛋白质结构综述。"
+      }
+    },
+    {
+      "case_id": "expanded_sma_gene_replacement",
+      "slice": "large_corpus_clinical_scope",
+      "baseline_query": "Find the 15-patient study of single-dose intravenous AAV9 SMN1 gene replacement for infantile spinal muscular atrophy type 1 with historical controls.",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "spinal muscular atrophy type 1",
+          "AAV9",
+          "SMN1",
+          "single-dose gene replacement"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1056/nejmoa1706198"
+        ],
+        "gold_note": "目标摘要为 15 名 SMA1 患者、静脉 AAV9 携带 SMN cDNA 的单次基因替代研究，并使用历史队列作探索比较。"
+      }
+    },
+    {
+      "case_id": "expanded_deepvariant",
+      "slice": "large_corpus_deep_learning_method",
+      "baseline_query": "Find DeepVariant, the convolutional neural network that calls SNPs and small indels from images of aligned read pileups across sequencing technologies.",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "DeepVariant",
+          "convolutional neural network",
+          "read pileup images",
+          "SNP small-indel calling"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1038/nbt.4235"
+        ],
+        "gold_note": "目标摘要明确描述深度卷积网络 DeepVariant 从 read pileup 图像学习变异与真实基因型关系。"
+      }
+    },
+    {
+      "case_id": "expanded_proteinmpnn_recovery",
+      "slice": "large_corpus_quantitative_comparison",
+      "baseline_query": "Find ProteinMPNN and its experimentally validated protein sequence design results, including native-backbone sequence recovery compared with Rosetta.",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "ProteinMPNN",
+          "protein sequence design",
+          "sequence recovery",
+          "Rosetta"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1126/science.add2187"
+        ],
+        "gold_note": "摘要明确给出 ProteinMPNN 52.4% 与 Rosetta 32.9% 的天然骨架序列恢复率及实验验证范围。"
+      }
+    },
+    {
+      "case_id": "expanded_rice_3010_pangenome",
+      "slice": "large_corpus_population_genomics",
+      "baseline_query": "Find the 3,000 Rice Genomes Project analysis of 3,010 Asian cultivated rice genomes reporting SNPs, indels, structural variants and novel protein-coding genes.",
+      "request": {
+        "input_type": "keywords",
+        "keywords": [
+          "3010 Asian cultivated rice genomes",
+          "3000 Rice Genomes Project",
+          "pan-genome",
+          "structural variations"
+        ]
+      },
+      "expect": {
+        "required_ids": [
+          "work:10.1038/s41586-018-0063-9"
+        ],
+        "gold_note": "目标摘要明确分析 3,010 份亚洲栽培稻基因组并报告 2900 万 SNP、240 万小 indel、9 万以上结构变异及新蛋白编码基因。"
+      }
+    }
+  ],
+  "core_work_ids": [
+    "work:10.1007/s42994-024-00191-3",
+    "work:10.1007/s42994-024-00192-2",
+    "work:10.1007/s42994-024-00193-1",
+    "work:10.1007/s42994-024-00194-0",
+    "work:10.1007/s42994-024-00195-z",
+    "work:10.1007/s42994-025-00196-6",
+    "work:10.1007/s42994-025-00197-5",
+    "work:10.1007/s42994-025-00198-4",
+    "work:10.1007/s42994-025-00199-3",
+    "work:10.1007/s42994-025-00200-z",
+    "work:10.1007/s42994-025-00201-y",
+    "work:10.1007/s42994-025-00202-x",
+    "work:10.1007/s42994-025-00203-w",
+    "work:10.1007/s42994-025-00204-9",
+    "work:10.1007/s42994-025-00205-8",
+    "work:10.1007/s42994-025-00206-7",
+    "work:10.1007/s42994-025-00208-5",
+    "work:10.1007/s42994-025-00209-4",
+    "work:10.1007/s42994-025-00210-x",
+    "work:10.1007/s42994-025-00212-9",
+    "work:10.1007/s42994-025-00214-7",
+    "work:10.1007/s42994-025-00215-6",
+    "work:10.1007/s42994-025-00216-5",
+    "work:10.1007/s42994-025-00218-3",
+    "work:10.1007/s42994-025-00219-2",
+    "work:10.1007/s42994-025-00222-7",
+    "work:10.1007/s42994-025-00223-6",
+    "work:10.1007/s42994-025-00224-5",
+    "work:10.1007/s42994-025-00225-4",
+    "work:10.1007/s42994-025-00227-2",
+    "work:10.1007/s42994-025-00228-1",
+    "work:10.1007/s42994-025-00229-0",
+    "work:10.1007/s42994-025-00230-7",
+    "work:10.1007/s42994-025-00232-5",
+    "work:10.1007/s42994-025-00233-4",
+    "work:10.1007/s42994-025-00234-3",
+    "work:10.1007/s42994-025-00235-2",
+    "work:10.1007/s42994-025-00236-1",
+    "work:10.1007/s42994-025-00237-0",
+    "work:10.1007/s42994-025-00238-z",
+    "work:10.1007/s42994-025-00239-y",
+    "work:10.1007/s42994-025-00240-5",
+    "work:10.1007/s42994-025-00241-4",
+    "work:10.1007/s42994-025-00243-2",
+    "work:10.1007/s42994-025-00244-1",
+    "work:10.1007/s42994-025-00245-0",
+    "work:10.1007/s42994-025-00247-y",
+    "work:10.1007/s42994-025-00248-x",
+    "work:10.1007/s42994-025-00249-w",
+    "work:10.1007/s42994-025-00250-3"
+  ],
+  "retriever": "sparse",
+  "dense_threshold": 0.8,
+  "development_case_ids": [
+    "unseen_segmentation",
+    "proteomics_ood",
+    "graph_pangenome",
+    "rare_proteasome",
+    "rice_negation",
+    "inversion_causality_limit",
+    "single_cell_ood"
+  ]
+}
