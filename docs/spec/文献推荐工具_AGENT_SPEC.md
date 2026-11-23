@@ -88,6 +88,8 @@ validation_state: m0_quality_iteration_in_progress
 - `candidate_diagnostic` 是独立事件，payload 为 `candidate`，不冒充 `recommendation_created`，不增加推荐计数、不进入推荐快照。网页以真实候选卡流式展示书目、真实模型理由、文献类型、可展开摘要和来源链接；单 Claim 候选视图不重复展示整段查询。原始题录复制不是 CSL 引文或可引用资格证明；新格式选择与全文建议见 FND-059。Agent 完成且有结果时，网页可提供默认折叠的“Agent 综合结论”，内容仅为真实 `AgentRun.summary`，避免不可比候选遮蔽直接答案；不得显示隐藏推理、系统提示或额外工作流面板。
 - 当前公网实例按用户明确要求关闭令牌认证，网页、API 与 `POST /mcp` 匿名开放，不用于私稿或需要租户保密的材料。可选 `POST /login`、12 小时 HttpOnly Cookie、`POST /logout` 与 Bearer 实现保留，只有显式开启认证时启用；开启后服务端只存令牌/会话 SHA-256，租户来自认证身份，不信任 `X-Tenant-ID`。MCP 协议版本 `2025-03-26`，工具包括 `search_literature`、`get_search_state`、`get_snapshot`、`get_snapshot_evidence`。
 - 当前生产形态是单进程 FastAPI + SQLite + systemd + 现有 Caddy，仅回环监听，复用 `/literature/` 子路径，不引入 Tower、分布式队列或新公网端口。模型 JSON 使用 systemd 加密凭据，不写明文环境文件；运行中 Agent/Worker 重启不自动续跑。
+- 第三方演示机可用独立 Linux 更新脚本：只接受当前上游的快进版本，在独立目录同步锁定依赖并预检；仅停止脚本自身管理的实例，真实 HTTP 健康后才登记新版本。首启可选择空闲回环端口，固定端口冲突 MUST 拒绝，不杀占用进程。原配置与数据目录保留；回退不覆盖数据库。不用于接管现网 systemd 服务，亦不授权操作远端。
+- 正式演示在目标机运行 `citation-tool --check-live`（Linux 更新器同名参数在切换前运行）；`--check` 和 `/healthz` 只证明能启动。联网验收使用相同应用工厂、来源与默认模型配置，但用临时 SQLite，仅发送公开 `lfy2`，不得访问或改写用户会话库。须核对真实 Agent 终稿与会话、实际 Europe PMC 召回、同一候选池完整列表名次和逐字依据、定榜事件及真实标准书目。模拟、仅本地回退、缺模型或终榜失败均非零退出；不固定 Agent 的查询步骤，也不因缺论述而要求生成全文引用建议。验收失败不得停掉旧实例。
 - 自定义 E5 注册与初始化 MUST 使用进程内锁，同一模型注册一次，单个索引的加载也须防重入。启用混合召回的服务启动时 MUST 校验并加载与模型版本、语料及记录顺序绑定的预建向量索引；缺失或损坏时明确拒绝启动，不在首个请求中构建整库索引。Worker 在实际检索后持久化适配器的最终模型/回退状态，不能沿用检索前副本。跨平台缓存元数据 MUST 使用 POSIX 相对路径；发布时验证模型文件、固定快照与路径，禁止静默以稀疏结果冒充混合检索。
 - 本项仍不实现全文 PDF 解析与定位、科学关系独立核验、完整实时 `recommendation_revoked`、CSL/Word 导出或跨领域检索质量证明。不得因真实摘要候选上线而宣称这些能力已完成。
 

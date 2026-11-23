@@ -444,7 +444,7 @@ def load_model_config(path: Path | None) -> ModelConfig | None:
         return None
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise ValueError("model credential file must be a UTF-8 JSON object") from exc
     if not isinstance(data, dict) or set(data) - {
         "api_key",
@@ -454,6 +454,8 @@ def load_model_config(path: Path | None) -> ModelConfig | None:
         "api_type",
     }:
         raise ValueError("model credential file has unsupported fields")
+    if not all(isinstance(value, str) for value in data.values()):
+        raise ValueError("model credential fields must be strings")
     try:
         config = ModelConfig(**data)
     except TypeError as exc:

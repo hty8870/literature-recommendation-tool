@@ -32,11 +32,35 @@ git pull --ff-only && uv run --frozen citation-tool
 
 保留原环境变量和数据路径，无需重建账号、导入论文库或重装前端。Git 不能快进时会停下，不要强制覆盖本地修改。由 systemd 等管理的实例，拉取后用原服务管理器启动，不再额外启动第二个进程。原 Uvicorn factory 命令仍可使用；短命令可传 `--host` 和 `--port`。
 
-需要先核对启动配置时，运行 `uv run --frozen citation-tool --check`：它检查前端文件、语料、配置和显式启用的 E5 缓存，使用临时 SQLite，不监听端口、不接触旧数据库、不请求在线库或模型。正式启动后可用 `/healthz` 确认可用。
+`uv run --frozen citation-tool --check` 只验证启动：检查前端文件、语料、配置和显式启用的 E5 缓存，使用临时 SQLite，不接触旧数据库、不请求在线库或模型。正式启动后的 `/healthz` 同样不能证明真实检索或重排可用。
+
+### 正式演示前的联网验收
+
+在**实际演示服务器**设置好服务端默认模型后，从同一个仓库运行：
+
+```sh
+uv run --frozen citation-tool --check-live
+```
+
+它用公开关键词 `lfy2` 走正常 Agent 接口，以临时 SQLite 实际调用模型和 Europe PMC；验收真实助手答复、完整 LLM 排名、与论文原文绑定的推荐理由、可回放的流式事件，以及样例论文的 APA/Vancouver 书目。命令只报告本轮实际用过的来源；不要求自由 Agent 每次都查满三个库。使用与正式启动相同的配置，不写会话数据库、不读取用户稿件，不需要登录。会使用少量模型额度；模拟快慢库、旧 `pointwise` 模式、本地备用检索、上游失败或缺少实际名次均不会通过。裸关键词不预设科学论述，因此不把生成全文引用建议作为这项验收的要求。
+
+### Linux 演示机一键启动或更新
+
+已有 Git 克隆与 uv 的机器，可把 [`tools/update_linux.py`](tools/update_linux.py) 单独放到仓库根目录。首次若旧服务是手工或 systemd 启动的，用原方式停一次。以后每次在仓库根目录运行：
+
+```sh
+uv run --script update_linux.py
+```
+
+若直接使用仓库里的脚本，改用 `uv run --script tools/update_linux.py`。**正式演示请用最新版脚本，追加 `--check-live`**（如 `uv run --script tools/update_linux.py --check-live`）：先完成上述联网验收，再切换；验收失败不停止脚本管理的旧服务。显式使用此参数时，同版也会在验收成功后重启，以加载磁盘上的最新模型配置。追加 `status` 查看运行地址，追加 `stop` 安全停止。无须 sudo、Docker 或额外的服务管理器；不要在同一数据目录同时启动手工实例或系统服务。
+
+- 只取当前 Git 分支的上游版本并检查可快进，不重置工作区。新版本和锁定依赖放在独立目录，预检通过才停旧实例并检查新实例 `/healthz`。默认只做离线启动检查，代码没变且服务健康时不重启。新版启动失败会尝试恢复之前运行的版本，且命令仍返回失败状态；不覆盖 SQLite、原稿或模型配置。重要数据仍应单独备份，新版一旦改了数据库结构，旧程序不一定兼容。
+- 首启默认尝试 `127.0.0.1:8765–8775`，打印实际可用地址；之后沿用成功过的端口。已经配置反代、要固定端口时加 `--port 8765`，端口占用就报错，不改端口也不杀占用进程。保持同一套 `CITATION_*` 环境变量；脚本不复制凭据。通过 SSH 在电脑浏览器演示时，把端口转发目标改为脚本打印的实际端口。
+- 旧系统若缺支持的 Python 或二进制依赖，安装或自检会报错；日志见 `data/runtime/linux-updater/update.log` 和 `service.log`。脚本不修改操作系统、反代、防火墙或开机自启设置。已纳入系统服务管理的正式部署请继续使用原管理器，不和此脚本混用。
 
 ### 接入真实 Agent 与部署配置
 
-- 首页头像 → **模型设置**：选择协议、填写公网 HTTPS 地址、模型名和自己的 API Key。所选模型须支持工具调用和结构化输出。服务端默认模型可用 `CITATION_MODEL_CONFIG` 指向仓库外的 JSON 文件，字段含 `base_url`、`model`、`api_key`；原生 Responses 加 `"api_type": "responses"`。不继承试用站的 Luna 凭据；浏览器 Key 仅供当前标签页使用，不写服务端数据库。
+- 首页头像 → **模型设置**：选择协议、填写公网 HTTPS 地址、模型名和自己的 API Key。所选模型须支持工具调用和结构化输出。匿名演示要使用服务端默认模型：用 `CITATION_MODEL_CONFIG` 指向仓库外的 JSON 文件（默认位置为 `data/runtime/deepseek.local.json`）。例如 Luna 的字段为 `"provider": "openai"`、`"base_url": "https://api.openai.com/v1"`、`"api_type": "responses"`、`"model": "gpt-6-luna"` 和 `"api_key"`。部署不会继承试用站凭据；不要把 Key 加进 Git。仅在网页填写的 Key 只供当前标签页使用，不会成为服务器的默认 Key，也不能用于上述命令。
 - 默认本地召回使用 BM25，不下载模型。持有授权快照时，可设置 `CITATION_CORPUS_PATH`、`CITATION_SAMPLE_CORPUS_PATH` 覆盖两个默认文件；清单的 `original_sha256` 对应原始快照。若启用 `CITATION_EMBEDDING_ENABLED=1`，还需用 `CITATION_EMBEDDING_CACHE_DIR` 指向该语料匹配的预建 E5 模型和 `.npz` 索引。缺失或不匹配在启动时报错，不在首个请求里向量化整库。公开版默认检索排名不承诺与带完整摘要和 E5 的线上实例一致。
 - 健康检查：`GET /healthz`；交互文档：`GET /docs`；MCP：`POST /mcp`。上述命令只监听回环；在远程服务器演示可经已有 HTTPS 入口反代，或用 SSH 端口转发。反代须允许 SSE、保留正确的 Host，并配置 `CITATION_TRUSTED_HOSTS`；按需设 `CITATION_BASE_PATH`、`CITATION_SECURE_COOKIES=1`。不直接公开裸 Uvicorn 或无安全扫描的稿件上传。
 - 进程意外退出后，重启会标记未完成检索与对话轮次中断，不会自动重跑；已保存的候选、会话记录和快照仍可访问，也可继续该会话。

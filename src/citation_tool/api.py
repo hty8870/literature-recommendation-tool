@@ -229,6 +229,16 @@ def create_app(
     if missing:
         raise ValueError(f"missing adapters for configured libraries: {missing}")
 
+    model_config = load_model_config(settings.model_config_path)
+    gateway = (
+        DeepSeekModelGateway(
+            model_config,
+            max_inflight=settings.model_max_inflight,
+            timeout_ms=settings.model_timeout_ms,
+        )
+        if model_config
+        else None
+    )
     personal_workspace = settings.accounts_enabled and not settings.auth_required
     connectors = {
         key: recipe
@@ -262,16 +272,6 @@ def create_app(
         manuscript_scanner = ClamAVScanner(
             settings.manuscript_scan_socket, timeout_s=settings.manuscript_scan_timeout_s
         )
-    model_config = load_model_config(settings.model_config_path)
-    gateway = (
-        DeepSeekModelGateway(
-            model_config,
-            max_inflight=settings.model_max_inflight,
-            timeout_ms=settings.model_timeout_ms,
-        )
-        if model_config
-        else None
-    )
     reasons = reason_generator or (
         DeepSeekReasonGenerator(
             gateway,
