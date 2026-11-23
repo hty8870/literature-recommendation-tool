@@ -15,6 +15,8 @@ uv run --frozen python -m tools.browser_fixture_server
 
 打开 **<http://127.0.0.1:8767/>**，用关键词模式提交 `LFY2, soybean`。这条路径使用明确标识的模拟论文和固定模型回执，可体验流式榜单、对话和页面操作；不连接真实论文库、不调用付费模型，也不会把模拟结果当成科研证据。进程只监听本机，按 `Ctrl+C` 停止。需要检查前端源码或运行前端测试时，安装 Node.js 22 或更新版；网页运行无第三方 JavaScript 依赖。
 
+顶栏“界面”提供四套完整主题：[1 简洁经典](http://127.0.0.1:8767/?theme=1)、[2 农科院门户](http://127.0.0.1:8767/?theme=2)、[3 学术札记](http://127.0.0.1:8767/?theme=3) 和 [4 研究工作台](http://127.0.0.1:8767/?theme=4)。四套共享检索、对话、历史、账户、项目与引用功能，仅呈现不同；农科院主题不使用院徽或官方身份。主题选择只保存数字编号，旧英文主题链接继续兼容，切换后由服务端恢复原会话。结果卡片与证据详情展示名次而不展示数值分数。[四种前端方案对比图](docs/design/四种前端方案对比.png)展示同一已登录账户、真实多轮对话和服务端历史在各主题下的主页与对话页。
+
 ## 运行常规服务
 
 ```sh
@@ -49,5 +51,7 @@ npm test
 uv run --frozen python tools/smoke.py
 uv run --frozen python tools/check_spec.py
 ```
+
+运行上述本地夹具后，可另用 `npm run test:browser:themes` 验证四主题的桌面/手机首页、全文入口、双榜单、原生移动触控、引用和证据弹窗；它使用隔离的无头 Edge，不操作日常浏览器。可用 `THEMES=2,3 VIEWPORTS=mobile npm run test:browser:themes` 缩小范围，截图和报告写入 `data/runtime/theme-browser-acceptance/` 的新目录。
 
 `tools/smoke.py` 使用真实本地 HTTP/SSE 验证早到结果、事件重放和快照不可变，不调用外部模型。缺少另行准备的语料快照或 E5 缓存时，仅依赖该文件的测试会显式跳过，并列出缺失文件；已有数据仍按原断言验证。评测工具的 `run` 命令可能花费 API 额度；先读对应协议并从 `prepare` 开始。仓库不含生产 SSH 目标和密钥，不触发部署。维护者若另获发布授权，须显式指定 `CITATION_DEPLOY_SSH_TARGET`（OpenSSH 别名或 `user@host`），用 SSH 配置或 `CITATION_DEPLOY_SSH_IDENTITY_FILE` 指定本机私钥路径；发布脚本仍面向既有服务器布局，不是通用部署器。

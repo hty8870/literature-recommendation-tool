@@ -12,10 +12,6 @@ function publicationBadge(candidate) {
   return ['研究论文', 'badge'];
 }
 
-export function candidateScoreText(value) {
-  return typeof value === 'number' && Number.isFinite(value) ? value.toFixed(1) : '—';
-}
-
 export function candidateRankChange(candidate) {
   if (candidate.ranking_status !== 'ranked' || !Number.isFinite(candidate.rank_delta)) return '';
   const delta = candidate.rank_delta;
@@ -50,8 +46,6 @@ export class CandidateCard {
   constructor(candidate, index, libraryNames = new Map()) {
     this.card = el('article', { class: 'result-card candidate-card', dataset: { resultId: candidate.result_id } });
     this.rank = el('span', { class: 'result-card__rank' });
-    this.score = el('strong', { class: 'result-card__score' });
-    this.scale = el('span', { class: 'result-card__scale' });
     this.movement = el('span', { class: 'result-card__scale' });
     this.title = el('a', { class: 'result-card__title', target: '_blank', rel: 'noopener noreferrer' });
     this.badge = el('span');
@@ -83,7 +77,7 @@ export class CandidateCard {
     this.details.append(el('summary', { text: '摘要与来源' }), this.abstract, this.links,
       this.quote, this.matches, this.otherSources, this.publicationNote, this.corrections);
     this.card.append(
-      el('div', { class: 'result-card__score-rail' }, this.rank, this.score, this.scale, this.movement),
+      el('div', { class: 'result-card__score-rail' }, this.rank, this.movement),
       el('div', { class: 'result-card__content' },
         el('div', {}, el('h3', { class: 'result-card__heading' }, this.title),
           el('span', { class: 'result-card__badges' },
@@ -103,9 +97,6 @@ export class CandidateCard {
     setText(this.rank, agentic
       ? ranked ? `LLM ${String(candidate.llm_rank).padStart(2, '0')}` : '待核查候选'
       : scored ? `候选 ${String(index + 1).padStart(2, '0')}` : '待核查候选');
-    setText(this.score, candidateScoreText(candidate.candidate_score));
-    setText(this.scale, agentic ? '共同基础分' : scored ? '当前查询统一对齐分'
-      : candidate.score_status === 'incomparable' ? '原始分不可比' : '未统一评分');
     const movement = candidateRankChange(candidate);
     setText(this.movement, movement);
     setHidden(this.movement, !movement);

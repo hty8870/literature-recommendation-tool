@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Zero-dependency M0 browser client; production framework selection is deferred.",
   "scripts": {
-    "test": "node --test tests/web-store.test.mjs tests/web-ui.test.mjs"
+    "test": "node --test tests/web-store.test.mjs tests/web-ui.test.mjs",
+    "test:browser:themes": "node tools/browser_theme_acceptance.mjs http://127.0.0.1:8767/"
   }
 }

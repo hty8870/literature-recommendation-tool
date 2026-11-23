@@ -3,7 +3,7 @@ import { icon } from './icons.js';
 import { buildEvidence } from './evidence-view.js';
 import { formatCitationInfo, resultMetadata, resultTitle } from './citation.js';
 import { recommendationReason } from './result-card.js';
-import { RELATIONSHIP, calibrateText, formatScore, label, shortHash } from './labels.js';
+import { RELATIONSHIP, label, shortHash } from './labels.js';
 
 export function renderResultDetail(refs, rec) {
   refs.resultDialogTitle.textContent = resultTitle(rec);
@@ -22,7 +22,6 @@ export function renderResultDetail(refs, rec) {
   if (claim.claim_id || rec.claim_id) claimMeta.push(`Claim ${claim.claim_id || rec.claim_id}`);
   if (rec.relationship) claimMeta.push(`关系：${label(RELATIONSHIP, rec.relationship)}`);
   if (rec.rankable && Number.isFinite(rec.current_rank)) claimMeta.push(`同 Claim、同组第 ${rec.current_rank} 名`);
-  if (formatScore(rec.display_score) != null) claimMeta.push(`相关性分 ${formatScore(rec.display_score)} · ${calibrateText(rec)}`);
   claimMeta.push(`结果版本 v${rec.result_version ?? '—'}`);
   claimPanel.append(el('p', { class: 'detail-panel__reason', text: claimMeta.join(' · ') }));
   if (rec.insertion_anchor) {

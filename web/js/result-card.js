@@ -2,7 +2,7 @@ import { el } from './dom.js';
 import { icon } from './icons.js';
 import { evidenceScope } from './evidence-view.js';
 import { resultMetadata, resultTitle } from './citation.js';
-import { RELATIONSHIP, REVOKE_REASON, calibrateText, formatScore, label } from './labels.js';
+import { RELATIONSHIP, REVOKE_REASON, label } from './labels.js';
 import { libraryDisplayName } from './search-input.js';
 
 export function recommendationReason(rec) {
@@ -21,7 +21,6 @@ export function cardSignature(rec) {
     rec.citable,
     rec.rankable,
     rec.current_rank,
-    rec.display_score,
     rec.relationship,
     rec.verification_status,
     rec.reason?.status,
@@ -46,18 +45,6 @@ export function buildCard(rec, { late = false } = {}) {
 
   const scoreRail = el('div', { class: 'result-card__score-rail' });
   scoreRail.append(el('span', { class: 'result-card__rank', text: rankLabel(rec) }));
-  const score = formatScore(rec.display_score);
-  if (rec.rankable && score != null) {
-    scoreRail.append(
-      el('strong', { class: 'result-card__score', text: score }),
-      el('span', { class: 'result-card__scale', text: calibrateText(rec) }),
-    );
-  } else {
-    scoreRail.append(
-      el('strong', { class: 'result-card__score result-card__score--muted', text: '不可比' }),
-      el('span', { class: 'result-card__scale', text: '证据已通过，不参与分数排名' }),
-    );
-  }
   card.append(scoreRail);
 
   const content = el('div', { class: 'result-card__content' });

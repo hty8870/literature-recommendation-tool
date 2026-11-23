@@ -159,11 +159,6 @@ export function groupScaleNote(group, recs = []) {
   return '仅在组内比较，不跨组、不跨 claim';
 }
 
-export function formatScore(score) {
-  if (typeof score !== 'number' || Number.isNaN(score)) return null;
-  return score.toFixed(1);
-}
-
 export function formatDuration(ms) {
   if (typeof ms !== 'number' || ms < 0) return '—';
   if (ms < 1000) return `${Math.round(ms)} 毫秒`;
@@ -200,16 +195,4 @@ export function listOrDash(values) {
 
 export function isScopedGroupComparable(rec) {
   return Boolean(rec && rec.citable && rec.rankable && rec.rankable_group && rec.rankable_group !== 'evidence_only');
-}
-
-export function calibrateText(rec) {
-  if (!rec) return '';
-  if (rec.rankable_group === 'evidence_only' || !rec.rankable) {
-    return '证据已通过，分数不可比';
-  }
-  if (rec.calibration_status === 'bootstrap' || rec.score_kind === 'bootstrap') {
-    return '启动排序，未概率校准';
-  }
-  if (rec.calibration_status === 'calibrated') return '已校准';
-  return '未校准';
 }

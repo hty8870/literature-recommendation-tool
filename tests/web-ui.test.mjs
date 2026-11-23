@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import vm from 'node:vm';
 import { readFile } from 'node:fs/promises';
 
 import { InputError, buildSearchPayload, libraryDisplayName, libraryPillLabel, manuscriptContentType, terms, validateManuscriptFile } from '../web/js/search-input.js';
@@ -8,7 +9,7 @@ import { Store, artifactCount, workersList } from '../web/js/store.js';
 import { AgentSession } from '../web/js/agent-session.js';
 import { preserveResultScroll } from '../web/js/results-view.js';
 import { recommendationReason } from '../web/js/result-card.js';
-import { candidateScoreText, candidateRankChange, candidateCardSignature } from '../web/js/candidate-card.js';
+import { candidateRankChange, candidateCardSignature } from '../web/js/candidate-card.js';
 import { agentOutcome } from '../web/js/agent-run-view.js';
 import { resultStatus, workerCounts } from '../web/js/render.js';
 import { modelRequestPayload, readModelSelection, writeModelSelection } from '../web/js/model-settings.js';
@@ -318,6 +319,127 @@ test('UI-MINIMAL-001: the result page omits diagnostic and duplicate query surfa
   assert.match(html, /id="results-pane"[^>]*tabindex="0"/);
 });
 
+test('UI-THEME-001: four themes share one application and use only local presentation assets', async () => {
+  const html = await readFile(new URL('../web/index.html', import.meta.url), 'utf8');
+  assert.match(html, /id="theme-switch"/);
+  assert.match(html, /<script src="\.\/js\/theme-bootstrap\.js"><\/script>/);
+  assert.equal(html.match(/<script type="module" src="\.\/js\/main\.js"><\/script>/g).length, 1);
+  const bootstrap = await readFile(new URL('../web/js/theme-bootstrap.js', import.meta.url), 'utf8');
+  for (const id of ['paper', 'editorial', 'lab', 'caas']) {
+    assert.match(bootstrap, new RegExp(`id: '${id}'`));
+    if (id !== 'paper') {
+      const css = await readFile(new URL(`../web/themes/${id}.css`, import.meta.url), 'utf8');
+      assert.match(css, /--paper:/);
+      assert.doesNotMatch(css, /@import|url\(['"]?https?:/);
+    }
+  }
+  assert.doesNotMatch(bootstrap, /sessionStorage|api_key|citation\.model-selection/);
+  for (const [choice, id] of [['1', 'paper'], ['2', 'caas'], ['3', 'editorial'], ['4', 'lab']]) {
+    assert.match(bootstrap, new RegExp(`choice: '${choice}', id: '${id}'`));
+  }
+});
+
+test('UI-THEME-002: every theme boots the same picker and scoped presentation', async () => {
+  const source = await readFile(new URL('../web/js/theme-bootstrap.js', import.meta.url), 'utf8');
+  const requests = [
+    { requested: '1', expected: 'paper', choice: '1' },
+    { requested: '2', expected: 'caas', choice: '2' },
+    { requested: '3', expected: 'editorial', choice: '3' },
+    { requested: '4', expected: 'lab', choice: '4' },
+    { requested: 'paper', expected: 'paper', choice: '1' },
+    { requested: 'caas', expected: 'caas', choice: '2' },
+    { requested: 'editorial', expected: 'editorial', choice: '3' },
+    { requested: 'lab', expected: 'lab', choice: '4' },
+    { requested: 'invalid-theme', expected: 'paper', choice: '1' },
+  ];
+  for (const { requested, expected, choice } of requests) {
+    const href = `https://biodataagent.com/literature/?theme=${requested}#result=res_1`;
+    const values = new Map();
+    const storage = {
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => values.set(key, value),
+    };
+    const appended = [];
+    let ready;
+    const mount = { children: [], replaceChildren(...children) { this.children = children; } };
+    const makeElement = (tag) => ({
+      tag,
+      children: [],
+      attributes: {},
+      append(...children) { this.children.push(...children); },
+      replaceChildren(...children) { this.children = children; },
+      setAttribute(name, value) { this.attributes[name] = value; },
+      addEventListener: () => {},
+    });
+    const document = {
+      documentElement: { dataset: {}, style: {} },
+      baseURI: href,
+      head: { append: (node) => appended.push(node) },
+      querySelector: () => null,
+      createElement: makeElement,
+      getElementById: (id) => id === 'theme-switch' ? mount : null,
+      addEventListener: (type, callback) => { if (type === 'DOMContentLoaded') ready = callback; },
+    };
+    const window = { location: { href }, localStorage: storage };
+    vm.runInNewContext(source, { window, document, URL, Set });
+    assert.equal(document.documentElement.dataset.uiTheme, expected);
+    assert.equal(document.documentElement.style.colorScheme, expected === 'lab' ? 'dark' : 'light');
+    assert.equal(appended.length, expected === 'paper' ? 0 : 1);
+    if (expected !== 'paper') assert.equal(appended[0].href, `https://biodataagent.com/literature/themes/${expected}.css`);
+    ready();
+    const mountChildren = mount.children;
+    const picker = mountChildren[1];
+    assert.equal(picker.value, choice);
+    assert.deepEqual(picker.children.map((option) => option.value), ['1', '2', '3', '4']);
+    assert.deepEqual(picker.children.map((option) => option.textContent), [
+      '1 简洁经典', '2 农科院门户', '3 学术札记', '4 研究工作台',
+    ]);
+  }
+});
+
+test('UI-THEME-003: explicit selection stores only the theme and keeps unrelated URL state', async () => {
+  const source = await readFile(new URL('../web/js/theme-bootstrap.js', import.meta.url), 'utf8');
+  const values = new Map();
+  const listeners = new Map();
+  let picker;
+  const document = {
+    documentElement: { dataset: {}, style: {} },
+    baseURI: 'http://127.0.0.1:8767/?theme=3&api=http%3A%2F%2F127.0.0.1%3A9999%2Fapi#result=res_1',
+    head: { append: () => {} },
+    querySelector: () => null,
+    createElement: (tag) => ({
+      tag, children: [], attributes: {},
+      append(...children) { this.children.push(...children); },
+      replaceChildren(...children) { this.children = children; },
+      setAttribute(name, value) { this.attributes[name] = value; },
+      addEventListener(type, callback) { listeners.set(`${tag}:${type}`, callback); },
+    }),
+    getElementById: () => ({
+      replaceChildren: (...children) => { picker = children[1]; },
+    }),
+    addEventListener: (type, callback) => { if (type === 'DOMContentLoaded') listeners.set(type, callback); },
+  };
+  const replacements = [];
+  const window = {
+    location: { href: document.baseURI, replace: (url) => replacements.push(url) },
+    localStorage: { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) },
+  };
+  vm.runInNewContext(source, { window, document, URL, Set });
+  listeners.get('DOMContentLoaded')();
+  picker.value = '4';
+  listeners.get('select:change')();
+  assert.equal(values.get('citation.ui-theme.v1'), '4');
+  const target = new URL(replacements[0]);
+  assert.equal(target.searchParams.get('theme'), '4');
+  assert.equal(target.searchParams.get('api'), 'http://127.0.0.1:9999/api');
+  assert.equal(target.hash, '#result=res_1');
+  assert.equal(values.has('citation.model-selection.v1'), false);
+  picker.value = '1';
+  listeners.get('select:change')();
+  assert.equal(new URL(replacements[1]).searchParams.get('theme'), '1');
+  assert.equal(values.size, 1);
+});
+
 test('UI-RESULTS-001: streaming updates re-anchor the first visible card in the correct viewport', (t) => {
   const original = globalThis.window;
   t.after(() => {
@@ -498,12 +620,12 @@ test('UI-RANK-001: movements use the server-provided same-pool rank difference',
   assert.equal(candidateRankChange({ ranking_status: 'failed', rank_delta: null }), '');
 });
 
-test('UI-SCORE-001: incomparable or missing candidate scores never render as zero', () => {
-  assert.equal(candidateScoreText(null), '—');
-  assert.equal(candidateScoreText(undefined), '—');
-  assert.equal(candidateScoreText(Number.NaN), '—');
-  assert.equal(candidateScoreText(0), '0.0');
-  assert.equal(candidateScoreText(91.25), '91.3');
+test('UI-SCORE-001: numeric scores stay out of cards and evidence details', async () => {
+  for (const file of ['candidate-card.js', 'result-card.js', 'detail-view.js']) {
+    const source = await readFile(new URL(`../web/js/${file}`, import.meta.url), 'utf8');
+    assert.doesNotMatch(source, /candidateScoreText|formatScore|calibrateText|相关性分/);
+    assert.equal(source.includes("class: 'result-card__score'"), false, file);
+  }
 });
 
 test('UI-REASON-001: reasons are server-generated text or an honest failure, never template text', () => {
