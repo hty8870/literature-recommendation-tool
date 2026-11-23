@@ -35,6 +35,7 @@ from .citation_sources import (
     EuropePmcSourceResolver,
     HttpTransport,
 )
+from .config import LOCAL_ONLY_ADAPTER_MODE
 from .entities import (
     CandidateDiagnostic,
     CitationBatchOutcome,
@@ -1049,6 +1050,10 @@ class CitationTextService:
             ) from exc
         if state is None:
             raise CitationTextError("QUERY_NOT_FOUND", 404, "搜索会话不存在或不属于当前租户。")
+        if state.adapter_mode == LOCAL_ONLY_ADAPTER_MODE:
+            raise CitationTextError(
+                "CITATION_LOCAL_SEARCH_ONLY", 422, "本地候选只提供原始题录，不请求外部书目或原文。"
+            )
         if request.result_kind == "recommendation":
             recommendation = next(
                 (item for item in state.results if item.result_id == request.result_id), None

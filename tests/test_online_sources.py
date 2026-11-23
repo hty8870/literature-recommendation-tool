@@ -6,6 +6,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 import httpx
+import numpy as np
 import pytest
 
 from citation_tool.api import create_app
@@ -165,6 +166,29 @@ def test_online_transport_failures_are_explicit_and_bounded():
     assert "HAS_ABSTRACT:y" in native_query(make_claim())
 
 
+@pytest.mark.parametrize("payload", [{}, {"resultList": {}}, {"error": "busy"}])
+def test_online_missing_result_payload_is_not_relabelled_as_zero_matches(payload):
+    adapter = EuropePMCOnlineAdapter(online_library(), transport=lambda *_: payload)
+    with pytest.raises(SourceSearchError) as error:
+        adapter.search(make_claim())
+    assert error.value.code == "SOURCE_INVALID_RESPONSE"
+
+
+def test_online_empty_result_list_is_valid_but_bad_optional_metadata_does_not_abort():
+    adapter = EuropePMCOnlineAdapter(
+        online_library(), transport=lambda *_: {"hitCount": 0, "resultList": {"result": []}}
+    )
+    assert adapter.search(make_claim()) == []
+
+    adapter = EuropePMCOnlineAdapter(
+        online_library(),
+        transport=lambda *_: online_payload(online_record(pubTypeList="unknown")),
+    )
+    batch = adapter._reading_page("LFY2", 5)
+    assert len(batch.items) == 1
+    assert batch.items[0].data["pub_types"] == []
+
+
 def test_environment_registers_online_large_and_teacher_libraries(tmp_path, monkeypatch):
     record = snapshot_record()
     for name in ("large.json", "sample.json"):
@@ -198,6 +222,58 @@ def test_environment_registers_online_large_and_teacher_libraries(tmp_path, monk
         "local_snapshot",
         "local_snapshot",
     ]
+
+
+@pytest.mark.parametrize("cache_state", ["missing", "corrupt", "wrong-records", "ready"])
+def test_metadata_factory_requires_a_prebuilt_embedding_index(tmp_path, cache_state):
+    corpus = tmp_path / "corpus.json"
+    corpus.write_text(json.dumps({"records": [snapshot_record()]}), encoding="utf-8")
+    library = LibraryConfig(
+        "local",
+        "Local corpus",
+        "",
+        0,
+        simulation=False,
+        adapter_id="metadata-hybrid-e5-rrf-v1",
+        source_type="local_snapshot",
+        corpus_path=corpus,
+    )
+    cache = tmp_path / "cache"
+    settings = replace(
+        Settings.for_tests(tmp_path),
+        library_mode="metadata",
+        libraries=(library,),
+        embedding_enabled=True,
+        embedding_cache_dir=cache,
+    )
+    snapshot = cache / "models--intfloat--multilingual-e5-small" / "snapshots" / "fixture-revision"
+    onnx = snapshot / "onnx" / "model.onnx"
+    onnx.parent.mkdir(parents=True)
+    onnx.touch()
+    index = build_metadata_adapters(settings)["local"]._index
+    if cache_state == "corrupt":
+        index.cache_path.write_bytes(b"not a matrix")
+    elif cache_state in {"wrong-records", "ready"}:
+        np.savez(
+            index.cache_path,
+            version=index._cache_identity["version"],
+            model=index.model_name,
+            model_revision=index.model_revision,
+            ids=index._ids if cache_state == "ready" else ["wrong-work-id"],
+            vectors=np.asarray([[1.0, 0.0]], dtype=np.float32),
+        )
+
+    if cache_state == "ready":
+        app = create_app(settings)
+        loaded = app.state.adapters["local"]._index
+        assert loaded._model is None
+        assert loaded._prebuilt_model_path == snapshot
+        assert np.array_equal(loaded._load_matrix(), [[1.0, 0.0]])
+    else:
+        with pytest.raises(RuntimeError, match="Missing or invalid prebuilt E5 cache"):
+            create_app(settings)
+        app = create_app(replace(settings, embedding_enabled=False))
+        assert type(app.state.adapters["local"]) is MetadataCorpusAdapter
 
 
 def test_three_source_workers_merge_dois_without_mixing_score_scales(tmp_path, live_server):

@@ -47,6 +47,111 @@ test('UI-ROUTING-001: API defaults stay under the deployment subpath', async (t)
   }
 });
 
+function browserLocation(t) {
+  t.mock.method(globalThis, 'fetch', async () => { throw new Error('unexpected fetch'); });
+  const previousWindow = globalThis.window;
+  const previousDocument = globalThis.document;
+  globalThis.window = { location: new URL('http://127.0.0.1:8765/') };
+  globalThis.document = { querySelector: () => null };
+  t.after(() => {
+    if (previousWindow === undefined) delete globalThis.window;
+    else globalThis.window = previousWindow;
+    if (previousDocument === undefined) delete globalThis.document;
+    else globalThis.document = previousDocument;
+  });
+}
+
+test('API transport times out reading a lost response body without resubmitting', async (t) => {
+  browserLocation(t);
+  const { request } = await import('../web/js/api.js');
+  const calls = [];
+  globalThis.fetch = async (_url, options) => {
+    calls.push(options.headers['Idempotency-Key']);
+    return {
+      ok: true, status: 202,
+      text: () => new Promise((_, reject) => {
+        const fallback = setTimeout(() => reject(new Error('still waiting for body')), 120);
+        options.signal?.addEventListener('abort', () => {
+          clearTimeout(fallback);
+          reject(options.signal.reason);
+        }, { once: true });
+      }),
+    };
+  };
+  await assert.rejects(request('/agent/runs', {
+    method: 'POST', body: {}, idempotencyKey: 'same-attempt', timeoutMs: 15,
+  }), { code: 'NETWORK_TIMEOUT', retryable: true });
+  assert.deepEqual(calls, ['same-attempt']);
+  globalThis.fetch = async (_url, options) => {
+    calls.push(options.headers['Idempotency-Key']);
+    return new Response('{"run_id":"same-run"}', { status: 202 });
+  };
+  assert.deepEqual(await request('/agent/runs', {
+    method: 'POST', body: {}, idempotencyKey: 'same-attempt',
+  }), { run_id: 'same-run' });
+  assert.deepEqual(calls, ['same-attempt', 'same-attempt']);
+});
+
+test('API transport keeps user abort and upstream failures distinct', async (t) => {
+  browserLocation(t);
+  const { request } = await import('../web/js/api.js');
+  const controller = new AbortController();
+  globalThis.fetch = async (_url, { signal }) => { throw signal.reason; };
+  controller.abort();
+  await assert.rejects(request('/libraries', { signal: controller.signal }), { name: 'AbortError' });
+  globalThis.fetch = async () => new Response('<html>Bad gateway details</html>', { status: 502 });
+  await assert.rejects(request('/libraries'), {
+    code: 'HTTP_502', message: '请求失败（HTTP 502）', retryable: true,
+  });
+});
+
+test('SSE detects a silent connection and resumes using the last applied sequence', async (t) => {
+  browserLocation(t);
+  const { SearchEventStream } = await import('../web/js/sse.js');
+  const headers = { 'Content-Type': 'text/event-stream' };
+  const resume = [];
+  const events = [];
+  const states = [];
+  const encoder = new TextEncoder();
+  let terminal = false;
+  let finish;
+  const completed = new Promise((resolve) => { finish = resolve; });
+  globalThis.fetch = async (_url, { headers: requestHeaders, signal }) => {
+    resume.push(requestHeaders['Last-Event-ID']);
+    if (resume.length === 1) {
+      const body = new ReadableStream({ start(controller) {
+        controller.enqueue(encoder.encode('id: 8\ndata: {"sequence":8}\n\n'));
+        signal.addEventListener('abort', () => controller.error(signal.reason), { once: true });
+      } });
+      return new Response(body, { headers });
+    }
+    return new Response('id: 9\ndata: {"sequence":9}\n\n', { headers });
+  };
+  const stream = new SearchEventStream({
+    queryId: 'silent', idleMs: 25,
+    getAfterSequence: () => events.at(-1) ?? 7,
+    onEvent: ({ sequence }) => { events.push(sequence); terminal = sequence === 9; },
+    onConnection: (state, detail) => {
+      if (detail?.error) states.push(detail.error.code);
+      if (state === 'closed') finish();
+    },
+    onGap: () => finish(), onExhausted: () => finish(), isTerminal: () => terminal,
+  });
+  t.after(() => stream.stop());
+  let end;
+  try {
+    stream.start();
+    await Promise.race([completed, new Promise((_, reject) => {
+      end = setTimeout(() => reject(new Error('silent SSE did not recover')), 2750);
+    })]);
+  } finally {
+    clearTimeout(end);
+  }
+  assert.deepEqual(states, ['STREAM_IDLE_TIMEOUT']);
+  assert.deepEqual(resume, ['7', '8']);
+  assert.deepEqual(events, [8, 9]);
+});
+
 test('UI-INPUT-001: keywords use the selected libraries and explicit demo scope', () => {
   const payload = buildSearchPayload({
     mode: 'keywords',

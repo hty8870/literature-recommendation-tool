@@ -257,7 +257,8 @@ async def one(
             completed=False,
             model_valid=False,
             session_isolation_valid=False,
-            error={"code": drain_error, "message": "Benchmark could not close the model audit"},
+            error=row.get("error")
+            or {"code": drain_error, "message": "Benchmark could not close the model audit"},
         )
     row.update(
         arm=arm,

@@ -23,7 +23,6 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 from tools.benchmark.core import ROOT
 from tools.kimi_chat_model import (
     DEFAULT_MODEL,
@@ -34,9 +33,8 @@ from tools.kimi_chat_model import (
 )
 
 from citation_tool.config import LibraryConfig, Settings
-from citation_tool.publication import canonical_work_id
 from citation_tool.runtime import build_metadata_adapters
-from citation_tool.semantic import EMBEDDING_CACHE_VERSION, EmbeddingIndex
+from citation_tool.semantic import EmbeddingIndex
 
 TRIAL_ROOT_ENV = "CITATION_LUNA_TRIAL_ROOT"
 TRIAL_PORT_ENV = "CITATION_LUNA_TRIAL_PORT"
@@ -132,40 +130,12 @@ def validate_trial_adapters(adapters: dict[str, Any]) -> None:
         )
 
 
-def _verify_prebuilt_index(index: EmbeddingIndex) -> None:
-    path = index.cache_path
-    if not path.is_file():
-        raise RuntimeError(
-            f"prebuilt E5 cache missing for the trial snapshot: {path}; "
-            "refusing to start and embed the whole corpus"
-        )
-    expected_ids = [canonical_work_id(record) for record in index._records]
-    try:
-        with np.load(path, allow_pickle=False) as cached:
-            valid = (
-                cached["version"].item() == EMBEDDING_CACHE_VERSION
-                and cached["model"].item() == index.model_name
-                and cached["model_revision"].item() == index.model_revision
-                and cached["ids"].tolist() == expected_ids
-                and cached["vectors"].ndim == 2
-                and cached["vectors"].shape[0] == len(expected_ids)
-                and np.isfinite(cached["vectors"]).all()
-            )
-    except (OSError, ValueError, KeyError) as exc:
-        raise RuntimeError(f"prebuilt E5 cache cannot be validated: {path}") from exc
-    if not valid:
-        raise RuntimeError(
-            f"prebuilt E5 cache does not match the trial snapshot/model: {path}; "
-            "refusing to rebuild it during the trial"
-        )
-
-
 def _verify_snapshot_cache(adapters: dict[str, Any]) -> None:
     snapshot = adapters.get("europepmc-snapshot")
     index = getattr(snapshot, "_index", None)
     if not isinstance(index, EmbeddingIndex):
         raise RuntimeError("trial snapshot did not build a semantic index")
-    _verify_prebuilt_index(index)
+    index.require_prebuilt()
 
 
 def create_trial_app(
@@ -218,7 +188,11 @@ def create_native_trial_app():
     from citation_tool.reasons import DeepSeekModelGateway, DeepSeekReasonGenerator
 
     root = trial_root()
-    settings = replace(trial_settings(root), model_timeout_ms=180_000)
+    settings = replace(
+        trial_settings(root),
+        model_timeout_ms=180_000,
+        demo_continuity=os.environ.get("CITATION_DEMO_CONTINUITY") == "1",
+    )
     adapters = build_metadata_adapters(settings)
     _verify_snapshot_cache(adapters)
     validate_trial_adapters(adapters)

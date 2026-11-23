@@ -5,6 +5,7 @@ import json
 import threading
 import uuid
 from dataclasses import replace
+from datetime import UTC, datetime
 
 import pytest
 from langchain_core.messages import AIMessage
@@ -164,6 +165,46 @@ async def test_native_audit_saves_failed_and_unmatched_calls_without_error_messa
     assert result["model_calls"] == 1
     assert {row["status"] for row in result["artifacts"]} == {"failed", "audit_error"}
     assert "DO_NOT_RECORD" not in json.dumps(result)
+
+
+async def test_native_audit_releases_slot_even_when_persistence_fails(tmp_path, monkeypatch):
+    audit = native.NativeModelAudit(tmp_path, native.NativeModelSlots())
+    persist = audit._persist
+
+    def fail_after_admission(row):
+        if row["status"] != "queued":
+            raise OSError("injected write failure")
+        persist(row)
+
+    monkeypatch.setattr(audit, "_persist", fail_after_admission)
+    with pytest.raises(OSError, match="write failure"):
+        await audit.on_chat_model_start({}, [], run_id=uuid.uuid4())
+    assert audit.slots.active == 0
+    audit.seal()
+    assert native.collect_model_audit(tmp_path)["model_valid"] is False
+
+
+async def test_native_gateway_cancellation_does_not_leave_an_open_audit(tmp_path, monkeypatch):
+    audit = native.NativeModelAudit(tmp_path, native.NativeModelSlots())
+    gateway = native.NativeLunaGateway(config(), audit)
+    model = gateway.agent_model()
+    entered = asyncio.Event()
+
+    async def waiting(*args, **kwargs):
+        entered.set()
+        await asyncio.Event().wait()
+
+    monkeypatch.setattr(type(model), "_agenerate", waiting)
+    task = asyncio.create_task(model.ainvoke("public fixture"))
+    await asyncio.wait_for(entered.wait(), 2)
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    assert audit.slots.active == 0
+    row = native.collect_model_audit(tmp_path)["artifacts"][0]
+    assert row["status"] == "failed"
+    assert row["error"] == {"type": "CancelledError"}
+    await gateway.aclose()
 
 
 async def test_native_audit_enforces_one_shared_two_call_envelope(tmp_path):
@@ -348,6 +389,12 @@ def test_native_contract_freezes_transport_and_keeps_original_data_and_limits(
 async def test_native_resume_preserves_failed_records_without_reading_credentials_again(
     tmp_path, monkeypatch
 ):
+    class FixedClock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return datetime(2026, 11, 17, tzinfo=UTC)
+
+    monkeypatch.setattr(native, "datetime", FixedClock)
     task = {"case_id": "sf-native-fixture"}
     monkeypatch.setattr(native, "prepare_run", lambda name: (tmp_path, {"tasks": [task]}, {}))
     monkeypatch.setattr(
@@ -382,6 +429,38 @@ async def test_native_resume_preserves_failed_records_without_reading_credential
     summary = await native.run_products("fixture", resume=True)
     assert summary["cases"] == 1 and summary["completed"] == 0
     assert path.read_bytes() == before
+    assert len(list(tmp_path.glob("native-product-summary-*.json"))) == 2
+
+
+async def test_native_cleanup_does_not_hide_the_primary_case_failure(tmp_path, monkeypatch):
+    class Gateway:
+        def __init__(self, *_):
+            pass
+
+        async def aclose(self):
+            raise TimeoutError
+
+    async def failed_case(*args, **kwargs):
+        return {"completed": False, "error": {"code": "MODEL_CONNECTION_ERROR"}}
+
+    monkeypatch.setattr(native, "NativeLunaGateway", Gateway)
+    monkeypatch.setattr(shared, "run_case", failed_case)
+    row = await native.run_case(
+        {},
+        root=tmp_path,
+        runtime=tmp_path,
+        corpus={},
+        index=None,
+        implementation_hash="fixture",
+        config=None,
+        slots=native.NativeModelSlots(),
+    )
+    assert row["completed"] is False
+    assert row["error"]["code"] == "MODEL_CONNECTION_ERROR"
+    assert row["native_cleanup_error"] == {
+        "code": "NATIVE_MODEL_CLEANUP_FAILED",
+        "message": "TimeoutError",
+    }
 
 
 async def test_native_run_rejects_parallel_cases_before_loading_data(monkeypatch):

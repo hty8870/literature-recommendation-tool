@@ -424,7 +424,8 @@ class CandidatePool:
         return self.ranking_ok
 
     def request_cancel(self) -> None:
-        self._task.cancel()
+        if not self._task.done() and not self._task.cancelling():
+            self._task.cancel()
 
     async def cancel(self) -> None:
         self.request_cancel()

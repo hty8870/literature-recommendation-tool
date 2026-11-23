@@ -1,6 +1,5 @@
 import json
 from copy import deepcopy
-from types import SimpleNamespace
 
 import pytest
 
@@ -120,6 +119,7 @@ async def test_agent_tool_projects_only_return_value_not_store_or_public_result(
     class Service:
         def create(self, tenant, body, *_args, **_kwargs):
             assert (tenant, body.keywords) == ("current-tenant", request.keywords)
+            attached.append((tenant, _kwargs["agent_run_id"]))
             return SearchCreated(
                 query_id="q_tool",
                 search_state="running",
@@ -138,7 +138,6 @@ async def test_agent_tool_projects_only_return_value_not_store_or_public_result(
     service = Service()
     service.settings = settings
     tool = LiteratureSearchTool(
-        SimpleNamespace(attach_agent_query=lambda *args: attached.append(args)),
         service,
         "current-tenant",
         "agt_tool",
@@ -205,7 +204,6 @@ async def test_abstract_view_is_used_only_in_the_parent_tool(mode):
             return payload
 
     tool = LiteratureSearchTool(
-        SimpleNamespace(attach_agent_query=lambda *args: None),
         Service(),
         "current-tenant",
         "agt_tool",

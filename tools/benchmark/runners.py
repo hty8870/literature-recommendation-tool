@@ -332,6 +332,7 @@ def run_kimi(
                 "CI": "1",
             }
         )
+        process_error = None
         try:
             process = subprocess.run(
                 [
@@ -356,37 +357,57 @@ def run_kimi(
             returncode = process.returncode
         except subprocess.TimeoutExpired as exc:
             stdout = exc.stdout or ""
-            stderr = "benchmark subprocess timeout"
-            returncode = 124
+            if isinstance(stdout, bytes):
+                stdout = stdout.decode("utf-8", errors="replace")
+            stderr = ""
+            returncode = None
+            process_error = {"code": "KIMI_TIMEOUT", "message": "CLI exceeded its deadline"}
+        except OSError as exc:
+            stdout, stderr, returncode = "", "", None
+            process_error = {"code": "KIMI_PROCESS_START_FAILED", "message": type(exc).__name__}
         stream_path = runtime / f"{case_id}.stream.jsonl"
-        stream_path.write_text(stdout, encoding="utf-8")
-        leaked = secret_leak(stdout, secrets)
-        parsed = _parse_stream(stdout)
+        leaked = secret_leak(stdout, secrets) or secret_leak(stderr, secrets)
+        stream_path.write_text(
+            "[WITHHELD: potential secret]" if leaked else stdout, encoding="utf-8"
+        )
+        parsed = _parse_stream("" if leaked else stdout)
         session_id = parsed["session_id"]
+        if leaked:
+            process_error = {"code": "KIMI_SECRET_LEAK", "message": "CLI output was withheld"}
+        elif process_error is None and returncode:
+            process_error = _kimi_exit_error(returncode, stderr)
+        elif process_error is None and not parsed["response_text"]:
+            process_error = {"code": "KIMI_NO_FINAL_ANSWER", "message": "CLI produced no answer"}
         export_path = runtime / f"{case_id}.zip"
-        export_error = None
-        if session_id:
-            exported = subprocess.run(
-                [
-                    kimi_executable(),
-                    "export",
-                    session_id,
-                    "--no-include-global-log",
-                    "-o",
-                    str(export_path),
-                ],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=45,
-            )
-            if exported.returncode or not export_path.is_file():
-                export_error = "session export failed"
-        else:
-            export_error = "session id missing"
-        if export_path.is_file():
-            raw = _parse_kimi_export(export_path, started_at)
+        export_error = "session id missing"
+        if isinstance(session_id, str) and re.fullmatch(
+            r"[A-Za-z\d][A-Za-z\d_-]{0,127}", session_id
+        ):
+            try:
+                exported = subprocess.run(
+                    [
+                        kimi_executable(),
+                        "export",
+                        session_id,
+                        "--no-include-global-log",
+                        "-o",
+                        str(export_path),
+                    ],
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    timeout=45,
+                )
+                if exported.returncode or not export_path.is_file():
+                    export_error = "session export failed"
+                else:
+                    raw = _parse_kimi_export(export_path, started_at)
+                    export_error = None
+            except subprocess.TimeoutExpired:
+                export_error = "session export timed out"
+            except (OSError, ValueError, TypeError, AttributeError, zipfile.BadZipFile) as exc:
+                export_error = f"session export unreadable: {type(exc).__name__}"
         raw.update(
             {
                 "system": "kimi_code",
@@ -396,7 +417,7 @@ def run_kimi(
                 "mode": task.get("mode", task.get("slice", "discovery")),
                 "started_at": started_at,
                 "wall_time_ms": round((time.monotonic() - started) * 1000, 3),
-                "completed": returncode == 0 and bool(parsed["response_text"]),
+                "completed": process_error is None,
                 "response_text": "[WITHHELD: potential secret]"
                 if leaked
                 else parsed["response_text"],
@@ -406,9 +427,7 @@ def run_kimi(
                 "transcript_text": "[WITHHELD: potential secret]"
                 if leaked
                 else parsed["transcript_text"],
-                "error": None
-                if returncode == 0
-                else {"code": "KIMI_PROCESS_FAILED", "message": stderr[-500:]},
+                "error": process_error,
                 "session_id": session_id,
                 "observability_error": export_error,
                 "model_requested": KIMI_MODEL_ALIAS,
@@ -428,6 +447,22 @@ def run_kimi(
     return raw
 
 
+def _kimi_exit_error(returncode: int, stderr: str) -> dict[str, Any]:
+    markers = (
+        "insufficient_quota",
+        "insufficient_user_quota",
+        "insufficient balance",
+        "quota exceeded",
+        "quota exhausted",
+        "quota has been exhausted",
+    )
+    if any(marker in stderr.casefold() for marker in markers):
+        code, message = "KIMI_UPSTREAM_QUOTA", "Model provider reported depleted quota"
+    else:
+        code, message = "KIMI_PROCESS_FAILED", "CLI exited unsuccessfully"
+    return {"code": code, "message": message, "returncode": returncode}
+
+
 def _parse_stream(stdout: str) -> dict[str, Any]:
     messages = []
     session_id = None
@@ -436,6 +471,8 @@ def _parse_stream(stdout: str) -> dict[str, Any]:
         try:
             event = json.loads(line)
         except json.JSONDecodeError:
+            continue
+        if not isinstance(event, dict):
             continue
         if event.get("type") == "session.resume_hint":
             session_id = event.get("session_id")

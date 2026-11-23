@@ -48,6 +48,7 @@ export function failureMessage(error, fallback = '请求失败。') {
 
 export function runProgressText(run, hasQuery) {
   if (run?.citation_preparation?.status === 'waiting') return '正在准备引用建议…';
+  if (run?.provider === 'local') return '正在检索本地快照…';
   return hasQuery ? '正在检索并整理结果…' : 'Agent 正在处理本轮请求…';
 }
 
@@ -81,8 +82,9 @@ export function runChatFallback(run) {
       ...base,
       role: 'assistant',
       kind: 'status',
-      level: 'error',
-      content: failureMessage(run.error, 'Agent 未能完成本轮；可以继续发送新消息重试。'),
+      level: run.error?.code === 'LOCAL_SEARCH_ONLY' ? 'warn' : 'error',
+      content: run.error?.code === 'LOCAL_SEARCH_ONLY' ? run.error.message
+        : failureMessage(run.error, 'Agent 未能完成本轮；可以继续发送新消息重试。'),
     };
   }
   if (typeof run.summary === 'string' && run.summary.trim()) {

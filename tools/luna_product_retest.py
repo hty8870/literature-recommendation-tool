@@ -82,6 +82,9 @@ MAX_PARALLEL_SUBJECTS = 2
 MAX_PROCESS_MODEL_CALLS = 2
 MODEL_TIMEOUT_S = 300.0
 AGENT_TIMEOUT_MS = 900_000
+AGENT_POLL_GRACE_S = 10.0
+CASE_CLEANUP_TIMEOUT_S = 10.0
+TERMINAL_RUN_STATES = {"completed", "failed", "cancelled"}
 AGENT_MAX_TOOL_CALLS = 32
 AGENT_RECURSION_LIMIT = 96
 TRANSPORT_NOTE = (
@@ -531,11 +534,41 @@ def _error_from_exception(exc: Exception) -> dict[str, Any]:
     return {"code": "PRODUCT_RUNNER_ERROR", "message": _redact(str(exc)) or type(exc).__name__}
 
 
-async def _cancel(client: httpx.AsyncClient, run_id: str, tenant: str) -> None:
+async def _settle_failed_run(
+    client: httpx.AsyncClient, app, tenant: str, run: dict[str, Any]
+) -> tuple[dict[str, Any], dict[str, str] | None]:
+    run_id = run["run_id"]
+    path = f"/api/v1/agent/runs/{run_id}"
+    headers = {"X-Tenant-ID": tenant}
     try:
-        await client.post(f"/api/v1/agent/runs/{run_id}/cancel", headers={"X-Tenant-ID": tenant})
-    except Exception:
-        return
+        async with asyncio.timeout(CASE_CLEANUP_TIMEOUT_S):
+            if run["status"] not in TERMINAL_RUN_STATES:
+                response = await client.post(f"{path}/cancel", headers=headers)
+                run = response.raise_for_status().json()
+            await app.state.agent_runner.wait_for_exit(run_id)
+            saved = await asyncio.to_thread(app.state.store.get_agent_run, tenant, run_id)
+            if saved is None:
+                return run, {"code": "BENCHMARK_CLEANUP_INCOMPLETE", "message": "Missing Agent run"}
+            run = saved.model_dump(mode="json")
+            query_ids = [query["created"]["query_id"] for query in run["queries"]]
+            coordinator = app.state.coordinator
+            await asyncio.gather(
+                *(
+                    coordinator.wait(query_id, timeout_s=CASE_CLEANUP_TIMEOUT_S)
+                    for query_id in query_ids
+                )
+            )
+            settled = not coordinator.has_live_searches(query_ids)
+            if run["status"] in TERMINAL_RUN_STATES and settled:
+                return run, None
+            return run, {
+                "code": "BENCHMARK_CLEANUP_INCOMPLETE",
+                "message": "Case work is not terminal",
+            }
+    except TimeoutError:
+        return run, {"code": "BENCHMARK_CLEANUP_TIMEOUT", "message": "Case work did not settle"}
+    except Exception as exc:
+        return run, {"code": "BENCHMARK_CLEANUP_ERROR", "message": type(exc).__name__}
 
 
 async def run_case(
@@ -585,6 +618,7 @@ async def run_case(
     app = None
     run: dict[str, Any] = {}
     error: dict[str, Any] | None = None
+    cleanup_error: dict[str, str] | None = None
     missing_query_states: list[str] = []
     try:
         app, _, _ = await asyncio.to_thread(builder, settings, adapter, gateway, callback)
@@ -592,33 +626,40 @@ async def run_case(
         async with httpx.AsyncClient(
             transport=transport, base_url="http://luna-product.local", timeout=30
         ) as client:
+            submission_key = uuid.uuid4().hex
+            headers = {"X-Tenant-ID": tenant}
             try:
-                response = await client.post(
-                    "/api/v1/agent/runs",
-                    json=payload,
-                    headers={"X-Tenant-ID": tenant},
-                )
-                response.raise_for_status()
-                run_id = response.json()["run_id"]
-                deadline = time.monotonic() + AGENT_TIMEOUT_MS / 1000 + 10
-                while time.monotonic() < deadline:
-                    response = await client.get(
-                        f"/api/v1/agent/runs/{run_id}",
-                        headers={"X-Tenant-ID": tenant},
+                async with asyncio.timeout(AGENT_TIMEOUT_MS / 1000 + AGENT_POLL_GRACE_S):
+                    response = await client.post(
+                        "/api/v1/agent/runs",
+                        json=payload,
+                        headers=headers | {"Idempotency-Key": submission_key},
                     )
-                    response.raise_for_status()
-                    run = response.json()
-                    if run["status"] in {"completed", "failed", "cancelled"}:
-                        break
-                    await asyncio.sleep(0.2)
-                else:
-                    error = {
-                        "code": "BENCHMARK_TIMEOUT",
-                        "message": "product run exceeded the 900 s quality budget",
-                    }
-                    await _cancel(client, run_id, tenant)
+                    run = response.raise_for_status().json()
+                    run_path = f"/api/v1/agent/runs/{run['run_id']}"
+                    while run["status"] not in TERMINAL_RUN_STATES:
+                        response = await client.get(run_path, headers=headers)
+                        run = response.raise_for_status().json()
+                        if run["status"] not in TERMINAL_RUN_STATES:
+                            await asyncio.sleep(0.2)
             except Exception as exc:
                 error = _error_from_exception(exc)
+            finally:
+                if not run:
+                    try:
+                        async with asyncio.timeout(CASE_CLEANUP_TIMEOUT_S):
+                            saved = await asyncio.to_thread(
+                                app.state.store.get_agent_run_by_key, tenant, submission_key
+                            )
+                        if saved is not None:
+                            run = saved.model_dump(mode="json")
+                    except Exception as exc:
+                        cleanup_error = {
+                            "code": "BENCHMARK_SUBMISSION_LOOKUP_FAILED",
+                            "message": type(exc).__name__,
+                        }
+                if run and (run.get("status") != "completed" or error is not None):
+                    run, cleanup_error = await _settle_failed_run(client, app, tenant, run)
         if run and run.get("status") != "completed" and error is None:
             error = run.get("error") or {
                 "code": "AGENT_RUN_NOT_COMPLETED",
@@ -638,7 +679,7 @@ async def run_case(
                 continue
             queries.append(output_details(state))
         audit = await asyncio.to_thread(collect_audit, runtime / "model-calls")
-        return build_record(
+        record = build_record(
             task,
             run=run,
             queries=queries,
@@ -653,6 +694,9 @@ async def run_case(
             error=error,
             missing_query_states=missing_query_states,
         )
+        if cleanup_error is not None:
+            record["cleanup_error"] = cleanup_error
+        return record
     finally:
         if app is not None:
             try:
@@ -901,7 +945,8 @@ async def run_products(
         ),
     }
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
-    await asyncio.to_thread(save_new, root / f"product-summary-{stamp}.json", summary)
+    path = root / f"product-summary-{stamp}-{uuid.uuid4().hex}.json"
+    await asyncio.to_thread(save_new, path, summary)
     if after_hash != frozen_hash:
         raise ValueError(
             "product implementation changed during the frozen run; records retained but invalid"

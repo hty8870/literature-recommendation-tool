@@ -11,6 +11,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from zipfile import BadZipFile
 
 import numpy as np
 
@@ -106,6 +107,7 @@ class EmbeddingIndex:
         self._model_lock = threading.Lock()
         self._model: Any = None
         self._vectors: np.ndarray | None = None
+        self._prebuilt_model_path: Path | None = None
         self._text_vectors: dict[str, np.ndarray] = {}
         self._query_vectors: dict[str, np.ndarray] = {}
         self._inference_lock = threading.RLock()
@@ -129,13 +131,17 @@ class EmbeddingIndex:
                     model_file="onnx/model.onnx",
                 )
                 _CUSTOM_MODELS_REGISTERED.add(self.model_name)
+            snapshot = self._prebuilt_model_path
             model = TextEmbedding(
                 model_name=self.model_name,
                 cache_dir=str(self._cache_dir / "models"),
                 threads=2,
+                local_files_only=snapshot is not None,
+                specific_model_path=str(snapshot) if snapshot is not None else None,
             )
-            self.model_revision = self._find_revision()
-            self._cache_path = self._new_cache_path()
+            if snapshot is None:
+                self.model_revision = self._find_revision()
+                self._cache_path = self._new_cache_path()
             return model
 
     @property
@@ -147,24 +153,42 @@ class EmbeddingIndex:
         return self._cache_dir / f"{cache_key[:32]}.npz"
 
     def _find_revision(self) -> str:
+        snapshot = self._find_model_snapshot()
+        return snapshot.name if snapshot is not None else "unresolved"
+
+    def _find_model_snapshot(self) -> Path | None:
         name = self.model_name.replace("/", "--")
         for root in (self._cache_dir, self._cache_dir / "models"):
             snapshots = root / f"models--{name}" / "snapshots"
             reference = root / f"models--{name}" / "refs" / "main"
             if reference.is_file():
-                revision = reference.read_text(encoding="utf-8").strip()
-                if (snapshots / revision / "onnx" / "model.onnx").is_file():
-                    return revision
-            revisions = sorted(
-                path.name
-                for path in snapshots.glob("*")
-                if (path / "onnx" / "model.onnx").is_file()
+                snapshot = snapshots / reference.read_text(encoding="utf-8").strip()
+                if (snapshot / "onnx" / "model.onnx").is_file():
+                    return snapshot
+            available = sorted(
+                path for path in snapshots.glob("*") if (path / "onnx" / "model.onnx").is_file()
             )
-            if len(revisions) == 1:
-                return revisions[0]
-            if len(revisions) > 1:
+            if len(available) == 1:
+                return available[0]
+            if len(available) > 1:
                 raise ValueError("embedding model cache contains ambiguous revisions")
-        return "unresolved"
+        return None
+
+    def require_prebuilt(self) -> None:
+        snapshot = self._find_model_snapshot()
+        vectors = (
+            self._read_cached_matrix()
+            if snapshot is not None and snapshot.name == self.model_revision
+            else None
+        )
+        if vectors is None:
+            raise RuntimeError(
+                f"Missing or invalid prebuilt E5 cache: {self._cache_path}. "
+                "Set CITATION_EMBEDDING_CACHE_DIR to the matching model and corpus index, "
+                "or set CITATION_EMBEDDING_ENABLED=0 to use keyword retrieval."
+            )
+        self._prebuilt_model_path = snapshot
+        self._vectors = vectors
 
     def _ensure_model(self) -> Any:
         if self._model is None:
@@ -181,27 +205,33 @@ class EmbeddingIndex:
             raise ValueError("embedding returned an invalid vector")
         return [value / norm for value in values]
 
+    def _read_cached_matrix(self) -> np.ndarray | None:
+        if not self._cache_path.is_file():
+            return None
+        try:
+            with np.load(self._cache_path, allow_pickle=False) as cached:
+                vectors = cached["vectors"]
+                if (
+                    cached["version"].item() == EMBEDDING_CACHE_VERSION
+                    and cached["model"].item() == self.model_name
+                    and cached["model_revision"].item() == self.model_revision
+                    and cached["ids"].tolist() == self._ids
+                    and vectors.ndim == 2
+                    and vectors.shape[0] == len(self._ids)
+                    and vectors.shape[1] > 0
+                    and np.isfinite(vectors).all()
+                ):
+                    return vectors
+        except (OSError, ValueError, KeyError, TypeError, BadZipFile) as exc:
+            logger.warning("embedding cache cannot be read type=%s", type(exc).__name__)
+        return None
+
     def _load_matrix(self) -> np.ndarray:
         if self._vectors is not None:
             return self._vectors
-        if self._cache_path.is_file():
-            try:
-                with np.load(self._cache_path, allow_pickle=False) as cached:
-                    vectors = cached["vectors"]
-                    ids = cached["ids"].tolist()
-                    if (
-                        cached["version"].item() == EMBEDDING_CACHE_VERSION
-                        and cached["model"].item() == self.model_name
-                        and cached["model_revision"].item() == self.model_revision
-                        and ids == self._ids
-                        and vectors.ndim == 2
-                        and vectors.shape[0] == len(self._ids)
-                        and np.isfinite(vectors).all()
-                    ):
-                        self._vectors = vectors
-                        return self._vectors
-            except (OSError, ValueError, KeyError) as exc:
-                logger.warning("embedding cache invalid; rebuilding type=%s", type(exc).__name__)
+        self._vectors = self._read_cached_matrix()
+        if self._vectors is not None:
+            return self._vectors
         documents = [
             f"passage: {record['title']}\n{record['abstract']}" for record in self._records
         ]
@@ -286,6 +316,7 @@ class SemanticMetadataAdapter(MetadataCorpusAdapter):
         index: EmbeddingIndex | None = None,
         dense_threshold: float = 0.80,
         top_k: int = DEFAULT_HYBRID_WINDOW,
+        require_prebuilt: bool = False,
     ) -> None:
         super().__init__(library, records, top_k=top_k)
         self.adapter_id = "europepmc-abstract-hybrid-e5-rrf-v1"
@@ -303,6 +334,8 @@ class SemanticMetadataAdapter(MetadataCorpusAdapter):
             model_name=settings.embedding_model,
             cache_dir=settings.embedding_cache_dir,
         )
+        if require_prebuilt:
+            self._index.require_prebuilt()
         self._threshold = dense_threshold
         self._joined_fallback = settings.candidate_pipeline == "agentic"
         self.score_version = f"{settings.embedding_model}:{RRF_VERSION}:min{dense_threshold:.2f}"

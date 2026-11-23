@@ -8,7 +8,8 @@ library's first result.
 
 Durability boundary: completed searches, events, and snapshots persist in
 SQLite, but an in-flight asyncio task is not a durable queue. Restarting the
-process does not resume a running search in M0; start a new search instead.
+process does not resume in-flight searches: startup marks them interrupted,
+while completed snapshots and previously committed results remain readable.
 """
 
 from __future__ import annotations
@@ -80,6 +81,10 @@ class SearchCoordinator:
         self._reason_overrides[query_id] = reasons
 
     def request_cancel(self, query_id: str) -> None:
+        if query_id not in self._completion or (
+            query_id in self._cancel_requested and query_id not in self._finalization_requested
+        ):
+            return
         self._finalization_requested.discard(query_id)
         self._cancel_requested.add(query_id)
         for task in self._source_tasks.get(query_id, set()):
@@ -156,11 +161,14 @@ class SearchCoordinator:
         options = json.loads(search["options_json"])
         library_ids = json.loads(search["requested_library_ids"])
         reasons = self._reason_overrides.get(query_id, self.reasons)
+        local_only = options.get("local_only", False)
         models = self.discovery_models if query_id not in self._reason_overrides else None
         if self._scorer is not None and any(
             not self.adapters[identifier].simulation for identifier in library_ids
         ):
-            if models is None and hasattr(reasons, "gateway"):
+            if local_only:
+                models = None
+            elif models is None and hasattr(reasons, "gateway"):
                 models = DiscoveryModels.from_reasons(reasons)
             self._pools[query_id] = {
                 claim.claim_id: CandidatePool(
@@ -174,11 +182,11 @@ class SearchCoordinator:
                 for claim in claims
             }
         await self._transition(tenant_id, query_id, "running")
-        tasks = [
-            asyncio.create_task(self._run_library(tenant_id, query_id, claims, library_id, options))
-            for library_id in library_ids
-        ]
-        await asyncio.gather(*tasks)
+        async with asyncio.TaskGroup() as workers:
+            for library_id in library_ids:
+                workers.create_task(
+                    self._run_library(tenant_id, query_id, claims, library_id, options)
+                )
         source = self._source_completion.get(query_id)
         if source is not None:
             source.set_result(query_id not in self._cancel_requested)
@@ -550,6 +558,7 @@ class SearchCoordinator:
         options: dict,
     ) -> None:
         adapter = self.adapters[library_id]
+        local_only = options.get("local_only", False)
         now = utc_now_iso()
         worker = WorkerStatus(
             tenant_id=tenant_id,
@@ -561,7 +570,7 @@ class SearchCoordinator:
             index_snapshot=adapter.index_snapshot,
             model_versions=dict(adapter.model_versions),
             worker_state="running",
-            source_agent_status="running",
+            source_agent_status="disabled" if local_only else "running",
             started_at=now,
             heartbeat_at=now,
             updated_at=now,
@@ -574,7 +583,7 @@ class SearchCoordinator:
             await self._worker_event(tenant_id, query_id, worker, "worker_progress")
             for claim in claims:
                 pool = self._pools[query_id][claim.claim_id]
-                if pool.models is None:
+                if not local_only and pool.models is None:
                     raise SourceSearchError("MODEL_NOT_CONFIGURED", "来源子 Agent 未配置模型。")
 
                 async def search(recall):
@@ -617,6 +626,10 @@ class SearchCoordinator:
                     )
                     await self._worker_event(tenant_id, query_id, worker, "worker_progress")
 
+                if local_only:
+                    for candidate in await search(claim):
+                        await submit(candidate, claim)
+                    continue
                 initial_error = None
                 try:
                     initial = await search(claim)
@@ -728,7 +741,10 @@ class SearchCoordinator:
                         },
                     }
                 )
-        worker = worker.model_copy(update={"ended_at": utc_now_iso(), "updated_at": utc_now_iso()})
+        worker = worker.model_copy(update={
+            "ended_at": utc_now_iso(), "updated_at": utc_now_iso(),
+            **({"source_agent_status": "disabled"} if local_only else {}),
+        })
         await self._worker_event(tenant_id, query_id, worker, event_type)
 
     async def _search_adapter(

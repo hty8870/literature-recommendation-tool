@@ -367,7 +367,11 @@ def make_service(
     candidate = make_candidate()
     if claim.claim_id != candidate.claim_id:
         candidate = candidate.model_copy(update={"claim_id": claim.claim_id})
-    state = SimpleNamespace(results=[], candidate_diagnostics=[candidate])
+    state = SimpleNamespace(
+        adapter_mode="real_abstract_metadata_live_llm",
+        results=[],
+        candidate_diagnostics=[candidate],
+    )
     store = FakeStore(tmp_path / "app.db", claim, tenant=tenant)
     search = FakeSearchService(state, tenant=tenant)
     service = CitationTextService(
@@ -927,7 +931,11 @@ async def test_purge_cancels_multiple_inflight_jobs_concurrently(tmp_path):
 async def test_model_timeout_does_not_exceed_the_source_http_timeout_contract(tmp_path, timeout_ms):
     claim = make_claim()
     store = FakeStore(tmp_path / "timeouts.db", claim)
-    search = FakeSearchService(SimpleNamespace(results=[], candidate_diagnostics=[]))
+    search = FakeSearchService(
+        SimpleNamespace(
+            adapter_mode="real_abstract_metadata_live_llm", results=[], candidate_diagnostics=[]
+        )
+    )
     service = CitationTextService(
         store, search, model=ScriptedCitationModel(), timeout_ms=timeout_ms
     )

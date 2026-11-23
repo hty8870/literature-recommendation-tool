@@ -76,7 +76,9 @@ let store = session.store;
 const view = new ResultsView({ root: refs.results, note: refs.resultsNote });
 const chat = new ChatView({ root: refs.chatLog });
 
+const localDemo = new URLSearchParams(window.location.search).get('local') === '1';
 let libraries = [];
+let demoLocalAvailable = false;
 let defaultModelAvailable = false;
 let agentAvailable = false;
 let authenticated = false;
@@ -99,6 +101,8 @@ let conversationPollUntil = 0;
 let runPollBusy = false;
 let chatComposing = false;
 const streams = new Map();
+const stateReads = new WeakMap();
+const stateRetryAt = new WeakMap();
 const attempts = new Map();
 let announcementTimer = null;
 let toastTimer = null;
@@ -310,7 +314,7 @@ function adoptIdentity(next) {
   if (changed || modelSettings.scope !== nextId) modelSettings.setScope(nextId, { forget: changed });
   accountView.setIdentity(next, { enabled: accountsEnabled, models: modelSettings.available });
   if (changed) sourceRequests.setIdentity(null, false);
-  historyView.setIdentity(accountsEnabled, next);
+  historyView.setIdentity(accountsEnabled && !localDemo, next);
   projects.setIdentity(projectsEnabled ? next?.id ?? null : null);
   identityReady = true;
   updateAgentAvailability();
@@ -402,16 +406,22 @@ async function loadLibraries() {
     const response = await getLibraries();
     libraries = Array.isArray(response) ? response : response.libraries || [];
     if (!libraries.length) throw new Error('服务端没有配置可用文献库。');
+    demoLocalAvailable = response.demo_local_search_available === true;
+    if (localDemo) {
+      libraries = libraries.filter(({ source_type, simulation }) => source_type === 'local_snapshot' && simulation === false);
+      if (!libraries.length) throw new Error('当前服务没有可用于本地备用的真实快照。');
+    }
     defaultModelAvailable = response.agent_available === true;
     citationPreparationEnabled = response.citation_preparation_enabled === true;
     accountsEnabled = response.accounts_enabled === true;
-    projectsEnabled = response.projects_enabled === true;
+    projectsEnabled = !localDemo && response.projects_enabled === true;
     authRequired = authRequired || response.authentication_required === true;
     modelSettings.setProviders(response.user_model_providers || [], response.user_model_protocols || [], response.model);
     home.setLibraries(libraries, {
-      agentAvailable: defaultModelAvailable || modelSettings.isCustom,
-      uploadCapability: response,
+      agentAvailable: !localDemo && (defaultModelAvailable || modelSettings.isCustom),
+      uploadCapability: localDemo ? {} : response,
       ocrEnabled: response.ocr_enabled,
+      localMode: localDemo,
     });
     authenticated = true;
     updateAgentAvailability();
@@ -431,9 +441,9 @@ async function loadLibraries() {
 }
 
 function updateAgentAvailability() {
-  agentAvailable = Boolean(authenticated && (identityReady || !accountsEnabled) && libraries.length
-    && (defaultModelAvailable || modelSettings.isCustom));
-  home.setAgentAvailable(agentAvailable);
+  const workspaceReady = authenticated && (identityReady || !accountsEnabled) && libraries.length;
+  agentAvailable = Boolean(!localDemo && workspaceReady && (defaultModelAvailable || modelSettings.isCustom));
+  home.setAgentAvailable(localDemo ? Boolean(workspaceReady && !account && demoLocalAvailable) : agentAvailable);
   syncChatControls();
 }
 
@@ -445,19 +455,24 @@ function storage() {
   }
 }
 
+function conversationScope() {
+  return localDemo ? 'demo-local' : account?.id;
+}
+
 function rememberConversation(conversationId) {
   if (typeof conversationId !== 'string' || !conversationId) return;
   const cache = storage();
-  if (readConversationId(cache, account?.id) === conversationId) return;
-  writeConversationId(cache, conversationId, account?.id);
+  const scope = conversationScope();
+  if (readConversationId(cache, scope) === conversationId) return;
+  writeConversationId(cache, conversationId, scope);
 }
 
 function forgetConversation() {
-  clearConversationId(storage(), account?.id);
+  clearConversationId(storage(), conversationScope());
 }
 
 function restoreConversation() {
-  return openHistory(readConversationId(storage(), account?.id), { restore: true });
+  return openHistory(readConversationId(storage(), conversationScope()), { restore: true });
 }
 
 let historyLoad = 0;
@@ -576,6 +591,7 @@ function handleIdentityError(error) {
 }
 
 async function startSearch(payload, context = {}) {
+  if (localDemo && (!demoLocalAvailable || account || payload.input_type === 'full_text')) return;
   if (projects.enabled && (projects.pending || !projects.draft || projects.draft.archived)) return;
   const project = projects.draft;
   resetSession({ forgetConversation: true });
@@ -610,6 +626,7 @@ function fallbackDisplayText(payload) {
 }
 
 function webRunPayload(body) {
+  if (localDemo) return { ...body, local_only: true };
   const model = modelSettings.payload();
   return {
     ...body,
@@ -863,16 +880,21 @@ function syncChatControls() {
   refs.paneResults.title = session.hasQueries ? '' : '本轮没有可查看的榜单';
   if (!session.hasQueries && refs.searchWorkspace.dataset.pane === 'results') setPane('chat');
   let note = '';
-  if (!agentAvailable) note = '未配置模型，无法继续发送；可在模型设置中接入。';
+  if (localDemo) note = '本地备用不支持追问；可新建检索。';
+  else if (!agentAvailable) note = '未配置模型，无法继续发送；可在模型设置中接入。';
   else if (!session.hasConversation && !sendBusy && !session.active) note = '当前对话尚未建立；请返回首页开始新检索。';
   refs.chatNote.hidden = !note;
   refs.chatNote.textContent = note;
 }
 
+function disconnectStream(queryId) {
+  streams.get(queryId)?.stop();
+  streams.delete(queryId);
+}
+
 function connectStream(queryId) {
   const target = session.forQuery(queryId);
-  if (!target || target.terminal) return;
-  streams.get(queryId)?.stop();
+  if (!target || target.terminal || streams.has(queryId)) return;
   target.connection = 'connecting';
   scheduleRender();
   const stream = new SearchEventStream({
@@ -880,7 +902,7 @@ function connectStream(queryId) {
     getAfterSequence: () => target.lastSequence,
     onEvent: (envelope) => handleEvent(queryId, envelope),
     onConnection: (state, info) => handleConnection(queryId, state, info),
-    onGap: () => recoverState(queryId),
+    onGap: () => handleStreamFailure(queryId),
     onExhausted: () => handleStreamFailure(queryId),
     isTerminal: () => target.frozen,
   });
@@ -892,8 +914,7 @@ function handleEvent(queryId, envelope) {
   const target = session.forQuery(queryId);
   if (!target) return;
   if (target.detectGap(envelope.sequence)) {
-    streams.get(queryId)?.stop();
-    void recoverState(queryId);
+    handleStreamFailure(queryId);
     return;
   }
   if (!target.applyEvent(envelope).changed) return;
@@ -907,13 +928,14 @@ function handleConnection(queryId, state, info = {}) {
   const target = session.forQuery(queryId);
   if (!target) return;
   if (state === 'protocol-error') {
-    target.addNotice('无法解析的事件已跳过；请重新读取状态。', { level: 'warn', key: 'protocol' });
-  } else if (state === 'error' && (handleWorkspaceError(info.error) || handleIdentityError(info.error))) {
+    handleStreamFailure(queryId);
     return;
-  } else {
-    target.connection = state;
-    target.connectionDetail = state === 'reconnecting' ? `${info.attempt || 1}/${info.max || 3}` : '';
   }
+  if (state === 'closed' || state === 'error') disconnectStream(queryId);
+  if (state === 'error' && (handleWorkspaceError(info.error) || handleIdentityError(info.error))) return;
+  target.connection = state;
+  target.connectionDetail = state === 'reconnecting' ? `${info.attempt || 1}/${info.max || 3}` : '';
+  if (info.error?.code === 'STREAM_IDLE_TIMEOUT') void recoverState(queryId);
   if (target === store) scheduleRender();
 }
 
@@ -922,6 +944,7 @@ function tick() {
   if (document.visibilityState !== 'hidden') void sourceRequests.poll();
   if (store.queryId && !store.terminal) renderStatus(store, refs, session.run);
   const now = Date.now();
+  if (now >= (stateRetryAt.get(store) ?? Infinity)) void recoverState(store.queryId);
   if (session.active) {
     if (!runPollBusy) void refreshActiveRuns();
     if (!conversationPollBusy && now >= conversationPollAt) void refreshConversation();
@@ -1001,31 +1024,55 @@ async function refreshConversation() {
   }
 }
 
-async function recoverState(queryId = store.queryId) {
+function recoverState(queryId = store.queryId) {
   const target = session.forQuery(queryId);
   if (!target) return;
-  const generation = sessionGeneration;
+  const pending = stateReads.get(target);
+  if (pending) return pending;
+  const read = readSearchState(target, queryId, sessionGeneration).finally(() => stateReads.delete(target));
+  stateReads.set(target, read);
+  return read;
+}
+
+async function readSearchState(target, queryId, generation) {
   try {
     const state = await getSearch(queryId);
     if (generation !== sessionGeneration) return;
-    target.applyState(state);
-    if (target === store) scheduleRender();
-    if (target.terminal) {
+    if (!state || !Number.isSafeInteger(state.as_of_sequence) || state.session?.query_id !== queryId) {
+      throw new ApiError(0, { code: 'INVALID_SEARCH_STATE', message: '服务未返回有效的榜单状态。', retryable: true });
+    }
+    const applied = target.applyState(state);
+    stateRetryAt.delete(target);
+    if (target.frozen || (applied && target.terminal)) {
+      disconnectStream(queryId);
       target.connection = 'closed';
     } else {
       connectStream(queryId);
     }
+    if (target === store) scheduleRender();
   } catch (error) {
     if (generation !== sessionGeneration || handleIdentityError(error)) return;
-    if (target === store) showError(refs.fatalError, '读取状态失败', error, () => void recoverState(queryId));
+    if (error.retryable || error.status === 429) {
+      stateRetryAt.set(target, Date.now() + 5000);
+      if (!streams.has(queryId)) target.connection = 'exhausted';
+      if (target === store) scheduleRender();
+    } else if (!streams.has(queryId)) {
+      stateRetryAt.delete(target);
+      target.connection = 'error';
+      if (target === store) showError(refs.fatalError, '读取状态失败', error, () => {
+        renderError(refs.fatalError, {});
+        void recoverState(queryId);
+      });
+    }
   }
 }
 
 function handleStreamFailure(queryId) {
   const target = session.forQuery(queryId);
   if (!target) return;
+  disconnectStream(queryId);
   target.connection = 'exhausted';
-  target.addNotice('事件流重连失败，已改为读取当前状态。', { level: 'warn', key: 'stream-failure' });
+  if (target === store) scheduleRender();
   void recoverState(queryId);
 }
 
@@ -1073,6 +1120,7 @@ function citationTarget(resultId) {
 }
 
 function openCitation(resultId) {
+  if (localDemo || store.localOnly) return;
   const target = citationTarget(resultId);
   if (!target) {
     showToast('未找到可查看建议的当前条目。', { level: 'error' });
@@ -1113,8 +1161,9 @@ function openCopyMenu(trigger) {
     return;
   }
   const { rec } = target;
-  bibliography.open(trigger, store.simulation === false ? target : null, {
-    raw: formatCitationInfo(rec, store.libraryNames),
+  const localOnly = store.localOnly || localDemo;
+  bibliography.open(trigger, store.simulation === false && !localOnly ? target : null, {
+    raw: formatCitationInfo(rec, store.libraryNames), localOnly,
   });
 }
 

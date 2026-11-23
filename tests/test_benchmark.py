@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import zipfile
 from datetime import UTC, datetime
 
 import pytest
 from langchain_core.messages import AIMessage
 from langchain_core.outputs import ChatGeneration, LLMResult
+from tools.benchmark import runners
 from tools.benchmark.core import (
     DIMENSIONS,
     MODEL_ID,
@@ -346,6 +348,54 @@ def test_kimi_final_answer_excludes_intermediate_progress_from_ranking() -> None
     assert "10.9999/wrong" not in parsed["response_text"]
     assert "10.9999/wrong" in parsed["transcript_text"]
     assert parsed["session_id"] == "session-test"
+
+
+@pytest.mark.parametrize("failure", ["timeout", "quota", "no_output", "export_timeout", "secret"])
+def test_kimi_runner_retains_typed_failure_without_leaking_output(tmp_path, monkeypatch, failure):
+    monkeypatch.setattr(runners, "RUNTIME_ROOT", tmp_path)
+    monkeypatch.setattr(runners, "ROOT", tmp_path)
+    monkeypatch.setattr(runners, "kimi_executable", lambda: "test-kimi")
+    secret = "synthetic-do-not-store"  # noqa: S105
+    reply = '{"role":"assistant","content":"Partial or unverified reply."}\n'
+
+    def run(args, **kwargs):
+        if args[1] == "export":
+            assert failure == "export_timeout"
+            raise subprocess.TimeoutExpired(args, kwargs["timeout"])
+        if failure == "timeout":
+            raise subprocess.TimeoutExpired(
+                args, kwargs["timeout"], output=b"null\n" + reply.encode()
+            )
+        if failure == "quota":
+            return subprocess.CompletedProcess(args, 1, "", "insufficient_user_quota")
+        if failure == "no_output":
+            return subprocess.CompletedProcess(args, 0, "", "")
+        if failure == "secret":
+            return subprocess.CompletedProcess(args, 1, "", secret)
+        hint = '{"type":"session.resume_hint","session_id":"fixture-session"}\n'
+        return subprocess.CompletedProcess(args, 0, hint + reply, "")
+
+    monkeypatch.setattr(runners.subprocess, "run", run)
+    case = task()
+    result = runners.run_kimi(case, "fixture", [secret], corpus_payload={"records": []})
+    if failure == "export_timeout":
+        assert result["completed"] is True and result["model_valid"] is False
+        assert result["observability_error"] == "session export timed out"
+    else:
+        assert result["completed"] is False
+        assert (
+            result["error"]["code"]
+            == {
+                "timeout": "KIMI_TIMEOUT",
+                "quota": "KIMI_UPSTREAM_QUOTA",
+                "no_output": "KIMI_NO_FINAL_ANSWER",
+                "secret": "KIMI_SECRET_LEAK",
+            }[failure]
+        )
+    stream = tmp_path / result["stream_path"]
+    assert secret not in stream.read_text(encoding="utf-8") and secret not in json.dumps(result)
+    if failure == "timeout":
+        assert result["response_text"] == "Partial or unverified reply."
 
 
 def test_usage_cost_separates_cached_and_uncached_input() -> None:

@@ -47,6 +47,7 @@ from .agent import (
     AgentRunCreate,
     AgentRunner,
     AgentUnavailableError,
+    LocalSearchUnavailableError,
 )
 from .auth import (
     COOKIE_NAME,
@@ -209,7 +210,7 @@ def create_app(
         adapters = (
             build_fixture_adapters(settings)
             if settings.library_mode == "fixture"
-            else build_metadata_adapters(settings)
+            else build_metadata_adapters(settings, require_prebuilt=True)
         )
     adapters = dict(adapters)
     settings = replace(
@@ -341,8 +342,10 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(application):
-        worker = asyncio.create_task(learning.run()) if learning is not None else None
+        worker = None
         try:
+            await asyncio.to_thread(store.settle_interrupted_work)
+            worker = asyncio.create_task(learning.run()) if learning is not None else None
             yield
         finally:
             if worker is not None:
@@ -651,7 +654,7 @@ def create_app(
         )
 
     @app.get("/api/v1/libraries")
-    async def libraries() -> dict:
+    async def libraries(request: Request) -> dict:
         upload_capability = await asyncio.to_thread(
             scan_capability,
             uploads_enabled=settings.manuscript_upload_enabled,
@@ -667,6 +670,9 @@ def create_app(
             "agent_available": agent.available,
             "agent_mode": "skill_guided_langchain",
             "model": agent.model_name if agent.available else None,
+            "demo_local_search_available": bool(
+                service.demo_library_ids(_tenant(request, settings))
+            ),
             "conversation_enabled": True,
             **upload_capability,
             "max_upload_bytes": manuscripts.limits.max_upload_bytes,
@@ -738,7 +744,10 @@ def create_app(
                 active_query_id=body.active_query_id,
                 expected_revision=body.expected_revision,
                 project_id=body.project_id,
+                local_only=body.local_only,
             )
+        except LocalSearchUnavailableError as exc:
+            raise ApiError(400, "LOCAL_SEARCH_UNAVAILABLE", str(exc)) from exc
         except AgentCapacityError as exc:
             raise ApiError(
                 429,

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import threading
 import time
 from collections.abc import Sequence
 from dataclasses import replace
@@ -542,6 +543,108 @@ def test_agent_can_narrow_a_query_and_keep_both_result_sets(tmp_path, live_serve
         assert all(item["reason"]["status"] == "generated" for item in second["results"])
 
 
+async def test_search_belongs_to_parent_before_any_worker_is_started(tmp_path, monkeypatch):
+    from citation_tool.agent import LiteratureSearchTool
+    from test_conversations import make_run
+
+    app = create_app(Settings.for_tests(tmp_path))
+    store = app.state.store
+    run, _ = store.create_conversation_agent_run(make_run(), None, create_conversation=True)
+    assert store.save_agent_run(run.model_copy(update={"status": "running"}))
+    coordinator = app.state.coordinator
+    start = coordinator.start
+    observed = []
+
+    def verify_owner(tenant, query_id):
+        persisted = store.get_agent_run(tenant, run.run_id)
+        observed.append(query_id in {query.created.query_id for query in persisted.queries})
+        return start(tenant, query_id)
+
+    monkeypatch.setattr(coordinator, "start", verify_owner)
+    search = LiteratureSearchTool(
+        app.state.search_service, run.tenant_id, run.run_id, run.request
+    ).as_tool()
+    result = await search.ainvoke({"input_type": "keywords", "keywords": ["LFY2"]})
+    assert result["search_state"] == "completed"
+    assert observed == [True]
+
+
+async def test_unexpected_worker_error_drains_other_workers_before_finishing(tmp_path, monkeypatch):
+    from citation_tool.entities import SearchCreate
+
+    app = create_app(Settings.for_tests(tmp_path))
+    coordinator = app.state.coordinator
+    ready, release, drained = asyncio.Event(), asyncio.Event(), asyncio.Event()
+
+    async def worker(tenant, query, claims, library, options):
+        if library == "fixture-fast":
+            await ready.wait()
+            raise RuntimeError("test unexpected worker error")
+        ready.set()
+        try:
+            await release.wait()
+        finally:
+            drained.set()
+
+    monkeypatch.setattr(coordinator, "_run_library", worker)
+    created, _ = app.state.search_service.create(
+        "local", SearchCreate(input_type="keywords", keywords=["LFY2"]), None
+    )
+    try:
+        assert await coordinator.wait(created.query_id, timeout_s=3)
+        assert drained.is_set()
+        state = app.state.search_service.state("local", created.query_id)
+        assert state.session.search_state == "failed"
+        assert state.coverage.running_library_ids == []
+    finally:
+        release.set()
+        await asyncio.wait_for(drained.wait(), 2)
+
+
+async def test_cancellation_cannot_be_overwritten_by_a_late_running_save(
+    tmp_path, monkeypatch
+) -> None:
+    app = create_app(Settings.for_tests(tmp_path), agent_model=ScriptedChatModel())
+    store = app.state.store
+    original = store.save_agent_run
+    started, release, saved = threading.Event(), threading.Event(), threading.Event()
+
+    def save(run):
+        if run.status != "running":
+            return original(run)
+        started.set()
+        try:
+            assert release.wait(timeout=5)
+            return original(run)
+        finally:
+            saved.set()
+
+    monkeypatch.setattr(store, "save_agent_run", save)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://testserver"
+    ) as client:
+        receipt = await client.post(
+            "/api/v1/agent/runs", json={"input_type": "keywords", "keywords": ["LFY2"]}
+        )
+        path = f"/api/v1/agent/runs/{receipt.raise_for_status().json()['run_id']}"
+        try:
+            assert await asyncio.to_thread(started.wait, 2)
+            cancelled = await client.post(path + "/cancel")
+            assert cancelled.raise_for_status().json()["status"] == "cancelled"
+        finally:
+            release.set()
+        assert await asyncio.to_thread(saved.wait, 2)
+        persisted = (await client.get(path)).raise_for_status().json()
+        assert persisted["status"] == "cancelled"
+        assert persisted["error"]["code"] == "AGENT_CANCELLED"
+        conversation = (
+            (await client.get(f"/api/v1/conversations/{persisted['conversation_id']}"))
+            .raise_for_status()
+            .json()
+        )
+        assert conversation["active_run_id"] is None and conversation["revision"] == 1
+
+
 def test_authentication_failures_have_a_specific_public_code() -> None:
     from citation_tool.agent import _agent_error_code
     from citation_tool.reasons import _failure_code
@@ -549,6 +652,19 @@ def test_authentication_failures_have_a_specific_public_code() -> None:
     error = type("OpenAIAuthenticationError", (Exception,), {})()
     assert _agent_error_code(error) == "MODEL_AUTHENTICATION_FAILED"
     assert _failure_code(error) == "MODEL_AUTHENTICATION_FAILED"
+
+
+@pytest.mark.parametrize(
+    ("exception_name", "expected"),
+    [("OpenAIConnectionError", "MODEL_CONNECTION_ERROR"), ("OpenAITimeoutError", "MODEL_TIMEOUT")],
+)
+def test_wrapped_provider_errors_are_distinct_from_agent_timeout(exception_name, expected) -> None:
+    from citation_tool.agent import _agent_error_code
+
+    error = RuntimeError()
+    error.__cause__ = type(exception_name, (Exception,), {})()
+    assert _agent_error_code(error) == expected
+    assert _agent_error_code(TimeoutError()) == "AGENT_TIMEOUT"
 
 
 def test_agent_defaults_prioritize_quality_with_runaway_safety_limits(tmp_path) -> None:

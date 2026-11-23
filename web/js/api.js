@@ -71,17 +71,13 @@ export function newIdempotencyKey() {
 }
 
 async function readProblem(response) {
-  let text = '';
-  try {
-    text = await response.text();
-  } catch {
-    return null;
-  }
+  const text = await response.text();
   if (!text) return null;
   try {
-    return JSON.parse(text);
+    const problem = JSON.parse(text);
+    return typeof problem?.code === 'string' && typeof problem.message === 'string' ? problem : null;
   } catch {
-    return { message: text.slice(0, 500) };
+    return null;
   }
 }
 
@@ -89,7 +85,9 @@ export async function readProblemFromResponse(response) {
   return readProblem(response);
 }
 
-export async function request(path, { method = 'GET', body, signal, idempotencyKey, headers = {}, discover = false } = {}) {
+export async function request(path, {
+  method = 'GET', body, signal, idempotencyKey, headers = {}, discover = false, timeoutMs = 25_000,
+} = {}) {
   const epoch = workspaceEpoch;
   const finalHeaders = {
     'X-Tenant-ID': TENANT_ID,
@@ -101,47 +99,53 @@ export async function request(path, { method = 'GET', body, signal, idempotencyK
   if (body !== undefined) finalHeaders['Content-Type'] = 'application/json';
   if (idempotencyKey) finalHeaders['Idempotency-Key'] = idempotencyKey;
 
-  let response;
+  const deadline = new AbortController();
+  const requestSignal = signal ? AbortSignal.any([signal, deadline.signal]) : deadline.signal;
+  const timer = setTimeout(() => deadline.abort(), timeoutMs);
   try {
-    response = await fetch(`${API_BASE}${path}`, {
+    const response = await fetch(`${API_BASE}${path}`, {
       method,
       headers: finalHeaders,
       body: body === undefined ? undefined : JSON.stringify(body),
-      signal,
+      signal: requestSignal,
       cache: 'no-store',
       credentials: 'same-origin',
     });
+    confirmWorkspace(epoch);
+    if (!response.ok) {
+      const problem = await readProblem(response);
+      confirmWorkspace(epoch);
+      const error = new ApiError(response.status, problem, response.headers.get('X-Request-ID'));
+      if (!discover) handleWorkspaceError(error);
+      throw error;
+    }
+
+    if (response.status === 204) return null;
+    const text = await response.text();
+    confirmWorkspace(epoch);
+    if (!text) return null;
+    try {
+      return JSON.parse(text);
+    } catch {
+      throw new ApiError(response.status, {
+        code: 'INVALID_JSON',
+        message: '服务端返回了无法解析的 JSON。',
+        retryable: false,
+      });
+    }
   } catch (error) {
-    if (error && error.name === 'AbortError') throw error;
+    if (error instanceof ApiError || signal?.aborted) throw error;
+    confirmWorkspace(epoch);
+    if (!deadline.signal.aborted && error?.name === 'AbortError') throw error;
     throw new ApiError(0, {
-      title: '无法连接服务',
-      code: 'NETWORK_ERROR',
-      message: '无法连接本地 API。请确认 FastAPI 已启动，且静态服务器代理指向正确地址。',
+      code: deadline.signal.aborted ? 'NETWORK_TIMEOUT' : 'NETWORK_ERROR',
+      message: deadline.signal.aborted
+        ? '未及时收到服务响应，请检查网络后重试。'
+        : '无法连接文献服务，请检查网络后重试。',
       retryable: true,
     });
-  }
-
-  confirmWorkspace(epoch);
-  if (!response.ok) {
-    const problem = await readProblem(response);
-    confirmWorkspace(epoch);
-    const error = new ApiError(response.status, problem, response.headers.get('X-Request-ID'));
-    if (!discover) handleWorkspaceError(error);
-    throw error;
-  }
-
-  if (response.status === 204) return null;
-  const text = await response.text();
-  confirmWorkspace(epoch);
-  if (!text) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    throw new ApiError(response.status, {
-      code: 'INVALID_JSON',
-      message: '服务端返回了无法解析的 JSON。',
-      retryable: false,
-    });
+  } finally {
+    clearTimeout(timer);
   }
 }
 

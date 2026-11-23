@@ -22,7 +22,7 @@ export class BibliographyMenu {
     }, true);
   }
 
-  open(trigger, target, { raw = '', fallback = '' } = {}) {
+  open(trigger, target, { raw = '', fallback = '', localOnly = false } = {}) {
     if (this.trigger === trigger) {
       this.close({ focus: true });
       return;
@@ -37,7 +37,7 @@ export class BibliographyMenu {
     trigger.setAttribute('aria-expanded', 'true');
     this.node.hidden = false;
     const note = el('p', { class: 'bibliography-menu__note', role: 'status',
-      text: target ? '正在读取书目格式…' : '模拟条目仅提供原始题录。' });
+      text: target ? '正在读取书目格式…' : localOnly ? '本地候选仅提供未核查的原始题录。' : '模拟条目仅提供原始题录。' });
     const choices = el('div', { role: 'group' });
     this.node.replaceChildren(note, choices);
     const basic = raw || fallback;

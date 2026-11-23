@@ -43,7 +43,7 @@ function secureUrl(url) {
 }
 
 export class CandidateCard {
-  constructor(candidate, index, libraryNames = new Map()) {
+  constructor(candidate, index, libraryNames = new Map(), localOnly = false) {
     this.card = el('article', { class: 'result-card candidate-card', dataset: { resultId: candidate.result_id } });
     this.rank = el('span', { class: 'result-card__rank' });
     this.movement = el('span', { class: 'result-card__scale' });
@@ -53,6 +53,7 @@ export class CandidateCard {
     this.year = el('span');
     this.doi = el('span');
     this.reason = document.createTextNode('');
+    this.reasonRow = el('p', { class: 'result-card__reason' }, el('span', { text: '推荐理由' }), this.reason);
     this.details = el('details', { class: 'candidate-card__abstract' });
     this.abstract = el('p');
     this.links = el('div', { class: 'candidate-card__sources' });
@@ -83,10 +84,11 @@ export class CandidateCard {
           el('span', { class: 'result-card__badges' },
             el('span', { class: 'badge badge--evidence', text: '仅摘要' }), this.badge)),
         el('div', { class: 'result-card__meta' }, this.authors, this.year, this.doi),
-        el('p', { class: 'result-card__reason' }, el('span', { text: '推荐理由' }), this.reason),
-        this.details),
+        this.reasonRow, this.details),
       el('div', { class: 'result-card__actions' }, this.copy, this.citation),
     );
+    setHidden(this.reasonRow, localOnly);
+    setHidden(this.citation, localOnly);
     this.update(candidate, index, libraryNames);
   }
 

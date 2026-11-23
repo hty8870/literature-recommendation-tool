@@ -9,6 +9,7 @@ import httpx
 import pytest
 from langchain_core.messages import AIMessage
 
+from citation_tool import agent as agent_module
 from citation_tool.api import create_app
 from citation_tool.config import LibraryConfig, Settings
 from citation_tool.entities import AgentRun, CitationBatchOutcome, SearchCreate, utc_now_iso
@@ -18,10 +19,13 @@ from test_discovery import models, record
 from test_integration import headers
 
 
-def new_app(tmp_path, responses):
+def new_app(tmp_path, responses, *, demo_continuity=False):
     library = LibraryConfig("a", "A", "", 0, simulation=False)
     settings = replace(
-        Settings.for_tests(tmp_path), libraries=(library,), candidate_pipeline="agentic"
+        Settings.for_tests(tmp_path),
+        libraries=(library,),
+        candidate_pipeline="agentic",
+        demo_continuity=demo_continuity,
     )
     return create_app(
         settings,
@@ -128,6 +132,60 @@ def test_turn_keeps_both_boards_available_and_waits_for_both_batches(tmp_path, l
         finally:
             for gate in gates:
                 gate.set()
+
+
+def test_demo_publishes_answer_without_canceling_slow_citation_batch(
+    tmp_path, live_server, monkeypatch
+):
+    app = new_app(
+        tmp_path,
+        [search_call("slow-citation", ["LFY2"]), AIMessage(content="已查到相关摘要。")],
+        demo_continuity=True,
+    )
+    monkeypatch.setattr(agent_module, "DEMO_CITATION_WAIT_S", 0.05)
+    release = threading.Event()
+    settled = threading.Event()
+    tasks = []
+
+    def prepare(*_):
+        async def generate():
+            assert await asyncio.to_thread(release.wait, 8)
+            settled.set()
+            return CitationBatchOutcome(ready=1)
+
+        task = asyncio.create_task(generate())
+        tasks.append(task)
+        return task
+
+    app.state.citation_texts.schedule_preparation = prepare
+    base = live_server(app)
+    try:
+        with httpx.Client(timeout=8) as client:
+            sent = (
+                client.post(
+                    f"{base}/api/v1/agent/runs",
+                    json={
+                        "input_type": "keywords",
+                        "keywords": ["LFY2"],
+                        "prepare_citations": True,
+                    },
+                )
+                .raise_for_status()
+                .json()
+            )
+            result = wait_agent(client, base, sent["run_id"])
+            assert result["status"] == "completed" and result["summary"] == "已查到相关摘要。"
+            assert result["citation_preparation"] == {
+                "status": "partial",
+                "ready": 0,
+                "unavailable": 0,
+                "unfinished_batches": 1,
+            }
+            assert len(tasks) == 1 and not tasks[0].done()
+            release.set()
+            assert settled.wait(2)
+    finally:
+        release.set()
 
 
 @pytest.mark.parametrize("enable", [False, True])

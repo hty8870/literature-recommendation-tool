@@ -122,7 +122,13 @@ export class HomeView {
     agentAvailable = true,
     uploadCapability = {},
     ocrEnabled = null,
+    localMode = false,
   } = {}) {
+    this.localMode = localMode;
+    for (const button of this.modeOptions) {
+      if (button.dataset.mode === 'full_text') setHidden(button, localMode);
+    }
+    if (localMode && this.mode === 'full_text') this.setMode('keywords');
     this.setSourceChoices(libraries, libraries.map((library) => library.library_id));
     this.ocrEnabled = typeof ocrEnabled === 'boolean' ? ocrEnabled : null;
     this.applyUploadCapability(uploadCapability);
@@ -171,8 +177,11 @@ export class HomeView {
     this.ready = this.libraries.length > 0 && agentAvailable;
     if (this.ready) this.clearError();
     if (this.libraries.length) {
-      const note = !agentAvailable ? '暂无可用模型，请检查模型设置或服务端配置。'
-        : this.libraries.some((library) => library.simulation === true) ? '包含模拟文献库，仅供演示。' : '';
+      const note = this.localMode
+        ? agentAvailable ? '本地备用：只查已选快照的题录与摘要，不调用模型或在线数据源。'
+          : '本地备用不可用：需要启用演示开关，并在访客工作区选择本地库。'
+        : !agentAvailable ? '暂无可用模型，请检查模型设置或服务端配置。'
+          : this.libraries.some((library) => library.simulation === true) ? '包含模拟文献库，仅供演示。' : '';
       this.setLibraryNote(note);
     }
     this.updateButtons();
@@ -265,7 +274,7 @@ export class HomeView {
   }
 
   setMode(mode) {
-    if (!INPUT_MODES[mode]) return;
+    if (!INPUT_MODES[mode] || (this.localMode && mode === 'full_text')) return;
     const previousMode = this.mode;
     this.mode = mode;
     const config = INPUT_MODES[mode];

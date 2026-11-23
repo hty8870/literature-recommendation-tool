@@ -488,6 +488,8 @@ def validate_openai_proxy(value: str | None) -> str | None:
 
 
 class DeepSeekModelGateway:
+    _chat_model_type: type[ChatOpenAI] | None = None
+
     def __init__(self, config: ModelConfig, *, max_inflight: int, timeout_ms: int) -> None:
         self.config = config
         self._timeout_s = timeout_ms / 1000
@@ -510,6 +512,7 @@ class DeepSeekModelGateway:
         self._reason = self._client(json_mode=True, max_tokens=350)
 
     def _client(self, *, json_mode: bool = False, max_tokens: int = 2000) -> ChatOpenAI:
+        model_type = self._chat_model_type or ChatOpenAI
         custom = self.config.provider == "custom"
         retries = 0 if custom else 4
         proxy = (
@@ -518,7 +521,7 @@ class DeepSeekModelGateway:
             else None
         )
         if self.config.api_type == "responses":
-            return ChatOpenAI(
+            return model_type(
                 model=self.config.model,
                 api_key=self.config.api_key,
                 base_url=self.config.base_url,
@@ -540,7 +543,7 @@ class DeepSeekModelGateway:
             extra_body["thinking"] = {"type": "disabled"}
         if json_mode:
             extra_body["response_format"] = {"type": "json_object"}
-        return ChatOpenAI(
+        return model_type(
             model=self.config.model,
             temperature=0,
             api_key=self.config.api_key,

@@ -74,9 +74,13 @@ def normalize_online_record(item: Mapping[str, Any]) -> dict[str, Any] | None:
         if isinstance(year_value, int) or isinstance(year_value, str) and year_value.isdigit()
         else None
     )
-    pub_types = (item.get("pubTypeList") or {}).get("pubType", [])
-    if not isinstance(pub_types, list):
-        pub_types = []
+    pub_type_list = item.get("pubTypeList")
+    raw_types = pub_type_list.get("pubType") if isinstance(pub_type_list, Mapping) else None
+    pub_types = (
+        [value for value in raw_types if isinstance(value, str)]
+        if isinstance(raw_types, list)
+        else []
+    )
     relations = _publication_relations(item)
     retracted = str(item.get("retracted") or "").casefold() in {"y", "yes", "true"}
     checked = (
@@ -177,8 +181,8 @@ class EuropePMCOnlineAdapter:
             "synonym": "false",
         }
         payload = self._transport(f"{ENDPOINT}?{urlencode(params)}", self._timeout_s)
-        container = payload.get("resultList", {})
-        results = container.get("result", []) if isinstance(container, Mapping) else None
+        container = payload.get("resultList") if isinstance(payload, Mapping) else None
+        results = container.get("result") if isinstance(container, Mapping) else None
         if not isinstance(results, list):
             raise SourceSearchError(
                 "SOURCE_INVALID_RESPONSE", "Europe PMC 返回的结果列表格式不正确。"

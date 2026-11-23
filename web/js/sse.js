@@ -5,9 +5,10 @@ import { ApiError, eventsUrl, eventRequestHeaders, readProblemFromResponse } fro
 
 const MAX_RECONNECTS = 3;
 const BACKOFF_MS = [600, 1400, 2800];
+const IDLE_MS = 45_000;
 
 export class SearchEventStream {
-  constructor({ queryId, getAfterSequence, onEvent, onConnection, onGap, onExhausted, isTerminal }) {
+  constructor({ queryId, getAfterSequence, onEvent, onConnection, onGap, onExhausted, isTerminal, idleMs = IDLE_MS }) {
     this.queryId = queryId;
     this.getAfterSequence = getAfterSequence;
     this.onEvent = onEvent;
@@ -15,6 +16,7 @@ export class SearchEventStream {
     this.onGap = onGap;
     this.onExhausted = onExhausted;
     this.isTerminal = isTerminal || (() => false);
+    this.idleMs = idleMs;
     this.stopped = true;
     this.attempts = 0;
     this.abort = null;
@@ -43,51 +45,35 @@ export class SearchEventStream {
 
   async #loop() {
     while (!this.stopped) {
-      const after = this.getAfterSequence();
-      let outcome = null;
+      let failure = null;
       try {
-        outcome = await this.#attempt(after);
+        await this.#attempt(this.getAfterSequence());
       } catch (error) {
-        if (this.stopped || (error && error.name === 'AbortError')) return;
+        if (this.stopped) return;
         if (error instanceof ApiError) {
           if (error.code === 'REPLAY_GAP' || error.code === 'REPLAY_REQUEST_CONFLICT') {
             this.onGap(error);
             return;
           }
-          if (error.status >= 400 && error.status < 500) {
+          if (error.status >= 400 && error.status < 500 && error.status !== 429 && !error.retryable) {
             this.onConnection('error', { error });
             return;
           }
-          this.onConnection('reconnecting', {
-            attempt: Math.min(this.attempts + 1, MAX_RECONNECTS),
-            max: MAX_RECONNECTS,
-            error,
-          });
-        } else {
-          this.onConnection('reconnecting', {
-            attempt: Math.min(this.attempts + 1, MAX_RECONNECTS),
-            max: MAX_RECONNECTS,
-            error,
-          });
         }
+        failure = error;
       }
 
       if (this.stopped) return;
-      if (outcome && outcome.terminal) {
-        this.onConnection('closed');
-        return;
-      }
       if (this.isTerminal()) {
         this.onConnection('closed');
         return;
       }
-
       this.attempts += 1;
       if (this.attempts > MAX_RECONNECTS) {
-        this.onExhausted({ attempts: MAX_RECONNECTS, lastError: outcome && outcome.error });
+        this.onExhausted({ attempts: MAX_RECONNECTS, lastError: failure });
         return;
       }
-      this.onConnection('reconnecting', { attempt: this.attempts, max: MAX_RECONNECTS });
+      this.onConnection('reconnecting', { attempt: this.attempts, max: MAX_RECONNECTS, error: failure });
       await sleep(BACKOFF_MS[this.attempts - 1] + Math.floor(Math.random() * 200));
     }
   }
@@ -95,99 +81,80 @@ export class SearchEventStream {
   async #attempt(after) {
     const controller = new AbortController();
     this.abort = controller;
-    const startedAt = performance.now();
-    let receivedAny = false;
-    let terminal = false;
-    let lastError = null;
+    let timer;
+    let timedOut = false;
+    let reader;
+    const received = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, this.idleMs);
+    };
 
-    let response;
     try {
-      response = await fetch(eventsUrl(this.queryId, after), {
+      received();
+      const response = await fetch(eventsUrl(this.queryId, after), {
         method: 'GET',
         headers: eventRequestHeaders(after),
         signal: controller.signal,
         cache: 'no-store',
         credentials: 'same-origin',
       });
-    } catch (error) {
-      if (error && error.name === 'AbortError') throw error;
-      throw new ApiError(0, {
-        code: 'NETWORK_ERROR',
-        message: '事件流无法连接。',
-        retryable: true,
-      });
-    }
+      if (!response.ok) {
+        const problem = await readProblemFromResponse(response);
+        throw new ApiError(response.status, problem, response.headers.get('X-Request-ID'));
+      }
+      if (!response.body || !response.headers.get('Content-Type')?.startsWith('text/event-stream')) {
+        throw new ApiError(0, {
+          code: 'STREAM_UNAVAILABLE', message: '服务未返回可读取的事件流。', retryable: true,
+        });
+      }
+      if (this.stopped) return;
+      this.onConnection('live', { resumeFrom: after });
+      reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
 
-    if (!response.ok) {
-      const problem = await readProblemFromResponse(response);
-      throw new ApiError(response.status, problem, response.headers.get('X-Request-ID'));
-    }
-    if (!response.body) {
-      throw new ApiError(0, {
-        code: 'STREAM_UNAVAILABLE',
-        message: '当前浏览器不支持流式响应。',
-        retryable: false,
-      });
-    }
-
-    this.onConnection('live', { resumeFrom: after });
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder('utf-8');
-    let buffer = '';
-
-    try {
       while (!this.stopped) {
-        let chunk;
-        try {
-          chunk = await reader.read();
-        } catch (error) {
-          if (this.stopped || (error && error.name === 'AbortError')) break;
-          lastError = error;
-          break;
-        }
-        if (chunk.done) break;
+        const chunk = await reader.read();
+        if (chunk.done || this.stopped) return;
+        if (chunk.value.byteLength) received();
         buffer += decoder.decode(chunk.value, { stream: true });
 
-        let split = takeBlock(buffer);
-        while (split) {
+        let split;
+        while (!this.stopped && (split = takeBlock(buffer))) {
           buffer = split.rest;
           const message = parseBlock(split.block);
-          if (message && message.data) {
-            const envelope = decodeEnvelope(message);
-            if (envelope) {
-              const sequence = Number(envelope.sequence);
-              if (Number.isFinite(sequence) && (after == null || sequence > after)) {
-                receivedAny = true;
-                this.attempts = 0;
-              }
-              if (!this.stopped) {
-                this.onEvent(envelope);
-              }
-              if (this.isTerminal()) {
-                terminal = true;
-                break;
-              }
-            } else {
-              this.protocolErrors += 1;
-              this.onConnection('protocol-error', { count: this.protocolErrors });
-            }
+          if (!message.data) continue;
+          const envelope = decodeEnvelope(message);
+          if (!envelope) {
+            this.protocolErrors += 1;
+            this.onConnection('protocol-error', { count: this.protocolErrors });
+            continue;
           }
-          split = takeBlock(buffer);
+          const previousSequence = this.getAfterSequence();
+          this.onEvent(envelope);
+          if (this.getAfterSequence() > (previousSequence ?? 0)) this.attempts = 0;
+          if (this.isTerminal()) return;
         }
-        if (terminal) break;
       }
+    } catch (error) {
+      if (!timedOut) throw error;
+      throw new ApiError(0, {
+        code: 'STREAM_IDLE_TIMEOUT', message: '事件流长时间未收到结果或心跳。', retryable: true,
+      });
     } finally {
+      clearTimeout(timer);
       try {
-        await reader.cancel();
+        if (reader) await reader.cancel();
       } catch {
-        /* 连接已关闭 */
+        // Fetch may already have closed the body after aborting.
+      } finally {
+        controller.abort();
+        if (this.abort === controller) this.abort = null;
       }
-      controller.abort();
-      this.abort = null;
     }
-
-    return { receivedAny, terminal, lastError, elapsedMs: performance.now() - startedAt };
   }
 }
 

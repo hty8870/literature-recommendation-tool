@@ -81,6 +81,28 @@ test('AT-SCR-007: state recovery keeps claim identities and groups separate', ()
   assert.equal(store.groupOrder.size, 2);
 });
 
+test('EVT-004: a delayed state response cannot erase a newer streamed ranking', () => {
+  const store = new Store();
+  const candidate = { result_id: 'r', work_id: 'w', claim_id: 'c', pool_version: 1,
+    ranking_version: 1, ranking_status: 'ranked', llm_rank: 1 };
+  const oldState = { session: { search_state: 'running' }, as_of_sequence: 8 };
+  store.applyState(oldState);
+  store.applyEvent({ event_id: 'ranked', sequence: 9, event_type: 'candidate_reranked',
+    payload: { ranking: { claim_id: 'c', pool_version: 1, ranking_version: 1 }, candidates: [candidate] } });
+
+  store.applyState(oldState);
+  assert.equal(store.candidates.get('r')?.llm_rank, 1);
+  assert.equal(store.lastSequence, 9);
+
+  store.applyState({ ...oldState, as_of_sequence: 12,
+    session: { search_state: 'completed', final_snapshot_id: 'final' }, candidate_diagnostics: [candidate] });
+  const replay = store.applyEvent({ event_id: 'not-previously-streamed', sequence: 11,
+    event_type: 'search_state_changed', payload: { current_state: 'running' } });
+  assert.equal(replay.changed, false);
+  assert.equal(store.searchState, 'completed');
+  assert.equal(store.lastSequence, 12);
+});
+
 test('AT-SNP-001: a late result cannot mutate a frozen snapshot', () => {
   const store = new Store();
   store.applyEvent({

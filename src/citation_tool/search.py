@@ -7,8 +7,9 @@ import uuid
 from collections import defaultdict
 from collections.abc import Mapping
 
+from .accounts import is_account_tenant
 from .candidates import candidate_sort_key, merge_candidates
-from .config import Settings
+from .config import LOCAL_ONLY_ADAPTER_MODE, LOCAL_ONLY_NOTICE, Settings
 from .coordinator import SearchCoordinator
 from .entities import (
     CandidateDiagnostic,
@@ -196,6 +197,22 @@ class SearchService:
                 "这些摘要候选尚无全文证据定位，不可直接引用；按需原文引用建议是独立资源，须作者核对。"
             ) + scope_note
 
+    def demo_library_ids(self, tenant_id: str, selected: list[str] | None = None) -> list[str]:
+        if (
+            not self.settings.demo_continuity
+            or self.settings.candidate_pipeline != "agentic"
+            or is_account_tenant(tenant_id)
+        ):
+            return []
+        local = {
+            library.library_id
+            for library in self.settings.libraries
+            if library.source_type == "local_snapshot"
+            and not self.adapters[library.library_id].simulation
+        }
+        requested = selected if selected is not None else list(self.library_configs)
+        return [library_id for library_id in requested if library_id in local]
+
     def create(
         self,
         tenant_id: str,
@@ -205,6 +222,8 @@ class SearchService:
         reason_override: ReasonGenerator | None = None,
         evaluation_anchor: EvaluationAnchor | None = None,
         workspace_id: str | None = None,
+        agent_run_id: str | None = None,
+        local_only: bool = False,
     ) -> tuple[SearchCreated, bool]:
         public_ids = tuple(item.library_id for item in self.settings.libraries)
         available = public_ids
@@ -218,6 +237,15 @@ class SearchService:
         unknown = [item for item in library_ids if item not in available]
         if unknown:
             raise SearchRequestError("请求包含未知 library_id。", details={"library_ids": unknown})
+        if local_only:
+            library_ids = self.demo_library_ids(tenant_id, library_ids)
+            if not library_ids or body.input_type == "full_text" or workspace_id is not None:
+                raise SearchRequestError("本地备用检索仅支持访客已选的本地题录库、关键词或摘要。")
+            local_options = body.options.model_copy(update={"library_delays_ms": {
+                key: delay for key, delay in body.options.library_delays_ms.items()
+                if key in library_ids
+            }})
+            body = body.model_copy(update={"library_ids": library_ids, "options": local_options})
         simulation = all(self.adapters[key].simulation for key in library_ids)
         now = utc_now_iso()
         query_id = f"q_{uuid.uuid4().hex}"
@@ -263,21 +291,25 @@ class SearchService:
             "library_delays_ms": resolved_delays,
             "soft_deadline_ms": soft_deadline,
             "scope_source": scope_source,
+            **({"local_only": True} if local_only else {}),
         }
+        notice = self.notice
+        if local_only:
+            notice = LOCAL_ONLY_NOTICE
+        elif body.input_type == "full_text":
+            notice = (
+                "本查询以用户私有稿件的指定段落为 Claim；检索结果只是该段落的候选证据，"
+                "不等于全文科学核验或可引用结论。"
+            )
         created = SearchCreated(
             query_id=query_id,
             search_state="created",
             claims=[claim],
             events_url=f"/api/v1/searches/{query_id}/events",
-            adapter_mode=self.adapter_mode,
+            adapter_mode=LOCAL_ONLY_ADAPTER_MODE if local_only else self.adapter_mode,
             scope_source=scope_source,
             simulation=simulation,
-            notice=(
-                "本查询以用户私有稿件的指定段落为 Claim；检索结果只是该段落的候选证据，"
-                "不等于全文科学核验或可引用结论。"
-                if body.input_type == "full_text"
-                else self.notice
-            ),
+            notice=notice,
         )
         workers = [
             WorkerStatus(
@@ -304,15 +336,17 @@ class SearchService:
             "claims": [claim.model_dump(mode="json")],
             "options": options,
             "request": body.model_dump(mode="json"),
-            "request_hash": sha256_json(
-                {"tenant_id": tenant_id, "request": body.model_dump(mode="json")}
-            ),
+            "request_hash": sha256_json({
+                "tenant_id": tenant_id,
+                "request": body.model_dump(mode="json"),
+                **({"local_only": True} if local_only else {}),
+            }),
             "idempotency_key": idempotency_key or None,
             "create_response": created.model_dump(mode="json"),
             "claim_count": 1,
             "created_at": now,
         }
-        row, replayed = self.store.create_search(record, workers)
+        row, replayed = self.store.create_search(record, workers, agent_run_id=agent_run_id)
         if not replayed:
             if reason_override is not None:
                 self.coordinator.set_reason_override(query_id, reason_override)
@@ -410,6 +444,7 @@ class SearchService:
             raise RuntimeError("提交水位不满足 finalize_cut 不变量。")
         requested = set(session.requested_library_ids)
         options = json.loads(search["options_json"])
+        local_only = options.get("local_only", False)
         diagnostics: dict[str, CandidateDiagnostic] = {}
         claim_hashes = {
             claim.claim_id: claim.claim_hash
@@ -434,9 +469,9 @@ class SearchService:
             as_of_sequence=search["applied_through_sequence"],
             latest_sequence=search["latest_sequence"],
             is_live=search["search_state"] not in {"completed", "partial", "failed", "cancelled"},
-            adapter_mode=self.adapter_mode,
+            adapter_mode=LOCAL_ONLY_ADAPTER_MODE if local_only else self.adapter_mode,
             scope_source=options.get("scope_source", "unknown"),
-            simulation_notice=self.notice,
+            simulation_notice=LOCAL_ONLY_NOTICE if local_only else self.notice,
             tenant_note=TENANT_NOTE,
             libraries=[
                 item for item in library_infos(self.settings) if item.library_id in requested

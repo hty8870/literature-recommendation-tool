@@ -45,6 +45,7 @@ def settings_from_env() -> Settings:
             os.environ.get("CITATION_MODEL_TIMEOUT_MS", defaults.model_timeout_ms)
         ),
         allow_user_models=_bool("CITATION_USER_MODELS_ENABLED", defaults.allow_user_models),
+        demo_continuity=_bool("CITATION_DEMO_CONTINUITY", defaults.demo_continuity),
         online_enabled=_bool("CITATION_EUROPEPMC_ONLINE", defaults.online_enabled),
         online_timeout_ms=int(
             os.environ.get("CITATION_ONLINE_TIMEOUT_MS", defaults.online_timeout_ms)
@@ -206,7 +207,9 @@ def load_metadata_records(path: Path) -> list[dict[str, Any]]:
     return records
 
 
-def build_metadata_adapter(settings: Settings, library: LibraryConfig | None = None):
+def build_metadata_adapter(
+    settings: Settings, library: LibraryConfig | None = None, *, require_prebuilt: bool = False
+):
     from .metadata_retrieval import MetadataCorpusAdapter
 
     library = library or next(
@@ -224,11 +227,12 @@ def build_metadata_adapter(settings: Settings, library: LibraryConfig | None = N
             settings=settings,
             dense_threshold=settings.embedding_dense_threshold,
             top_k=hybrid_candidate_window(settings),
+            require_prebuilt=require_prebuilt,
         )
     return MetadataCorpusAdapter(library, records)
 
 
-def build_metadata_adapters(settings: Settings) -> dict:
+def build_metadata_adapters(settings: Settings, *, require_prebuilt: bool = False) -> dict:
     from .online import EuropePMCOnlineAdapter
 
     adapters = {}
@@ -240,5 +244,7 @@ def build_metadata_adapters(settings: Settings) -> dict:
                 timeout_ms=settings.online_timeout_ms,
             )
         else:
-            adapters[library.library_id] = build_metadata_adapter(settings, library)
+            adapters[library.library_id] = build_metadata_adapter(
+                settings, library, require_prebuilt=require_prebuilt
+            )
     return adapters

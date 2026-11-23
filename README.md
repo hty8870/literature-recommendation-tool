@@ -26,8 +26,15 @@ uv run --frozen uvicorn citation_tool.api:create_app --factory --host 127.0.0.1 
 - 网页：<http://127.0.0.1:8765/>。健康检查：`GET /healthz`；API 交互文档：`GET /docs`；MCP：`POST /mcp`。
 - 缺省使用模拟文献。无需登录即可浏览首页；要运行真实 Agent，需在头像 → **模型设置**填入自己的模型协议、HTTPS 地址、模型名和 Key，或由维护者配置服务端默认模型。兼容 OpenAI Chat Completions 和 Responses；所选模型须支持工具调用和结构化输出。没有模型时服务会明确提示，不冒充真实运行。
 - 本机服务端模型配置可放在 `data/runtime/deepseek.local.json`，或用 `CITATION_MODEL_CONFIG` 指定一个未纳入版本控制的路径。文件包含 `base_url`、`model`、`api_key`；使用原生 Responses 时另设 `api_type` 为 `responses`。不要将真实 Key 写入仓库。浏览器里配置的 Key 只在当前标签页使用，不写入服务器数据库。
-- 要复现真实多库检索，设置 `CITATION_LIBRARY_MODE=metadata`，用 `CITATION_CORPUS_PATH` 和 `CITATION_SAMPLE_CORPUS_PATH` 分别指向有许可的题录/摘要 JSON（格式见 `src/citation_tool/runtime.py`）；默认同时启用 Europe PMC 在线检索。可选 `CITATION_EMBEDDING_ENABLED=1` 开启 E5 与 BM25 混合召回。真实语料、模型缓存和论文原件需要另外准备，不随源码分发。
+- 要复现真实多库检索，设置 `CITATION_LIBRARY_MODE=metadata`，用 `CITATION_CORPUS_PATH` 和 `CITATION_SAMPLE_CORPUS_PATH` 分别指向有许可的题录/摘要 JSON（格式见 `src/citation_tool/runtime.py`）；默认同时启用 Europe PMC 在线检索。可选 `CITATION_EMBEDDING_ENABLED=1` 开启 E5 与 BM25 混合召回，同时用 `CITATION_EMBEDDING_CACHE_DIR` 指向含 E5 模型及匹配该语料的预建 `.npz` 索引的目录。缺失或不匹配时会在启动时报错，不在首个请求里向量化整库。未准备索引时，可先不启用 E5。真实语料、模型缓存和论文原件不随源码分发。
+- 进程意外退出后，重启会标记未完成检索与对话轮次中断，不会自动重跑；已保存的候选、会话记录和快照仍可访问，也可继续该会话。
 - 后台发现数据源需 `CITATION_LEARNING_ENABLED=1`、服务端默认模型以及项目内的主动授权；DeepSeek Search/Fetch 还需独立的 `CITATION_LEARNING_SEARCH_KEY`。arXiv 和 Zenodo 是当前已审配方，接入必须用户批准，且默认不勾选。暂不支持由模型自行接入任意网站。
+
+### 实机演示的降级模式
+
+在真实题录模式下用 `CITATION_DEMO_CONTINUITY=1` 启动（默认关闭）。访客首轮已经选有本地快照、且服务端默认模型在任何检索受理之前遭遇连接错误、模型超时、限流、余额、鉴权或服务商故障时，只按原关键词或摘要查已选的真实本地库；原 Agent 仍记失败。若已有检索则保留原任务及结果，不另开一轮、不换模型或凭据。有效答复在演示模式下最多额外等引用建议 5 秒，未完成批次继续按原期限后台处理。
+
+可预先打开 <http://127.0.0.1:8765/?local=1>。此入口必须显式开启上述开关，只适用于访客的关键词或摘要，不处理全文、不请求模型或在线来源。页内只提供原始题录和摘要，不生成推荐理由、模型排名、规范引用或全文认证。若模型配置本身无法启动实例，在独立本机端口运行时将 `CITATION_MODEL_CONFIG` 指向不存在的专用路径，并设 `CITATION_EUROPEPMC_ONLINE=0`、`CITATION_EMBEDDING_ENABLED=0`，仍用两套真实快照；不覆盖已有数据库或配置。切换演示开关后需重启该本机实例。
 
 ## 源码导览
 

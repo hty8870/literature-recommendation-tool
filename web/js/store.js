@@ -6,6 +6,7 @@ import { SEARCH_STATE } from './labels.js';
 const TERMINAL_STATES = new Set(['completed', 'partial', 'failed', 'cancelled']);
 const MAX_EVENTS = 120;
 const MAX_NOTICES = 8;
+const LOCAL_ONLY_ADAPTER_MODE = 'real_abstract_metadata_local_only';
 
 export class Store {
   constructor() {
@@ -21,6 +22,7 @@ export class Store {
     this.candidateRankings = new Map();
     this.libraryNames = new Map();
     this.simulation = null;
+    this.localOnly = false;
     this.lateResults = new Map();
     this.workers = new Map();
     this.workerIndex = new Map();
@@ -60,6 +62,7 @@ export class Store {
     session.query_id = session.query_id || this.queryId;
     this.session = session;
     this.simulation = data.simulation ?? null;
+    this.localOnly = data.adapter_mode === LOCAL_ONLY_ADAPTER_MODE;
     for (const claim of data.claims || []) {
       if (claim && claim.claim_id) this.claims.set(claim.claim_id, { ...claim });
     }
@@ -106,6 +109,10 @@ export class Store {
 
   applyEvent(envelope) {
     if (!envelope || typeof envelope !== 'object') return { changed: false };
+    const sequence = Number(envelope.sequence);
+    if (Number.isFinite(sequence) && this.lastSequence !== null && sequence <= this.lastSequence) {
+      return { changed: false, duplicate: true };
+    }
     const eventId = envelope.event_id;
     if (eventId) {
       if (this.eventIds.has(eventId)) return { changed: false, duplicate: true };
@@ -116,10 +123,7 @@ export class Store {
       }
     }
 
-    const sequence = Number(envelope.sequence);
-    if (Number.isFinite(sequence)) {
-      this.lastSequence = Math.max(this.lastSequence ?? 0, sequence);
-    }
+    if (Number.isFinite(sequence)) this.lastSequence = sequence;
 
     const type = envelope.event_type || 'unknown';
     const payload = envelope.payload && typeof envelope.payload === 'object' ? envelope.payload : {};
@@ -434,6 +438,9 @@ export class Store {
   }
 
   applyState(payload) {
+    const asOf = payload.as_of_sequence ?? payload.latest_sequence;
+    if (Number.isSafeInteger(asOf) && this.lastSequence !== null && asOf < this.lastSequence) return false;
+
     const session = payload.session && typeof payload.session === 'object' ? { ...payload.session } : null;
     this.session = session;
     this.results.clear();
@@ -457,6 +464,7 @@ export class Store {
       this.candidateRankings.set(ranking.claim_id, { ...ranking });
     }
     this.simulation = payload.adapter_mode?.startsWith('real_') ? false : this.simulation;
+    if (payload.adapter_mode) this.localOnly = payload.adapter_mode === LOCAL_ONLY_ADAPTER_MODE;
     this.libraryNames = new Map((payload.libraries || []).map((library) => [library.library_id, library.display_name]));
     const libraryNames = this.libraryNames;
     for (const worker of payload.workers || []) {
@@ -464,12 +472,8 @@ export class Store {
     }
     this.#applyGroups(payload.groups);
 
-    const asOf = Number(payload.as_of_sequence);
-    const latest = Number(payload.latest_sequence);
-    this.asOfSequence = Number.isFinite(asOf) ? asOf : Number.isFinite(latest) ? latest : this.lastSequence;
-    if (Number.isFinite(this.asOfSequence)) {
-      this.lastSequence = Math.max(this.lastSequence ?? 0, this.asOfSequence);
-    }
+    this.asOfSequence = Number.isSafeInteger(asOf) ? asOf : this.lastSequence;
+    if (this.asOfSequence !== null) this.lastSequence = this.asOfSequence;
     if (session && session.final_snapshot_id) {
       this.frozen = true;
       if (!this.finalSnapshot) {
@@ -489,6 +493,7 @@ export class Store {
         });
       }
     }
+    return true;
   }
 
   applyFinalManifest(manifest) {

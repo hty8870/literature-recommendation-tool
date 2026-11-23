@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Literal
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+LOCAL_ONLY_ADAPTER_MODE = "real_abstract_metadata_local_only"
+LOCAL_ONLY_NOTICE = "仅检索已选本地快照的题录与摘要；没有在线查库、模型重排、推荐理由或全文核查。"
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,6 +53,7 @@ class Settings:
     model_max_inflight: int = 2
     model_timeout_ms: int = 45_000
     allow_user_models: bool = True
+    demo_continuity: bool = False
     agent_timeout_ms: int = 900_000
     agent_full_text_timeout_ms: int = 1_800_000
     agent_max_tool_calls: int = 32

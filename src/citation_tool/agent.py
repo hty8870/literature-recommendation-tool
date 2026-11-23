@@ -31,7 +31,6 @@ from .config import PROJECT_ROOT, LibraryConfig, Settings
 from .conversations import build_conversation_context
 from .design_review import DesignReviewer
 from .entities import (
-    AgentQuery,
     AgentRun,
     AgentToolCall,
     CitationBatchOutcome,
@@ -85,6 +84,16 @@ from .store import (
 logger = logging.getLogger(__name__)
 SKILL_PATH = PROJECT_ROOT / ".agents" / "skills" / "recommend-literature" / "SKILL.md"
 TOOL_NAME = "search_literature"
+DEMO_CITATION_WAIT_S = 5
+MODEL_OUTAGE_CODES = frozenset({
+    "MODEL_AUTHENTICATION_FAILED",
+    "MODEL_CONNECTION_ERROR",
+    "MODEL_INSUFFICIENT_BALANCE",
+    "MODEL_RATE_LIMITED",
+    "MODEL_TIMEOUT",
+    "MODEL_UPSTREAM_ERROR",
+})
+LOCAL_SEARCH_ONLY = "LOCAL_SEARCH_ONLY"
 EVIDENCE_DECISION_GUIDANCE = (
     "证据方向和证明强度是两件事。逐篇以所测对象、比较组、结局和实际结果判方向，"
     "把设计局限和能否外推另说。原文在同一范围提供实质性的支持或反证时，"
@@ -119,6 +128,10 @@ class AgentUnavailableError(RuntimeError):
     pass
 
 
+class LocalSearchUnavailableError(RuntimeError):
+    pass
+
+
 class AgentCapacityError(RuntimeError):
     pass
 
@@ -137,6 +150,7 @@ class AgentRunCreate(SearchCreate):
     active_query_id: str | None = Field(default=None, max_length=80)
     expected_revision: int | None = Field(default=None, ge=0)
     prepare_citations: bool = Field(default=False, exclude=True)
+    local_only: bool = Field(default=False, exclude=True)
 
     def search_create(self) -> SearchCreate:
         return SearchCreate.model_validate(
@@ -155,7 +169,6 @@ class AgentRunCreate(SearchCreate):
 class LiteratureSearchTool:
     def __init__(
         self,
-        store: Store,
         service: SearchService,
         tenant_id: str,
         run_id: str,
@@ -170,7 +183,6 @@ class LiteratureSearchTool:
         artifact_result: Callable[[dict], dict] | None = None,
         workspace_id: str | None = None,
     ) -> None:
-        self.store = store
         self.service = service
         self.tenant_id = tenant_id
         self.run_id = run_id
@@ -259,6 +271,7 @@ class LiteratureSearchTool:
                     reason_override=self.reasons,
                     evaluation_anchor=self.evaluation_anchor,
                     workspace_id=self.workspace_id,
+                    agent_run_id=self.run_id,
                 )
             except SearchRequestError as exc:
                 return {
@@ -268,14 +281,9 @@ class LiteratureSearchTool:
                         "details": exc.details,
                     }
                 }
-            query = AgentQuery(
-                created=created,
-                requested_library_ids=request.library_ids
-                or [library.library_id for library in self.service.settings.libraries],
-            )
-            await asyncio.to_thread(
-                self.store.attach_agent_query, self.tenant_id, self.run_id, query
-            )
+            requested_library_ids = request.library_ids or [
+                library.library_id for library in self.service.settings.libraries
+            ]
             result = await self.service.tool_result(
                 self.tenant_id,
                 created,
@@ -297,7 +305,7 @@ class LiteratureSearchTool:
                 and len(created.claims) == 1
                 and not any(
                     self.service.adapters[library_id].simulation
-                    for library_id in query.requested_library_ids
+                    for library_id in requested_library_ids
                 )
             ):
                 delta = self._evidence_history.observe(result)
@@ -368,8 +376,22 @@ class AgentRunner:
         context_blocks: list[dict] | None = None,
         on_query_ready: PrepareQuery | None = None,
         project_id: str | None = None,
+        local_only: bool = False,
     ) -> AgentRun:
-        if model_config is None and self.model is None:
+        if local_only and (
+            conversation_id is not None
+            or project_id is not None
+            or model_config is not None
+            or model_override is not None
+            or reason_override is not None
+            or on_query_ready is not None
+            or request.input_type == "full_text"
+            or not self.service.demo_library_ids(tenant_id, request.library_ids)
+        ):
+            raise LocalSearchUnavailableError(
+                "本地备用仅用于访客新建关键词或摘要查询，须选中本地库。"
+            )
+        if not local_only and model_config is None and self.model is None:
             raise AgentUnavailableError("未配置模型，无法启动自由 Agent。")
         if self._purging:
             document_ids: list[str] = []
@@ -381,8 +403,12 @@ class AgentRunner:
                 )
             if any((tenant_id, document_id) in self._purging for document_id in document_ids):
                 raise AgentPurgeBusy("该稿件正在删除，暂不可启动新一轮。")
-        provider = model_config.provider if model_config else self.provider
-        model_name = model_config.model if model_config else self.model_name
+        if local_only:
+            provider, model_name = "local", "none"
+        elif model_config is not None:
+            provider, model_name = model_config.provider, model_config.model
+        else:
+            provider, model_name = self.provider, self.model_name
         previous = (
             self.store.get_conversation(tenant_id, conversation_id)
             if conversation_id is not None
@@ -490,6 +516,7 @@ class AgentRunner:
                 "response_grounding": AGENT_RESPONSE_GROUNDING_VERSION,
                 **(model_config.cache_fields if model_config else {}),
                 **({"prepare_citations": True} if on_query_ready else {}),
+                **({"local_only": True} if local_only else {}),
             },
             create_conversation=conversation_id is None,
             project_id=project_id,
@@ -542,6 +569,8 @@ class AgentRunner:
                     context_blocks=context_blocks,
                     on_query_ready=on_query_ready,
                     workspace_id=workspace_id,
+                    local_only=local_only,
+                    allow_demo_recovery=model_config is None and workspace_id is None,
                 )
             )
             self._tasks[run.run_id] = task
@@ -559,9 +588,12 @@ class AgentRunner:
         context_blocks: list[dict] | None = None,
         on_query_ready: PrepareQuery | None = None,
         workspace_id: str | None = None,
+        local_only: bool = False,
+        allow_demo_recovery: bool = False,
     ) -> None:
         run = pending.model_copy(update={"status": "running", "updated_at": utc_now_iso()})
-        await asyncio.to_thread(self.store.save_agent_run, run)
+        if not await asyncio.to_thread(self.store.save_agent_run, run):
+            return
         manuscript_reads: list[dict] = []
         literature_reader: LiteratureReader | None = None
         workspace: ResearchWorkspace | None = None
@@ -573,6 +605,15 @@ class AgentRunner:
                 citation_batches[query_id] = on_query_ready(query_id)
 
         try:
+            if local_only:
+                run = await self._run_local_candidates(run)
+                run.status = "failed"
+                run.error = {
+                    "code": LOCAL_SEARCH_ONLY,
+                    "message": "本轮只检索本地题录和摘要，没有运行 Agent 或生成引用建议。",
+                }
+                run.updated_at = utc_now_iso()
+                return
             model = model or self.model
             assert model is not None
             workspace_enabled = self.settings.agent_research_workspace
@@ -624,7 +665,6 @@ class AgentRunner:
                     else None,
                 )
             tool = LiteratureSearchTool(
-                self.store,
                 self.service,
                 run.tenant_id,
                 run.run_id,
@@ -826,11 +866,7 @@ class AgentRunner:
             run.served_model = served_model if isinstance(served_model, str) else None
             run.updated_at = utc_now_iso()
         except asyncio.CancelledError:
-            run = self.store.get_agent_run(run.tenant_id, run.run_id) or run
-            self._cancel_run_queries(run)
-            run.status = "cancelled"
-            run.error = {"code": "AGENT_CANCELLED", "message": "用户取消了本次 Agent 运行。"}
-            run.updated_at = utc_now_iso()
+            run = self._cancelled_run(run)
             raise
         except Exception as exc:
             logger.warning(
@@ -839,12 +875,34 @@ class AgentRunner:
                 _exception_chain(exc),
             )
             run = self.store.get_agent_run(run.tenant_id, run.run_id) or run
-            self._cancel_run_queries(run)
+            code = _agent_error_code(exc)
+            message = "Agent 未能完成；已创建的检索（如有）仍可查看。"
+            if self.settings.demo_continuity and code in MODEL_OUTAGE_CODES:
+                if run.queries:
+                    message = "模型服务不可用；已受理的检索仍按原有期限运行，已交付结果可查看。"
+                elif (
+                    allow_demo_recovery
+                    and not local_only
+                    and run.turn_index == 1
+                    and run.request.input_type != "full_text"
+                    and self.service.demo_library_ids(run.tenant_id, run.request.library_ids)
+                ):
+                    try:
+                        run = await self._run_local_candidates(run)
+                    except asyncio.CancelledError:
+                        run = self._cancelled_run(run)
+                        raise
+                    except Exception as recovery_error:
+                        logger.warning(
+                            "local search recovery failed type=%s", type(recovery_error).__name__
+                        )
+                        run = self.store.get_agent_run(run.tenant_id, run.run_id) or run
+                    if run.queries:
+                        message = "模型服务不可用；改查所选本地快照，未做模型重排或全文核查。"
+            else:
+                self._cancel_run_queries(run)
             run.status = "failed"
-            run.error = {
-                "code": _agent_error_code(exc),
-                "message": "Agent 未能完成；已创建的检索（如有）仍可查看。",
-            }
+            run.error = {"code": code, "message": message}
             run.updated_at = utc_now_iso()
         finally:
             run.manuscript_reads = list(manuscript_reads)
@@ -864,9 +922,33 @@ class AgentRunner:
                 }
             await asyncio.to_thread(self._finish_conversation, run)
 
+    async def _run_local_candidates(self, run: AgentRun) -> AgentRun:
+        created, _ = self.service.create(
+            run.tenant_id,
+            run.request,
+            None,
+            evaluation_anchor=run.evaluation_anchor,
+            agent_run_id=run.run_id,
+            local_only=True,
+        )
+        await self.service.coordinator.wait(
+            created.query_id, timeout_s=self.settings.max_soft_deadline_ms / 1000
+        )
+        return self.store.get_agent_run(run.tenant_id, run.run_id) or run
+
+    def _cancelled_run(self, run: AgentRun) -> AgentRun:
+        run = self.store.get_agent_run(run.tenant_id, run.run_id) or run
+        self._cancel_run_queries(run)
+        run.status = "cancelled"
+        run.error = {"code": "AGENT_CANCELLED", "message": "用户取消了本次 Agent 运行。"}
+        run.updated_at = utc_now_iso()
+        return run
+
     async def _wait_for_citations(
         self, run: AgentRun, batches: dict[str, PreparationTask | None], deadline: float
     ) -> None:
+        if self.settings.demo_continuity:
+            deadline = min(deadline, time.monotonic() + DEMO_CITATION_WAIT_S)
         tasks = {task for task in batches.values() if task is not None}
         pending = {task for task in tasks if not task.done()}
         if pending and time.monotonic() < deadline:
@@ -993,14 +1075,19 @@ class AgentRunner:
     async def cancel(self, run: AgentRun) -> AgentRun:
         self._cancel_run_queries(run)
         task = self._tasks.get(run.run_id)
-        if task is not None and not task.done():
+        if task is not None and not task.done() and not task.cancelling():
             task.cancel()
         if run.status not in {"completed", "failed", "cancelled"}:
             run.status = "cancelled"
             run.error = {"code": "AGENT_CANCELLED", "message": "用户取消了本次 Agent 运行。"}
             run.updated_at = utc_now_iso()
         await asyncio.to_thread(self._finish_conversation, run)
-        return run
+        return await asyncio.to_thread(self.store.get_agent_run, run.tenant_id, run.run_id) or run
+
+    async def wait_for_exit(self, run_id: str) -> None:
+        task = self._tasks.get(run_id)
+        if task is not None:
+            await asyncio.shield(asyncio.gather(task, return_exceptions=True))
 
     def has_live_runs(self, run_ids: list[str]) -> bool:
         return any(
@@ -1582,14 +1669,22 @@ def _exception_chain(exc: Exception) -> list[str]:
 
 
 def _agent_error_code(exc: Exception) -> str:
-    if getattr(exc, "status_code", None) == 402:
+    status = getattr(exc, "status_code", None)
+    if status == 402:
         return "MODEL_INSUFFICIENT_BALANCE"
     if isinstance(exc, TimeoutError):
         return "AGENT_TIMEOUT"
     if "ToolCallLimit" in type(exc).__name__ or "Recursion" in type(exc).__name__:
         return "AGENT_BUDGET_EXCEEDED"
-    if type(exc).__name__.endswith("AuthenticationError"):
+    if status == 401 or type(exc).__name__.endswith("AuthenticationError"):
         return "MODEL_AUTHENTICATION_FAILED"
-    if type(exc).__name__.endswith("RateLimitError"):
+    if status == 429 or type(exc).__name__.endswith("RateLimitError"):
         return "MODEL_RATE_LIMITED"
+    chain = set(_exception_chain(exc))
+    if chain & {"APITimeoutError", "OpenAITimeoutError"}:
+        return "MODEL_TIMEOUT"
+    if chain & {"APIConnectionError", "OpenAIConnectionError"}:
+        return "MODEL_CONNECTION_ERROR"
+    if isinstance(status, int) and 500 <= status < 600:
+        return "MODEL_UPSTREAM_ERROR"
     return "AGENT_MODEL_ERROR"

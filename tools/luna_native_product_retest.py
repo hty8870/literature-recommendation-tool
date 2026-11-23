@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import logging
 import threading
 import time
 import uuid
@@ -19,6 +20,7 @@ from tools.benchmark.core import ROOT, BenchmarkUsageCallback, file_hash
 from tools.gap_benchmark.data import save_new
 from tools.luna_credentials import MODEL, authorized_config
 from tools.luna_gap_retest import prepare_run
+from tools.parallel_luna import CancelTrackedChatOpenAI
 
 from citation_tool.entities import utc_now_iso
 from citation_tool.jcs import sha256_json
@@ -39,6 +41,7 @@ USAGE_BOUNDARY = (
 )
 MAX_PARALLEL_SUBJECTS = 1
 MAX_MODEL_CALLS = 2
+logger = logging.getLogger(__name__)
 
 
 class NativeModelSlots:
@@ -159,20 +162,25 @@ class NativeModelAudit(AsyncCallbackHandler):
         }
         self._pending[call_id] = row
         self._started[call_id] = time.monotonic()
-        self._persist(row)
         try:
+            self._persist(row)
             await self.slots.acquire()
             self._leased.add(call_id)
             row.update(status="started", model_calls=1, dispatched_at=utc_now_iso())
             self._persist(row)
         except BaseException as exc:
-            row.update(status="failed", error={"type": type(exc).__name__})
-            self._persist(row)
-            self._release(call_id)
-            self._pending.pop(call_id, None)
+            try:
+                row.update(status="failed", error={"type": type(exc).__name__})
+                self._persist(row)
+            except OSError:
+                logger.warning("Could not persist failed native model dispatch")
+            finally:
+                self._release(call_id)
+                self._pending.pop(call_id, None)
             raise
 
     def _release(self, call_id: str) -> None:
+        self._started.pop(call_id, None)
         if call_id in self._leased:
             self._leased.remove(call_id)
             self.slots.release()
@@ -317,6 +325,8 @@ def collect_model_audit(directory: Path) -> dict[str, Any]:
 
 
 class NativeLunaGateway(DeepSeekModelGateway):
+    _chat_model_type = CancelTrackedChatOpenAI
+
     def __init__(self, config: ModelConfig, audit: NativeModelAudit) -> None:
         config.validate()
         if (
@@ -335,17 +345,20 @@ class NativeLunaGateway(DeepSeekModelGateway):
     def _client(self, **kwargs):
         model = super()._client(**kwargs)
         model.callbacks = [self.audit]
+        model._close_cancelled = self.audit.close_cancelled_invocation
         self._models.append(model)
         return model
 
     async def aclose(self) -> None:
-        await self.audit.slots.wait_idle()
-        self.audit.seal()
-        for model in self._models:
-            if model.http_async_client is not None:
-                await model.http_async_client.aclose()
-            if model.http_client is not None:
-                model.http_client.close()
+        try:
+            await self.audit.slots.wait_idle()
+            self.audit.seal()
+        finally:
+            for model in self._models:
+                if model.http_async_client is not None:
+                    await model.http_async_client.aclose()
+                if model.http_client is not None:
+                    model.http_client.close()
 
 
 def build_product_app(settings, adapter, gateway: NativeLunaGateway, callback):
@@ -447,7 +460,11 @@ async def run_case(
         except Exception as exc:
             cleanup_error = {"code": "NATIVE_MODEL_CLEANUP_FAILED", "message": type(exc).__name__}
     if cleanup_error:
-        record.update(completed=False, error=cleanup_error)
+        record.update(
+            completed=False,
+            error=record.get("error") or cleanup_error,
+            native_cleanup_error=cleanup_error,
+        )
     return _native_record(record, collect_model_audit(runtime / "model-calls"), runtime)
 
 
@@ -596,7 +613,8 @@ async def run_products(name: str, *, resume: bool, concurrency: int = 1) -> dict
         "usage_measurement": USAGE_BOUNDARY,
     }
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
-    await asyncio.to_thread(save_new, root / f"native-product-summary-{stamp}.json", summary)
+    path = root / f"native-product-summary-{stamp}-{uuid.uuid4().hex}.json"
+    await asyncio.to_thread(save_new, path, summary)
     if summary["implementation_changed_during_run"]:
         raise ValueError("native product implementation changed; records retained but invalid")
     return summary

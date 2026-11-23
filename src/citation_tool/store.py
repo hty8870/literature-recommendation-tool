@@ -34,6 +34,7 @@ from .entities import (
     PurgeReceipt,
     RankingPhase,
     RecommendationReason,
+    SearchCreated,
     SnapshotManifest,
     utc_now_iso,
 )
@@ -371,9 +372,13 @@ class Store:
         ).fetchone()
         return dict(row) if row else None
 
-    def create_search(self, record: dict, workers: list[dict]) -> tuple[dict, bool]:
+    def create_search(
+        self, record: dict, workers: list[dict], *, agent_run_id: str | None = None
+    ) -> tuple[dict, bool]:
         with self._write() as conn:
             key = record.get("idempotency_key")
+            if agent_run_id is not None and key:
+                raise ValueError("Agent searches do not use a public idempotency key")
             if key:
                 existing = conn.execute(
                     "SELECT * FROM searches WHERE tenant_id=? AND idempotency_key=?",
@@ -406,6 +411,16 @@ class Store:
             )
             for worker in workers:
                 self._insert_worker(conn, worker)
+            if agent_run_id is not None:
+                self._attach_agent_query(
+                    conn,
+                    record["tenant_id"],
+                    agent_run_id,
+                    AgentQuery(
+                        created=SearchCreated.model_validate(record["create_response"]),
+                        requested_library_ids=record["requested_library_ids"],
+                    ),
+                )
             return record, False
 
     @staticmethod
@@ -1009,58 +1024,66 @@ class Store:
                 return False
             if not reranked and previous and ranking["pool_version"] <= previous["pool_version"]:
                 raise StoreConflict("candidate pool versions must increase")
-            for item in candidates:
-                if (
-                    item.claim_id != ranking["claim_id"]
-                    or item.pool_version != ranking["pool_version"]
-                ):
-                    raise StoreConflict("candidate pool identity mismatch")
-                conn.execute(
-                    """INSERT INTO candidate_diagnostics
-                    (tenant_id, query_id, result_id, paper_id, library_id, payload_json, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(tenant_id, query_id, result_id) DO UPDATE SET
-                    paper_id=excluded.paper_id, library_id=excluded.library_id,
-                    payload_json=excluded.payload_json""",
-                    (
-                        tenant_id,
-                        query_id,
-                        item.result_id,
-                        item.paper_id,
-                        item.library_ids[0],
-                        item.model_dump_json(),
-                        utc_now_iso(),
-                    ),
-                )
-            conn.execute(
-                """INSERT INTO candidate_ranking_state VALUES (?, ?, ?, ?)
-                ON CONFLICT(tenant_id, query_id, claim_id)
-                DO UPDATE SET payload_json=excluded.payload_json""",
-                (tenant_id, query_id, ranking["claim_id"], _json(ranking)),
-            )
-            payload = {
-                "ranking": ranking,
-                "candidates": [item.model_dump(mode="json") for item in candidates],
-            }
-            if reranked:
-                conn.execute(
-                    "INSERT INTO candidate_ranking_history VALUES (?, ?, ?, ?, ?)",
-                    (
-                        tenant_id,
-                        query_id,
-                        ranking["claim_id"],
-                        ranking["ranking_version"],
-                        _json(payload),
-                    ),
-                )
-            self._insert_event(
-                conn,
-                tenant_id,
-                query_id,
-                "candidate_reranked" if reranked else "candidate_pool_updated",
-                payload,
-            )
+            self._save_discovery_pool(conn, tenant_id, query_id, ranking, candidates, reranked)
             return True
+
+    def _save_discovery_pool(
+        self,
+        conn: sqlite3.Connection,
+        tenant_id: str,
+        query_id: str,
+        ranking: dict,
+        candidates: list[CandidateDiagnostic],
+        reranked: bool,
+    ) -> None:
+        for item in candidates:
+            if item.claim_id != ranking["claim_id"] or item.pool_version != ranking["pool_version"]:
+                raise StoreConflict("candidate pool identity mismatch")
+            conn.execute(
+                """INSERT INTO candidate_diagnostics
+                (tenant_id, query_id, result_id, paper_id, library_id, payload_json, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(tenant_id, query_id, result_id) DO UPDATE SET
+                paper_id=excluded.paper_id, library_id=excluded.library_id,
+                payload_json=excluded.payload_json""",
+                (
+                    tenant_id,
+                    query_id,
+                    item.result_id,
+                    item.paper_id,
+                    item.library_ids[0],
+                    item.model_dump_json(),
+                    utc_now_iso(),
+                ),
+            )
+        conn.execute(
+            """INSERT INTO candidate_ranking_state VALUES (?, ?, ?, ?)
+            ON CONFLICT(tenant_id, query_id, claim_id)
+            DO UPDATE SET payload_json=excluded.payload_json""",
+            (tenant_id, query_id, ranking["claim_id"], _json(ranking)),
+        )
+        payload = {
+            "ranking": ranking,
+            "candidates": [item.model_dump(mode="json") for item in candidates],
+        }
+        if reranked:
+            conn.execute(
+                "INSERT INTO candidate_ranking_history VALUES (?, ?, ?, ?, ?)",
+                (
+                    tenant_id,
+                    query_id,
+                    ranking["claim_id"],
+                    ranking["ranking_version"],
+                    _json(payload),
+                ),
+            )
+        self._insert_event(
+            conn,
+            tenant_id,
+            query_id,
+            "candidate_reranked" if reranked else "candidate_pool_updated",
+            payload,
+        )
 
     def commit_ranking_phase(
         self, tenant_id: str, query_id: str, claim_id: str, pool_version: int, phase: RankingPhase
@@ -1577,29 +1600,108 @@ class Store:
                 return item
         return None
 
+    def settle_interrupted_work(self) -> None:
+        """Close work left by a former service process without restarting it."""
+        now = utc_now_iso()
+        with self._write() as conn:
+            searches = conn.execute(
+                "SELECT * FROM searches "
+                "WHERE search_state IN ('created','running','draining','finalizing')"
+            ).fetchall()
+            for search in searches:
+                self._fail_search(
+                    conn,
+                    dict(search),
+                    {
+                        "code": "SEARCH_INTERRUPTED",
+                        "message": "服务重启时检索未完成；此前提交的结果保留，可重新发起检索。",
+                    },
+                    now,
+                )
+            runs = conn.execute(
+                "SELECT payload_json FROM agent_runs "
+                "WHERE json_extract(payload_json,'$.status') IN ('pending','running')"
+            ).fetchall()
+            for row in runs:
+                run = AgentRun.model_validate_json(row["payload_json"])
+                self._save_agent_run(conn, self._interrupted_agent_run(run, now))
+            rows = conn.execute("SELECT * FROM conversations WHERE active_run_id <> ''").fetchall()
+            for row in rows:
+                self._reconcile_active_turn(conn, row["tenant_id"], row, now=now)
+
     def fail_search(self, tenant_id: str, query_id: str, message: str) -> None:
         with self._write() as conn:
             search = self._search(conn, tenant_id, query_id)
-            if search is None or search["search_state"] in TERMINAL_STATES:
-                return
-            now = utc_now_iso()
-            self._update(
-                conn,
-                "searches",
-                {"search_state": "failed", "updated_at": now},
-                {"tenant_id": tenant_id, "query_id": query_id},
+            if search is not None and search["search_state"] not in TERMINAL_STATES:
+                self._fail_search(
+                    conn, search, {"code": "INTERNAL_ERROR", "message": message}, utc_now_iso()
+                )
+
+    def _fail_search(self, conn: sqlite3.Connection, search: dict, error: dict, now: str) -> None:
+        tenant_id, query_id = search["tenant_id"], search["query_id"]
+        workers = conn.execute(
+            "SELECT payload_json FROM workers WHERE tenant_id=? AND query_id=? "
+            "AND worker_state IN ('pending','running','draining') ORDER BY library_id, attempt",
+            (tenant_id, query_id),
+        ).fetchall()
+        for row in workers:
+            worker = json.loads(row["payload_json"])
+            worker.update(worker_state="failed", last_error=error, ended_at=now, updated_at=now)
+            if worker.get("source_agent_status") == "running":
+                worker["source_agent_status"] = "failed"
+            self._save_worker(conn, tenant_id, query_id, worker)
+            self._insert_event(conn, tenant_id, query_id, "worker_failed", {"worker": worker})
+        self._fail_pending_rankings(conn, tenant_id, query_id, error["code"], now)
+        self._update(
+            conn,
+            "searches",
+            {"search_state": "failed", "updated_at": now},
+            {"tenant_id": tenant_id, "query_id": query_id},
+        )
+        self._insert_event(
+            conn,
+            tenant_id,
+            query_id,
+            "search_state_changed",
+            {"previous_state": search["search_state"], "current_state": "failed", "error": error},
+        )
+
+    def _fail_pending_rankings(
+        self, conn: sqlite3.Connection, tenant_id: str, query_id: str, code: str, now: str
+    ) -> None:
+        ranks = conn.execute(
+            "SELECT payload_json FROM candidate_ranking_state WHERE tenant_id=? AND query_id=? "
+            "AND json_extract(payload_json,'$.status')='pending' ORDER BY claim_id",
+            (tenant_id, query_id),
+        ).fetchall()
+        for row in ranks:
+            ranking = json.loads(row["payload_json"])
+            version = ranking["ranking_version"] + 1
+            ranking.update(
+                status="failed",
+                phase=None,
+                failure_code=code,
+                ranking_version=version,
+                created_at=now,
             )
-            self._insert_event(
-                conn,
-                tenant_id,
-                query_id,
-                "search_state_changed",
-                {
-                    "previous_state": search["search_state"],
-                    "current_state": "failed",
-                    "error": {"code": "INTERNAL_ERROR", "message": message},
-                },
-            )
+            candidates = []
+            for row in conn.execute(
+                "SELECT payload_json FROM candidate_diagnostics WHERE tenant_id=? AND query_id=? "
+                "AND json_extract(payload_json,'$.claim_id')=? "
+                "AND json_extract(payload_json,'$.pool_version')=? ORDER BY result_id",
+                (tenant_id, query_id, ranking["claim_id"], ranking["pool_version"]),
+            ):
+                item = CandidateDiagnostic.model_validate_json(row["payload_json"])
+                if item.ranking_status == "pending":
+                    item = item.model_copy(
+                        update={
+                            "ranking_version": version,
+                            "ranking_status": "failed",
+                            "ranking_failure_code": code,
+                        }
+                    )
+                candidates.append(item)
+            self._save_discovery_pool(conn, tenant_id, query_id, ranking, candidates, reranked=True)
 
     def create_agent_run(
         self,
@@ -1643,6 +1745,14 @@ class Store:
             row = conn.execute(
                 "SELECT payload_json FROM agent_runs WHERE tenant_id=? AND run_id=?",
                 (tenant_id, run_id),
+            ).fetchone()
+        return AgentRun.model_validate_json(row["payload_json"]) if row else None
+
+    def get_agent_run_by_key(self, tenant_id: str, idempotency_key: str) -> AgentRun | None:
+        with self._read() as conn:
+            row = conn.execute(
+                "SELECT payload_json FROM agent_runs WHERE tenant_id=? AND idempotency_key=?",
+                (tenant_id, idempotency_key),
             ).fetchone()
         return AgentRun.model_validate_json(row["payload_json"]) if row else None
 
@@ -1842,55 +1952,89 @@ class Store:
 
     def attach_agent_query(self, tenant_id: str, run_id: str, query: AgentQuery) -> None:
         with self._write() as conn:
-            row = conn.execute(
-                "SELECT payload_json FROM agent_runs WHERE tenant_id=? AND run_id=?",
-                (tenant_id, run_id),
-            ).fetchone()
-            if row is None:
-                raise LookupError("agent run not found")
-            run = AgentRun.model_validate_json(row["payload_json"])
-            if query.created.query_id not in {item.created.query_id for item in run.queries}:
-                run.queries.append(query)
-                if run.conversation_id:
-                    artifact_seq = (
-                        conn.execute(
-                            "SELECT COALESCE(MAX(seq),0) FROM conversation_artifacts "
-                            "WHERE tenant_id=? AND conversation_id=?",
-                            (tenant_id, run.conversation_id),
-                        ).fetchone()[0]
-                        + 1
-                    )
-                    self._insert(
-                        conn,
-                        "conversation_artifacts",
-                        {
-                            "tenant_id": tenant_id,
-                            "conversation_id": run.conversation_id,
-                            "seq": artifact_seq,
-                            "run_id": run.run_id,
-                            "turn_index": run.turn_index or 1,
-                            "query_id": query.created.query_id,
-                            "label": f"第{run.turn_index or 1}轮检索{len(run.queries)}",
-                            "created_at": utc_now_iso(),
-                        },
-                    )
-            run.latest_query_id = query.created.query_id
-            run.updated_at = utc_now_iso()
-            self._update(
-                conn,
-                "agent_runs",
-                {"payload_json": run.model_dump_json(), "updated_at": run.updated_at},
-                {"tenant_id": tenant_id, "run_id": run_id},
-            )
+            self._attach_agent_query(conn, tenant_id, run_id, query)
 
-    def save_agent_run(self, run: AgentRun) -> None:
-        with self._write() as conn:
-            self._update(
-                conn,
-                "agent_runs",
-                {"payload_json": run.model_dump_json(), "updated_at": run.updated_at},
-                {"tenant_id": run.tenant_id, "run_id": run.run_id},
+    def _attach_agent_query(
+        self, conn: sqlite3.Connection, tenant_id: str, run_id: str, query: AgentQuery
+    ) -> None:
+        row = conn.execute(
+            "SELECT payload_json FROM agent_runs WHERE tenant_id=? AND run_id=?",
+            (tenant_id, run_id),
+        ).fetchone()
+        if row is None:
+            raise LookupError("agent run not found")
+        run = AgentRun.model_validate_json(row["payload_json"])
+        if run.status not in {"pending", "running"}:
+            raise ConversationConflict("cannot attach a search to a terminal agent run")
+        if query.created.query_id in {item.created.query_id for item in run.queries}:
+            return
+        run.queries.append(query)
+        now = utc_now_iso()
+        if run.conversation_id:
+            artifact_seq = (
+                conn.execute(
+                    "SELECT COALESCE(MAX(seq),0) FROM conversation_artifacts "
+                    "WHERE tenant_id=? AND conversation_id=?",
+                    (tenant_id, run.conversation_id),
+                ).fetchone()[0]
+                + 1
             )
+            self._insert(
+                conn,
+                "conversation_artifacts",
+                {
+                    "tenant_id": tenant_id,
+                    "conversation_id": run.conversation_id,
+                    "seq": artifact_seq,
+                    "run_id": run.run_id,
+                    "turn_index": run.turn_index or 1,
+                    "query_id": query.created.query_id,
+                    "label": f"第{run.turn_index or 1}轮检索{len(run.queries)}",
+                    "created_at": now,
+                },
+            )
+        run.latest_query_id = query.created.query_id
+        run.updated_at = now
+        self._save_agent_run(conn, run)
+
+    def save_agent_run(self, run: AgentRun) -> bool:
+        with self._write() as conn:
+            if run.status in {"pending", "running"}:
+                updated = conn.execute(
+                    "UPDATE agent_runs SET payload_json=?, updated_at=? "
+                    "WHERE tenant_id=? AND run_id=? "
+                    "AND json_extract(payload_json,'$.status') IN ('pending','running')",
+                    (run.model_dump_json(), run.updated_at, run.tenant_id, run.run_id),
+                )
+                return updated.rowcount == 1
+            self._save_agent_run(conn, run)
+            return True
+
+    def _save_agent_run(self, conn: sqlite3.Connection, run: AgentRun) -> None:
+        self._update(
+            conn,
+            "agent_runs",
+            {"payload_json": run.model_dump_json(), "updated_at": run.updated_at},
+            {"tenant_id": run.tenant_id, "run_id": run.run_id},
+        )
+
+    @staticmethod
+    def _interrupted_agent_run(run: AgentRun, now: str) -> AgentRun:
+        preparation = run.citation_preparation
+        if preparation is not None and preparation.status == "waiting":
+            preparation = preparation.model_copy(update={"status": "partial"})
+        return run.model_copy(
+            update={
+                "status": "failed",
+                "summary": None,
+                "error": {
+                    "code": "AGENT_INTERRUPTED",
+                    "message": "上一轮运行已中断；其结果不视为成功答复。",
+                },
+                "citation_preparation": preparation,
+                "updated_at": now,
+            }
+        )
 
     def finish_conversation_run(self, run: AgentRun) -> Conversation | None:
         if not run.conversation_id:
@@ -2467,54 +2611,26 @@ class Store:
             )
             return self._conversation_row(conn, tenant_id, row["conversation_id"])
         run = AgentRun.model_validate_json(run_row["payload_json"])
-        if run.status in {"completed", "failed", "cancelled"}:
-            self._finish_turn(
-                conn,
-                tenant_id,
-                row,
-                turn,
-                status=run.status,
-                summary=run.summary,
-                error=run.error,
-                latest_query_id=run.latest_query_id,
-                now=now,
-            )
-            return self._conversation_row(conn, tenant_id, row["conversation_id"])
-        if _run_is_stale(run.updated_at, now):
-            interrupted = {
-                "code": "AGENT_INTERRUPTED",
-                "message": "上一轮运行已中断；其结果不视为成功答复。",
-            }
-            stale = run.model_copy(
-                update={
-                    "status": "failed",
-                    "summary": None,
-                    "error": interrupted,
-                    "updated_at": now,
-                }
-            )
-            self._update(
-                conn,
-                "agent_runs",
-                {
-                    "payload_json": stale.model_dump_json(),
-                    "updated_at": stale.updated_at,
-                },
-                {"tenant_id": tenant_id, "run_id": run.run_id},
-            )
-            self._finish_turn(
-                conn,
-                tenant_id,
-                row,
-                turn,
-                status="failed",
-                summary=None,
-                error=interrupted,
-                latest_query_id=run.latest_query_id,
-                now=now,
-            )
-            return self._conversation_row(conn, tenant_id, row["conversation_id"])
-        return row
+        if run.status in {"pending", "running"}:
+            if not _run_is_stale(run.updated_at, now):
+                return row
+            run = self._interrupted_agent_run(run, now)
+        self._finish_turn(
+            conn,
+            tenant_id,
+            row,
+            turn,
+            status=run.status,
+            summary=run.summary,
+            error=run.error,
+            latest_query_id=run.latest_query_id,
+            now=now,
+        )
+        updated = self._conversation_row(conn, tenant_id, row["conversation_id"])
+        self._save_agent_run(
+            conn, run.model_copy(update={"conversation_revision": updated["revision"]})
+        )
+        return updated
 
     @staticmethod
     def _finish_turn(

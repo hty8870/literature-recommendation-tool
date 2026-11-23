@@ -431,7 +431,6 @@ def test_literature_tool_rejects_libraries_outside_the_origin_run(tmp_path, live
 
     async def reject_invalid() -> None:
         tool = LiteratureSearchTool(
-            object(),
             NeverCreate(),
             "local",
             "guard-run",
@@ -460,7 +459,6 @@ def test_literature_tool_rejects_libraries_outside_the_origin_run(tmp_path, live
             }
         )
         fulltext_tool = LiteratureSearchTool(
-            object(),
             NeverCreate(),
             "local",
             "guard-fulltext",

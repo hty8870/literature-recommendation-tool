@@ -8,6 +8,12 @@ const workerViews = new WeakMap();
 export function resultStatus(store, agentRun = null) {
   if (['error', 'exhausted'].includes(store.connection)) return { text: '连接中断', level: 'error' };
   if (store.searchState === 'cancelled') return { text: '已取消', level: 'warn' };
+  if (store.localOnly) {
+    if (store.searchState === 'failed') return { text: '本地检索未完成', level: 'error' };
+    if (!store.terminal) return { text: '仅检索本地快照' };
+    const incomplete = [...store.workers.values()].some((worker) => worker.worker_state !== 'completed');
+    return { text: incomplete ? '本地覆盖不全 · 未经模型核查' : '本地候选 · 未经模型核查', level: 'warn' };
+  }
   const rankings = [...store.candidateRankings.values()];
   const failed = rankings.filter((ranking) => ['failed', 'unavailable'].includes(ranking.status));
   if (failed.length) return {

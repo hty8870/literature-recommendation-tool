@@ -82,7 +82,7 @@ export class ResultsView {
       const node = this.#ensureClaim(claim.claim_id);
       if (!real) this.#updateClaimHead(node, claim);
       this.#updateGroups(node, claim.claim_id, groups);
-      this.#updateCandidates(node, candidates, store.libraryNames);
+      this.#updateCandidates(node, candidates, store.libraryNames, store.localOnly);
       this.#updateDiagnostics(node, diagnostics);
       publishedCount += real ? candidates.length : groups.reduce((sum, group) => sum + group.results.length, 0);
     }
@@ -201,7 +201,7 @@ export class ResultsView {
     return entry;
   }
 
-  #updateCandidates(node, candidates, libraryNames) {
+  #updateCandidates(node, candidates, libraryNames, localOnly) {
     const seen = new Set();
     const children = [];
     const appendCandidate = (candidate, index) => {
@@ -209,7 +209,7 @@ export class ResultsView {
         candidate.library_ids?.map((id) => [id, libraryNames.get(id)])]);
       let entry = node.candidateCards.get(candidate.result_id);
       if (!entry) {
-        entry = { view: new CandidateCard(candidate, index, libraryNames), signature };
+        entry = { view: new CandidateCard(candidate, index, libraryNames, localOnly), signature };
         node.candidateCards.set(candidate.result_id, entry);
       } else if (entry.signature !== signature) {
         entry.view.update(candidate, index, libraryNames);
