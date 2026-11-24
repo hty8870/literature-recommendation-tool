@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import logging
 import os
@@ -18,6 +19,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, ValidationError
 
+from .credential_vault import CredentialError, CredentialVault, private_write
 from .entities import ClaimContext, EvidenceScope, RecommendationReason, utc_now_iso
 from .evidence import _SCOPE_ALIASES, Candidate
 from .jcs import sha256_json
@@ -439,6 +441,19 @@ def model_cache_fields(config: object) -> dict[str, str]:
     return config.cache_fields if isinstance(config, ModelConfig) else {}
 
 
+_DEFAULT_MODEL_CONTEXT = b"updater-default-model-v1"
+
+
+def save_demo_model_config(path: Path, api_key: str) -> None:
+    api_key = api_key.strip()
+    if not re.fullmatch(r"[\x21-\x7e]{1,512}", api_key):
+        raise ValueError("请输入有效的 DeepSeek API Key。")
+    vault = CredentialVault(path.with_name("default-model.key"))
+    payload = json.dumps({"api_key": api_key}).encode("utf-8")
+    sealed = vault.seal(payload, _DEFAULT_MODEL_CONTEXT, create_key=True)
+    private_write(path, json.dumps({"sealed": base64.b64encode(sealed).decode("ascii")}).encode())
+
+
 def load_model_config(path: Path | None) -> ModelConfig | None:
     if path is None or not path.is_file():
         return None
@@ -446,6 +461,13 @@ def load_model_config(path: Path | None) -> ModelConfig | None:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise ValueError("model credential file must be a UTF-8 JSON object") from exc
+    if isinstance(data, dict) and data.keys() == {"sealed"}:
+        try:
+            blob = base64.b64decode(data["sealed"], validate=True)
+            vault = CredentialVault(path.with_name("default-model.key"))
+            data = json.loads(vault.open(blob, _DEFAULT_MODEL_CONTEXT))
+        except (TypeError, ValueError) as exc:
+            raise CredentialError("无法解密默认模型配置。") from exc
     if not isinstance(data, dict) or set(data) - {
         "api_key",
         "base_url",

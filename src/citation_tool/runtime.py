@@ -34,6 +34,7 @@ def settings_from_env() -> Settings:
         base_path = "/" + base_path
     base_path = base_path.rstrip("/")
     library_mode = os.environ.get("CITATION_LIBRARY_MODE", "metadata")
+    account_key_file = os.environ.get("CITATION_ACCOUNT_MODEL_KEY_FILE")
     corpus_path = Path(os.environ.get("CITATION_CORPUS_PATH", BUNDLED_CORPUS_PATH))
     sample_path = Path(os.environ.get("CITATION_SAMPLE_CORPUS_PATH", BUNDLED_SAMPLE_PATH))
     bundled_start = library_mode == "metadata" and (corpus_path, sample_path) == (
@@ -43,7 +44,11 @@ def settings_from_env() -> Settings:
         defaults,
         db_path=Path(os.environ.get("CITATION_DB_PATH", defaults.db_path)),
         default_tenant=os.environ.get("CITATION_DEFAULT_TENANT", defaults.default_tenant),
-        model_config_path=Path(os.environ.get("CITATION_MODEL_CONFIG", defaults.model_config_path)),
+        model_config_path=Path(
+            os.environ.get("CITATION_UPDATER_MODEL_CONFIG")
+            or os.environ.get("CITATION_MODEL_CONFIG", defaults.model_config_path)
+        ),
+        account_model_key_file=Path(account_key_file) if account_key_file else None,
         library_mode=library_mode,
         candidate_pipeline=os.environ.get("CITATION_CANDIDATE_PIPELINE", "agentic"),
         listwise_score_review=_bool(

@@ -33,6 +33,7 @@ from .account_api import (
     require_account,
     validate_account_transport,
 )
+from .account_models import AccountModels
 from .accounts import (
     ACCOUNT_COOKIE,
     Account,
@@ -385,6 +386,20 @@ def create_app(
         else None
     )
     app.state.accounts = accounts
+    account_models = (
+        AccountModels(settings.db_path, settings.account_model_key_file)
+        if accounts is not None and settings.allow_user_models
+        else None
+    )
+
+    async def request_model_config(request: Request, selection: UserModelSelection | None):
+        if selection is not None:
+            return _user_model_config(selection, settings)
+        account = getattr(request.state, "account", None)
+        if account is not None and account_models is not None:
+            return await asyncio.to_thread(account_models.resolve, account.account_id)
+        return None
+
     mutation_locks: WeakValueDictionary[str, asyncio.Lock] = WeakValueDictionary()
     if settings.auth_required:
         app.add_middleware(TrustedHostMiddleware, allowed_hosts=list(settings.trusted_hosts))
@@ -409,6 +424,7 @@ def create_app(
                 cookie_path=settings.base_path or "/",
                 secure=settings.secure_cookies,
                 delete_data=delete_account_data,
+                models=account_models,
             )
         )
         app.include_router(build_history_router(store, agent, citations))
@@ -670,6 +686,7 @@ def create_app(
             "agent_available": agent.available,
             "agent_mode": "skill_guided_langchain",
             "model": agent.model_name if agent.available else None,
+            "account_model_sync": account_models is not None,
             "demo_local_search_available": bool(
                 service.demo_library_ids(_tenant(request, settings))
             ),
@@ -727,7 +744,11 @@ def create_app(
             ):
                 raise ApiError(400, "VALIDATION_ERROR", "请选择非空且不重复的已配置数据源。")
         tenant_id = _tenant(request, settings)
-        model_config = _user_model_config(body.model, settings)
+        model_config = (
+            _user_model_config(body.model, settings)
+            if body.local_only
+            else await request_model_config(request, body.model)
+        )
 
         def prepare(query_id: str):
             return citations.schedule_preparation(tenant_id, query_id, model_config)
@@ -864,7 +885,7 @@ def create_app(
             _tenant(request, settings),
             body.citation_request(),
             request.headers.get("Idempotency-Key"),
-            model_config=_user_model_config(body.model, settings),
+            model_config=await request_model_config(request, body.model),
         )
         payload = started.model_dump(mode="json")
         payload["status_url"] = http_resource_path(

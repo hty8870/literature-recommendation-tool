@@ -198,6 +198,14 @@ export function accountAction(action, body) {
   return request(`/account/${action}`, { method: action === 'profile' ? 'PATCH' : 'POST', body });
 }
 
+export function getAccountModel(signal) {
+  return request('/account/model-settings', { signal });
+}
+
+export function saveAccountModel(body, signal) {
+  return request('/account/model-settings', { method: 'PUT', body, signal });
+}
+
 export function listConversations(cursor, signal, projectId) {
   const params = new URLSearchParams();
   if (cursor) params.set('before', cursor);

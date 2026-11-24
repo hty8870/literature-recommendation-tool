@@ -10,6 +10,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, Response
 from pydantic import Field, SecretStr, ValidationError
 
+from .account_models import AccountModels, ModelSettingsUpdate, ModelSettingsView
 from .accounts import (
     ACCOUNT_COOKIE,
     ACCOUNT_SESSION_TTL,
@@ -125,6 +126,7 @@ def build_account_router(
     cookie_path: str,
     secure: bool,
     delete_data: Callable[[Account], Awaitable[None]],
+    models: AccountModels | None = None,
 ) -> APIRouter:
     router = APIRouter(prefix="/api/v1/account")
     rate = AccountRateLimiter()
@@ -186,6 +188,21 @@ def build_account_router(
         validate_account_transport(request)
         account = getattr(request.state, "account", None)
         return {"account": account.payload() if account else None}
+
+    @router.get("/model-settings")
+    async def model_settings(request: Request) -> ModelSettingsView:
+        account = require_account(request)
+        if models is None:
+            raise AccountError(403, "USER_MODEL_DISABLED", "服务端未开放自有模型。")
+        return await asyncio.to_thread(models.read, account.account_id)
+
+    @router.put("/model-settings")
+    async def save_model_settings(request: Request) -> ModelSettingsView:
+        account = require_account(request)
+        if models is None:
+            raise AccountError(403, "USER_MODEL_DISABLED", "服务端未开放自有模型。")
+        body = await protected_form(request, ModelSettingsUpdate)
+        return await asyncio.to_thread(models.save, account.account_id, body)
 
     @router.post("/register")
     async def register(request: Request) -> JSONResponse:

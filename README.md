@@ -52,7 +52,15 @@ uv run --frozen citation-tool --check-live
 uv run --script update_linux.py
 ```
 
-若直接使用仓库里的脚本，改用 `uv run --script tools/update_linux.py`。**正式演示请用最新版脚本，追加 `--check-live`**（如 `uv run --script tools/update_linux.py --check-live`）：先完成上述联网验收，再切换；验收失败不停止脚本管理的旧服务。显式使用此参数时，同版也会在验收成功后重启，以加载磁盘上的最新模型配置。追加 `status` 查看运行地址，追加 `stop` 安全停止。无须 sudo、Docker 或额外的服务管理器；不要在同一数据目录同时启动手工实例或系统服务。
+若直接使用仓库里的脚本，改用 `uv run --script tools/update_linux.py`。**已有默认模型**时，追加 `--check-live` 先进行联网验收，再切换；验收失败不停止脚本管理的旧服务。若要设置或更换脚本所管服务的默认 DeepSeek，请运行：
+
+```sh
+uv run --script tools/update_linux.py --set-deepseek --check-live
+```
+
+终端会隐藏输入 Key，预检通过且新版启动后将它加密保存，网页「服务端默认」即使用官方 `deepseek-flash`。不覆盖其他服务或原 `CITATION_MODEL_CONFIG` 文件。以后更新只需 `--check-live`，无需重输 Key。拷在根目录的旧脚本须替换为新版；对应命令是 `uv run --script update_linux.py --set-deepseek --check-live`。
+
+追加 `status` 查看运行地址，追加 `stop` 安全停止。无须 sudo、Docker 或额外的服务管理器；不要在同一数据目录同时启动手工实例或系统服务。
 
 - 只取当前 Git 分支的上游版本并检查可快进，不重置工作区。新版本和锁定依赖放在独立目录，预检通过才停旧实例并检查新实例 `/healthz`。默认只做离线启动检查，代码没变且服务健康时不重启。新版启动失败会尝试恢复之前运行的版本，且命令仍返回失败状态；不覆盖 SQLite、原稿或模型配置。重要数据仍应单独备份，新版一旦改了数据库结构，旧程序不一定兼容。
 - 首启默认尝试 `127.0.0.1:8765–8775`，打印实际可用地址；之后沿用成功过的端口。已经配置反代、要固定端口时加 `--port 8765`，端口占用就报错，不改端口也不杀占用进程。保持同一套 `CITATION_*` 环境变量；脚本不复制凭据。通过 SSH 在电脑浏览器演示时，把端口转发目标改为脚本打印的实际端口。
@@ -60,7 +68,9 @@ uv run --script update_linux.py
 
 ### 接入真实 Agent 与部署配置
 
-- 首页头像 → **模型设置**：选择协议、填写公网 HTTPS 地址、模型名和自己的 API Key。所选模型须支持工具调用和结构化输出。匿名演示要使用服务端默认模型：用 `CITATION_MODEL_CONFIG` 指向仓库外的 JSON 文件（默认位置为 `data/runtime/deepseek.local.json`）。例如 Luna 的字段为 `"provider": "openai"`、`"base_url": "https://api.openai.com/v1"`、`"api_type": "responses"`、`"model": "gpt-6-luna"` 和 `"api_key"`。部署不会继承试用站凭据；不要把 Key 加进 Git。仅在网页填写的 Key 只供当前标签页使用，不会成为服务器的默认 Key，也不能用于上述命令。
+- 首页头像 → **模型设置**：选择协议、填写公网 HTTPS 地址、模型名和自己的 API Key。登录后点「同步到账号」，同一站点的其他设备登录后会自动用于新检索、续聊和引用建议；Key 不回传浏览器。旧标签仍有同账户配置时，直接打开设置保存一次即可迁移，不用重输。选「服务端默认模型」并应用则移除账号已保存的 Key。访客自定义 Key 仍只留在当前标签，不会成为服务器默认 Key。
+- 服务器默认模型用 `CITATION_MODEL_CONFIG` 指向受保护的 JSON 凭据文件（默认位置为 `data/runtime/deepseek.local.json`）。例如 Luna 的字段为 `"provider": "openai"`、`"base_url": "https://api.openai.com/v1"`、`"api_type": "responses"`、`"model": "gpt-6-luna"` 和 `"api_key"`。快捷脚本也支持上面的 DeepSeek 配置。两种模型都须支持工具调用及结构化输出。部署不会继承试用站的默认 Key，不要把 Key 加进 Git。
+- 账户 Key 使用 `cryptography`（Apache-2.0/BSD 许可）的 AES-256-GCM 存密文，首次保存会在数据库旁生成独立的 `*.account-model.key`（Linux 仅服务账号可读）。迁移或恢复时，除 SQLite 外还需**从单独受控的备份恢复这份密钥**。正式部署可用 `CITATION_ACCOUNT_MODEL_KEY_FILE` 指向由凭据管理器注入的 32 字节密钥文件。缺失时不会用服务器的默认 Key 代替已选账户模型。
 - 默认本地召回使用 BM25，不下载模型。持有授权快照时，可设置 `CITATION_CORPUS_PATH`、`CITATION_SAMPLE_CORPUS_PATH` 覆盖两个默认文件；清单的 `original_sha256` 对应原始快照。若启用 `CITATION_EMBEDDING_ENABLED=1`，还需用 `CITATION_EMBEDDING_CACHE_DIR` 指向该语料匹配的预建 E5 模型和 `.npz` 索引。缺失或不匹配在启动时报错，不在首个请求里向量化整库。公开版默认检索排名不承诺与带完整摘要和 E5 的线上实例一致。
 - 健康检查：`GET /healthz`；交互文档：`GET /docs`；MCP：`POST /mcp`。上述命令只监听回环；在远程服务器演示可经已有 HTTPS 入口反代，或用 SSH 端口转发。反代须允许 SSE、保留正确的 Host，并配置 `CITATION_TRUSTED_HOSTS`；按需设 `CITATION_BASE_PATH`、`CITATION_SECURE_COOKIES=1`。不直接公开裸 Uvicorn 或无安全扫描的稿件上传。
 - 进程意外退出后，重启会标记未完成检索与对话轮次中断，不会自动重跑；已保存的候选、会话记录和快照仍可访问，也可继续该会话。
@@ -100,6 +110,8 @@ npm test
 uv run --frozen python tools/smoke.py
 uv run --frozen python tools/check_spec.py
 ```
+
+账户模型回归覆盖独立登录会话、服务重启后读回、续聊和引用建议用同一模型、切回默认及账户隔离；更新脚本回归验证加密配置和真实本地 HTTP 启动。它们不调用付费模型；联网验收仍使用 `--check-live`。
 
 运行上述本地夹具后，可另用 `npm run test:browser:themes` 验证四主题的桌面/手机首页、全文入口、双榜单、原生移动触控、引用和证据弹窗；它使用隔离的无头 Edge，不操作日常浏览器。可用 `THEMES=2,3 VIEWPORTS=mobile npm run test:browser:themes` 缩小范围，截图和报告写入 `data/runtime/theme-browser-acceptance/` 的新目录。
 

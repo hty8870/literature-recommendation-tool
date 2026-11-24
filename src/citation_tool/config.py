@@ -57,6 +57,7 @@ class Settings:
     model_max_inflight: int = 2
     model_timeout_ms: int = 45_000
     allow_user_models: bool = True
+    account_model_key_file: Path | None = None
     demo_continuity: bool = False
     agent_timeout_ms: int = 900_000
     agent_full_text_timeout_ms: int = 1_800_000

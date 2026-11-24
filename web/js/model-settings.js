@@ -71,7 +71,7 @@ export function modelRequestPayload(selection) {
 }
 
 export class ModelSettingsDialog {
-  constructor({ onChange }) {
+  constructor({ onChange, getSettings, putSettings }) {
     const id = (name) => document.getElementById(name);
     this.dialog = id('model-dialog');
     this.form = id('model-form');
@@ -83,17 +83,26 @@ export class ModelSettingsDialog {
     this.fields = id('model-custom-fields');
     this.keyNote = id('model-key-note');
     this.error = id('model-error');
+    this.saveButton = id('save-model-button');
     this.onChange = onChange;
+    this.getSettings = getSettings;
+    this.putSettings = putSettings;
     this.selection = null;
+    this.saved = null;
+    this.sync = false;
+    this.refreshing = null;
+    this.saving = null;
     this.providers = [];
     this.protocols = [];
     try { this.storage = window.sessionStorage; } catch { this.storage = null; }
     this.provider.addEventListener('change', () => this.showFields());
-    this.form.addEventListener('submit', (event) => this.save(event));
+    this.form.addEventListener('submit', (event) => { event.preventDefault(); void this.save(); });
     this.dialog.addEventListener('click', (event) => {
-      if (event.target.closest('button[value="cancel"]')) this.dialog.close('cancel');
+      if (!this.saving && event.target.closest('button[value="cancel"]')) this.dialog.close('cancel');
     });
+    this.dialog.addEventListener('cancel', (event) => { if (this.saving) event.preventDefault(); });
     this.dialog.addEventListener('close', () => {
+      if (this.dialog.open) return;
       this.key.value = '';
       id('profile-button').focus({ preventScroll: true });
     });
@@ -117,73 +126,158 @@ export class ModelSettingsDialog {
   }
 
   get available() { return this.protocols.length > 0 || this.providers.length > 0; }
-  get isCustom() { return this.selection !== null; }
-  payload() { return modelRequestPayload(this.selection); }
+  get ready() { return !this.sync || this.saved !== null; }
+  get isCustom() { return Boolean(this.sync ? this.saved?.model : this.selection); }
+  payload() { return this.sync ? null : modelRequestPayload(this.selection); }
 
   load() {
     this.selection = readModelSelection(this.storage, this.providers, this.protocols, this.scope);
-    this.onChange(this.isCustom);
+    this.onChange();
   }
 
-  setScope(scope, { forget = false } = {}) {
-    if (forget) this.clear();
+  setScope(scope, { forget = false, sync = false } = {}) {
+    if (scope === this.scope && sync === this.sync) return;
+    this.resetRequests();
+    if (forget) this.forgetLocalSelection();
     this.scope = scope;
+    this.sync = sync;
     this.load();
+  }
+
+  forgetLocalSelection() {
+    this.selection = writeModelSelection(this.storage, null, this.providers, this.protocols, this.scope);
+  }
+
+  resetRequests() {
+    this.refreshing?.abort();
+    this.saving?.abort();
+    this.refreshing = this.saving = this.saved = null;
+    this.key.value = '';
+    if (this.dialog.open) this.dialog.close();
+  }
+
+  clear() {
+    this.resetRequests();
+    this.forgetLocalSelection();
+    this.onChange();
+  }
+
+  async refresh({ opening = false } = {}) {
+    if (!this.sync || (!opening && (this.dialog.open || this.refreshing))) return;
+    this.refreshing?.abort();
+    const controller = new AbortController();
+    this.refreshing = controller;
+    if (opening) this.showFields();
+    try {
+      const saved = await this.getSettings(controller.signal);
+      if (this.refreshing !== controller) return;
+      this.saved = saved;
+      if (saved.model) this.forgetLocalSelection();
+      this.onChange();
+    } catch (error) {
+      if (this.refreshing !== controller || error.name === 'AbortError') return;
+      if (opening && this.dialog.open) this.showError(error);
+    } finally {
+      if (this.refreshing === controller) {
+        this.refreshing = null;
+        if (opening && this.dialog.open) {
+          this.fillForm();
+          if (document.activeElement === this.dialog) this.provider.focus();
+        }
+      }
+    }
+  }
+
+  fillForm() {
+    const current = this.saved?.model || this.selection;
+    const preset = OFFICIAL[current?.provider];
+    this.provider.value = current ? (this.protocols.length ? 'custom' : current.provider) : '';
+    this.protocol.value = current?.api_type || preset?.[1] || this.protocols[0] || '';
+    this.url.value = current?.base_url || preset?.[0] || '';
+    this.name.value = current?.model || '';
+    this.key.value = '';
+    this.key.placeholder = current ? '留空保留原 Key（同地址、同协议）' : '输入 API Key';
+    this.showFields();
   }
 
   open() {
     if (document.querySelector('dialog[open]')) return;
-    const current = this.selection;
-    const savedPreset = OFFICIAL[current?.provider];
-    this.provider.value = current ? (this.protocols.length ? 'custom' : current.provider) : '';
-    this.protocol.value = current?.api_type || savedPreset?.[1] || this.protocols[0] || '';
-    this.url.value = current?.base_url || savedPreset?.[0] || '';
-    this.name.value = current?.model || '';
-    this.key.value = '';
-    this.key.placeholder = current ? '已设置；留空保留（仅限原地址和协议）' : '输入 API Key';
-    this.showFields();
+    this.error.hidden = true;
+    this.fillForm();
     this.dialog.showModal();
     this.provider.focus();
+    void this.refresh({ opening: true });
   }
 
   showFields() {
     const custom = Boolean(this.provider.value);
+    const busy = Boolean(this.saving || this.refreshing);
     this.fields.hidden = !custom;
-    this.keyNote.hidden = !custom;
     this.protocol.parentElement.hidden = this.provider.value !== 'custom';
     this.url.parentElement.hidden = this.provider.value !== 'custom';
-    this.error.hidden = true;
+    for (const field of [this.provider, this.protocol, this.url, this.name, this.key]) field.disabled = busy;
+    this.saveButton.disabled = busy || !this.ready;
+    this.saveButton.textContent = this.saving ? '正在保存…' : this.sync && custom ? '同步到账号' : '应用到后续请求';
+    this.keyNote.textContent = this.sync
+      ? custom ? (this.selection && !this.saved?.model
+        ? '可沿用当前标签的旧 Key，保存后其他设备登录即可使用。'
+        : 'Key 加密保存，其他设备登录后即可使用。')
+        : this.saved?.model ? '应用后会移除此账号保存的 Key。' : ''
+      : custom ? 'Key 仅保留在此标签页。请只填写信任的服务。' : '';
+    this.keyNote.hidden = !this.keyNote.textContent;
   }
 
-  save(event) {
-    event.preventDefault();
+  showError(error) {
+    this.error.textContent = error.message;
+    this.error.hidden = false;
+  }
+
+  buildDraft() {
+    const mode = this.provider.value;
+    if (!mode) return null;
+    const previous = this.saved?.model || this.selection;
+    if (mode !== 'custom') {
+      return { provider: mode, model: this.name.value,
+        api_key: this.key.value || (mode === previous?.provider ? previous.api_key : '') };
+    }
+    const apiType = this.protocol.value;
+    const base = normalizeUrl(this.url.value, apiType);
+    const preset = OFFICIAL[previous?.provider];
+    const sameEndpoint = (previous?.base_url || preset?.[0]) === base
+      && (previous?.api_type || preset?.[1]) === apiType;
+    const draft = { api_type: apiType, base_url: base, model: this.name.value };
+    if (!this.sync || this.key.value.trim() || sameEndpoint && previous?.api_key) {
+      draft.api_key = this.key.value.trim() || (sameEndpoint ? previous?.api_key : '');
+    }
+    return draft;
+  }
+
+  async save() {
+    if (this.saving || this.refreshing || !this.ready) return;
+    this.error.hidden = true;
+    let controller;
     try {
-      const mode = this.provider.value;
-      const previous = this.selection;
-      let selection = null;
-      if (mode === 'custom') {
-        const url = normalizeUrl(this.url.value, this.protocol.value);
-        const preset = OFFICIAL[previous?.provider];
-        const sameEndpoint = (previous?.base_url || preset?.[0]) === url
-          && (previous?.api_type || preset?.[1]) === this.protocol.value;
-        selection = { api_type: this.protocol.value, base_url: url, model: this.name.value,
-          api_key: this.key.value || (sameEndpoint ? previous?.api_key : '') };
-      } else if (mode) {
-        selection = { provider: mode, model: this.name.value,
-          api_key: this.key.value || (mode === previous?.provider ? previous.api_key : '') };
+      const draft = this.buildDraft();
+      if (this.sync) {
+        controller = new AbortController();
+        this.saving = controller;
+        this.showFields();
+        const saved = await this.putSettings({ revision: this.saved.revision, model: draft }, controller.signal);
+        if (this.saving !== controller) return;
+        this.saved = saved;
+        this.forgetLocalSelection();
+      } else {
+        this.selection = writeModelSelection(this.storage, draft, this.providers, this.protocols, this.scope);
       }
-      this.selection = writeModelSelection(this.storage, selection, this.providers, this.protocols, this.scope);
-      this.onChange(this.isCustom);
+      this.onChange();
       this.dialog.close('saved');
     } catch (error) {
-      this.error.textContent = error.message;
-      this.error.hidden = false;
+      if (error.name !== 'AbortError' && (!controller || this.saving === controller)) this.showError(error);
+    } finally {
+      if (controller && this.saving === controller) {
+        this.saving = null;
+        this.showFields();
+      }
     }
-  }
-
-  clear() {
-    if (this.dialog.open) this.dialog.close();
-    this.selection = writeModelSelection(this.storage, null, this.providers, this.protocols, this.scope);
-    this.onChange(false);
   }
 }

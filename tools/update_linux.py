@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import errno
+import getpass
 import hashlib
 import http.client
 import json
@@ -20,6 +21,7 @@ import subprocess
 import sys
 import tarfile
 import time
+import warnings
 from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
@@ -33,6 +35,8 @@ PORT_COUNT = 11
 STOP_TIMEOUT = 25
 STATE_DIR = "data/runtime/linux-updater"
 HEALTH_LIMIT = 16_384
+UPDATER_MODEL_ENV = "CITATION_UPDATER_MODEL_CONFIG"
+ACCOUNT_KEY_ENV = "CITATION_ACCOUNT_MODEL_KEY_FILE"
 REVISION = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})\Z")
 STABLE_PATHS = {
     "CITATION_DB_PATH": "data/runtime/app.db",
@@ -174,9 +178,18 @@ def manual_instance(repo: Path) -> bool:
 
 def service_environment(repo: Path, releases: Path) -> dict[str, str]:
     env = dict(os.environ)
-    for key in ("VIRTUAL_ENV", "PYTHONPATH", "PYTHONHOME", "UV_PROJECT_ENVIRONMENT"):
+    for key in (
+        "VIRTUAL_ENV",
+        "PYTHONPATH",
+        "PYTHONHOME",
+        "UV_PROJECT_ENVIRONMENT",
+        UPDATER_MODEL_ENV,
+    ):
         env.pop(key, None)
-    for key, default in STABLE_PATHS.items():
+    stable = STABLE_PATHS | (
+        {ACCOUNT_KEY_ENV: env[ACCOUNT_KEY_ENV]} if env.get(ACCOUNT_KEY_ENV) else {}
+    )
+    for key, default in stable.items():
         path = (repo / env.get(key, default)).resolve()
         if path.is_relative_to(releases):
             raise UpdateError(f"{key} 必须指向独立数据目录，不能放在版本目录内。")
@@ -191,7 +204,8 @@ def profile_id(env: dict[str, str]) -> str:
     fields = {
         name: (
             bool(value)
-            if any(key in name for key in ("KEY", "TOKEN", "PASSWORD", "SECRET"))
+            if name != ACCOUNT_KEY_ENV
+            and any(key in name for key in ("KEY", "TOKEN", "PASSWORD", "SECRET"))
             else value
         )
         for name, value in env.items()
@@ -267,9 +281,12 @@ def git_text(repo: Path, *args: str) -> str:
 
 
 class Deployment:
-    def __init__(self, repo: Path, *, wait: int, check_live: bool = False) -> None:
+    def __init__(
+        self, repo: Path, *, wait: int, check_live: bool = False, set_deepseek: bool = False
+    ) -> None:
         self.repo = repo
         self.check_live = check_live
+        self.set_deepseek = set_deepseek
         self.state = repo / STATE_DIR
         self.state.mkdir(mode=0o700, parents=True, exist_ok=True)
         if self.state.is_symlink() or (os.name == "posix" and self.state.stat().st_mode & 0o077):
@@ -282,6 +299,10 @@ class Deployment:
         self.wait = wait
         self.env = service_environment(repo, self.releases)
         self.profile = profile_id(self.env)
+        self.default_model = self.state / "default-model.local.json"
+        self.pending_model = self.state / "pending-model.local.json"
+        if self.default_model.is_file():
+            self.env[UPDATER_MODEL_ENV] = str(self.default_model)
 
     def running(self) -> Instance | None:
         if not locked(self.state / "service.lock"):
@@ -299,6 +320,7 @@ class Deployment:
         cwd: Path,
         timeout: int,
         env: dict[str, str] | None = None,
+        input_data: bytes | None = None,
     ) -> None:
         with self.log.open("ab") as log:
             log.write(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] {name}\n".encode())
@@ -308,7 +330,8 @@ class Deployment:
                     argv,
                     cwd=cwd,
                     env=env,
-                    stdin=subprocess.DEVNULL,
+                    stdin=subprocess.DEVNULL if input_data is None else None,
+                    input=input_data,
                     stdout=log,
                     stderr=subprocess.STDOUT,
                     check=False,
@@ -379,14 +402,45 @@ class Deployment:
         else:
             self.check(release)
 
+    def staged_environment(self) -> dict[str, str]:
+        if self.set_deepseek:
+            return {**self.env, UPDATER_MODEL_ENV: str(self.pending_model)}
+        return self.env
+
+    def stage_deepseek(self, release: Path) -> None:
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("error", getpass.GetPassWarning)
+                key = getpass.getpass("DeepSeek API Key（输入不显示）：")
+        except (EOFError, getpass.GetPassWarning):
+            raise UpdateError("需要交互式终端安全输入 Key。") from None
+        self.command(
+            "保存候选默认模型",
+            [
+                str(interpreter(release)),
+                "-I",
+                "-c",
+                "import sys; from pathlib import Path; from citation_tool.reasons import "
+                "save_demo_model_config; "
+                "save_demo_model_config(Path(sys.argv[1]), sys.stdin.read(513))",
+                str(self.pending_model),
+            ],
+            input_data=key.encode("utf-8"),
+            cwd=release,
+            env=self.env,
+            timeout=30,
+        )
+
     def check(self, release: Path) -> None:
+        if self.set_deepseek:
+            self.stage_deepseek(release)
         flag = "--check-live" if self.check_live else "--check"
         command = f"import sys; from citation_tool.cli import main; sys.exit(main([{flag!r}]))"
         self.command(
             "真实演示预检" if self.check_live else "新版启动自检",
             [str(interpreter(release)), "-I", "-c", command],
             cwd=release,
-            env=self.env,
+            env=self.staged_environment(),
             timeout=1050 if self.check_live else max(90, self.wait),
         )
 
@@ -409,7 +463,9 @@ class Deployment:
             time.sleep(0.2)
         marker.unlink(missing_ok=True)
 
-    def start(self, revision: str, port: int, *, fallback: bool = False) -> Instance:
+    def start(
+        self, revision: str, port: int, *, fallback: bool = False, env: dict[str, str] | None = None
+    ) -> Instance:
         if locked(self.state / "service.lock"):
             raise UpdateError("旧进程仍持有实例锁。没有启动第二个实例。")
         (self.state / "running.json").unlink(missing_ok=True)
@@ -437,7 +493,7 @@ class Deployment:
             child = subprocess.Popen(  # noqa: S603
                 argv,
                 cwd=release,
-                env=self.env,
+                env=env if env is not None else self.env,
                 stdin=subprocess.DEVNULL,
                 stdout=sink,
                 stderr=subprocess.STDOUT,
@@ -490,6 +546,7 @@ class Deployment:
         revision = self.target(baseline)
         if (
             not self.check_live
+            and not self.set_deepseek
             and running
             and (running.revision, running.port) == (revision, selected)
             and healthy(selected)
@@ -502,16 +559,26 @@ class Deployment:
             print("将实际调用默认模型和 Europe PMC，详细进度见 " + str(self.log), flush=True)
         self.prepare(revision)
         item = None
+        receipt_written = False
         try:
             if running:
                 print("新版自检通过，正在停止脚本管理的旧实例…", flush=True)
                 self.stop(running)
-            item = self.start(revision, selected, fallback=fallback)
+            extra = {"env": self.staged_environment()} if self.set_deepseek else {}
+            item = self.start(revision, selected, fallback=fallback, **extra)
             item.save(receipt)
+            receipt_written = True
+            if self.set_deepseek:
+                self.pending_model.replace(self.default_model)
         except (OSError, UpdateError, KeyboardInterrupt) as exc:
             try:
                 if item:
                     self.stop(item)
+                if receipt_written:
+                    if previous_good is None:
+                        receipt.unlink(missing_ok=True)
+                    else:
+                        previous_good.save(receipt)
                 if running and not locked(self.state / "service.lock"):
                     restored = self.start(running.revision, running.port)
                     restored.save(receipt)
@@ -519,6 +586,8 @@ class Deployment:
             except (OSError, UpdateError, KeyboardInterrupt) as rollback:
                 raise UpdateError(f"更新失败：{exc}；恢复旧版也失败：{rollback}") from rollback
             raise
+        if self.set_deepseek:
+            print("服务端默认模型：deepseek-flash（Key 已加密保存）。", flush=True)
         self.report(item, "真实演示预检通过，已启动" if self.check_live else "更新成功，HTTP 健康")
         if not self.check_live:
             print("未调用模型或在线库；正式演示前请使用 --check-live。", flush=True)
@@ -544,9 +613,12 @@ def main() -> int:
     parser.add_argument(
         "--check-live", action="store_true", help="切换前实际验证模型、在线库和排名"
     )
+    parser.add_argument(
+        "--set-deepseek", action="store_true", help="隐藏输入 Key，设置服务端默认 DeepSeek"
+    )
     args = parser.parse_args()
-    if args.check_live and args.action != "update":
-        parser.error("--check-live 仅用于启动或更新。")
+    if (args.check_live or args.set_deepseek) and args.action != "update":
+        parser.error("--check-live 和 --set-deepseek 仅用于启动或更新。")
     if (args.port is not None and not 1024 <= args.port <= 65535) or not 5 <= args.wait <= 600:
         parser.error("端口须在 1024–65535，--wait 须在 5–600 秒内。")
     if not shutil.which("git") or not shutil.which("uv"):
@@ -556,10 +628,16 @@ def main() -> int:
         if not (repo / "src/citation_tool/api.py").is_file():
             raise UpdateError("请在文献推荐工具的 Git 仓库目录运行本脚本。")
         os.umask(0o077)
-        deploy = Deployment(repo, wait=args.wait, check_live=args.check_live)
+        deploy = Deployment(
+            repo, wait=args.wait, check_live=args.check_live, set_deepseek=args.set_deepseek
+        )
         with lock(deploy.state / "update.lock"):
             if args.action == "update":
-                deploy.update(args.port)
+                try:
+                    deploy.update(args.port)
+                finally:
+                    if args.set_deepseek:
+                        deploy.pending_model.unlink(missing_ok=True)
             elif current := deploy.running():
                 if args.action == "stop":
                     deploy.stop(current)

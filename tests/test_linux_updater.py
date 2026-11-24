@@ -5,8 +5,11 @@ import socket
 import sys
 from pathlib import Path
 
+import httpx
 import pytest
 from tools import update_linux as update
+
+from citation_tool.reasons import load_model_config, save_demo_model_config
 
 
 @pytest.fixture
@@ -125,6 +128,96 @@ def test_live_check_runs_before_switch_even_on_the_same_revision(deployment, mon
     monkeypatch.setattr(deployment, "command", fail_probe)
     with pytest.raises(update.UpdateError, match="NO_VALID_RANKING"):
         deployment.update(None)
+
+
+def test_deepseek_default_is_encrypted_and_used_by_real_service(deployment, monkeypatch):
+    key = "test-deepseek-key-not-a-provider-credential"
+    version = "a" * 40
+    release = deployment.releases / version
+    release.mkdir()
+    (release / ".prepared").touch()
+    deployment.set_deepseek = True
+    monkeypatch.setattr(deployment, "target", lambda _: version)
+    monkeypatch.setattr(update, "interpreter", lambda _: Path(sys.executable))
+    monkeypatch.setattr(update.getpass, "getpass", lambda _: key)
+    with socket.create_server((update.HOST, 0)) as listener:
+        port = listener.getsockname()[1]
+    try:
+        deployment.update(port)
+        health = httpx.get(f"http://{update.HOST}:{port}/healthz", trust_env=False)
+        assert health.json()["reason_model"] == "deepseek-flash"
+        assert health.json()["agent_available"]
+    finally:
+        if current := deployment.running():
+            deployment.stop(current)
+    assert not deployment.pending_model.exists()
+    assert key.encode() not in deployment.default_model.read_bytes()
+    assert key.encode() not in deployment.log.read_bytes()
+    assert key.encode() not in (deployment.state / "service.log").read_bytes()
+    restarted = update.Deployment(deployment.repo, wait=15)
+    restored = load_model_config(Path(restarted.env[update.UPDATER_MODEL_ENV]))
+    assert restored and restored.api_key == key and restored.model == "deepseek-flash"
+
+
+@pytest.mark.parametrize("failure", ["preflight", "receipt", "promotion"])
+def test_failed_default_change_preserves_existing_default(deployment, monkeypatch, failure):
+    old_key = "previous-test-key"
+    new_key = "candidate-test-key"
+    save_demo_model_config(deployment.default_model, old_key)
+    deployment = update.Deployment(deployment.repo, wait=15, set_deepseek=True)
+    previous = update.Instance("a" * 40, 18800, "1" * 32, deployment.profile)
+    candidate = update.Instance("b" * 40, 18800, "2" * 32, deployment.profile)
+    receipt = deployment.state / "last-good.json"
+    previous.save(receipt)
+    stopped = []
+    monkeypatch.setattr(deployment, "running", lambda: previous)
+    monkeypatch.setattr(deployment, "target", lambda _: candidate.revision)
+    monkeypatch.setattr(deployment, "stop", stopped.append)
+    monkeypatch.setattr(update, "healthy", lambda _: False)
+    monkeypatch.setattr(update, "locked", lambda _: False)
+
+    def prepare(_):
+        save_demo_model_config(deployment.pending_model, new_key)
+        if failure == "preflight":
+            raise update.UpdateError("preflight failed")
+
+    def start(revision, port, *, fallback=False, env=None):
+        assert port == previous.port and not fallback
+        if revision == candidate.revision:
+            configured = load_model_config(Path(env[update.UPDATER_MODEL_ENV]))
+            assert configured and configured.api_key == new_key
+            return candidate
+        assert revision == previous.revision and env is None
+        configured = load_model_config(Path(deployment.env[update.UPDATER_MODEL_ENV]))
+        assert configured and configured.api_key == old_key
+        return previous
+
+    monkeypatch.setattr(deployment, "prepare", prepare)
+    monkeypatch.setattr(deployment, "start", start)
+    if failure == "receipt":
+        save = update.Instance.save
+
+        def fail_receipt(instance, path):
+            if instance == candidate:
+                raise OSError("receipt failed")
+            save(instance, path)
+
+        monkeypatch.setattr(update.Instance, "save", fail_receipt)
+    elif failure == "promotion":
+        replace = Path.replace
+
+        def fail_promotion(path, destination):
+            if path == deployment.pending_model:
+                raise OSError("promotion failed")
+            return replace(path, destination)
+
+        monkeypatch.setattr(Path, "replace", fail_promotion)
+    with pytest.raises((OSError, update.UpdateError), match=failure):
+        deployment.update(None)
+    assert stopped == ([] if failure == "preflight" else [previous, candidate])
+    assert update.Instance.read(receipt) == previous
+    restored = load_model_config(deployment.default_model)
+    assert restored and restored.api_key == old_key
 
 
 def test_changed_profile_does_not_stop_live_instance(deployment, monkeypatch):

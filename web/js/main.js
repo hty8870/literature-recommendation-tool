@@ -4,6 +4,7 @@ import {
   createAgentRun,
   createCitationText,
   createConversationTurn,
+  getAccountModel,
   getAgentRun,
   getCitationFormats,
   getCitationText,
@@ -18,6 +19,7 @@ import {
   login,
   logout,
   newIdempotencyKey,
+  saveAccountModel,
   setWorkspaceAccount,
   uploadManuscript,
 } from './api.js';
@@ -84,6 +86,7 @@ let agentAvailable = false;
 let authenticated = false;
 let authRequired = false;
 let accountsEnabled = false;
+let accountModelSync = false;
 let projectsEnabled = false;
 let identityReady = false;
 let account = null;
@@ -122,7 +125,9 @@ const bibliography = new BibliographyMenu({
   copy: copyText,
   onToast: showToast,
 });
-const modelSettings = new ModelSettingsDialog({ onChange: () => updateAgentAvailability() });
+const modelSettings = new ModelSettingsDialog({
+  onChange: updateAgentAvailability, getSettings: getAccountModel, putSettings: saveAccountModel,
+});
 const accountView = new WorkspaceAccount({
   onChange: (next, changedSession) => {
     identityRequest += 1;
@@ -311,7 +316,8 @@ function adoptIdentity(next) {
   }
   account = next;
   setWorkspaceAccount(accountsEnabled ? nextId : null);
-  if (changed || modelSettings.scope !== nextId) modelSettings.setScope(nextId, { forget: changed });
+  modelSettings.setScope(nextId, { forget: changed, sync: accountModelSync && Boolean(next) });
+  void modelSettings.refresh();
   accountView.setIdentity(next, { enabled: accountsEnabled, models: modelSettings.available });
   if (changed) sourceRequests.setIdentity(null, false);
   historyView.setIdentity(accountsEnabled && !localDemo, next);
@@ -414,6 +420,7 @@ async function loadLibraries() {
     defaultModelAvailable = response.agent_available === true;
     citationPreparationEnabled = response.citation_preparation_enabled === true;
     accountsEnabled = response.accounts_enabled === true;
+    accountModelSync = !localDemo && response.account_model_sync === true;
     projectsEnabled = !localDemo && response.projects_enabled === true;
     authRequired = authRequired || response.authentication_required === true;
     modelSettings.setProviders(response.user_model_providers || [], response.user_model_protocols || [], response.model);
